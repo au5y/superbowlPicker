@@ -57,6 +57,7 @@
             <form action="/login" method="POST">
                 <input type="text" name="username" placeholder="Your Name" required autocomplete="off">
                 <input type="password" name="pin" placeholder="PIN (Optional)" maxlength="4">
+                <input type="text" name="room_code" placeholder="Room Code (Optional)" style="text-transform:uppercase">
                 <br>
                 <button type="submit" class="login-btn">Enter Arena</button>
             </form>
@@ -87,7 +88,7 @@
 
     <div class="mobile-header">
         <button class="menu-btn" onclick="toggleDrawer()">☰</button>
-        <div style="font-weight: bold;">{{.User.Username}} ({{.User.TotalScore}} pts)</div>
+        <div style="font-weight: bold;">{{.User.Username}} ({{.User.TotalScore}} pts) <span style="font-weight:normal; opacity:0.8; font-size:0.9em;">[{{.User.RoomCode}}]</span></div>
         {{if eq .GameStatus "LOCKED"}}<span style="background:#C60C30; padding:2px 8px; border-radius:4px; font-size:0.8rem;">LOCKED</span>{{end}}
     </div>
 

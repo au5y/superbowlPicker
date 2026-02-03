@@ -30,7 +30,13 @@
     </header>
 
     <div style="max-width: 800px; margin: 0 auto;">
-        <h2>🏆 Live Standings</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h2 style="margin:0;">🏆 Live Standings</h2>
+            <div>
+                <button id="btn-room" onclick="setScope('room')" style="padding:8px 12px; font-weight:bold; cursor:pointer; background:#002244; color:white; border:none; border-radius:4px;">My Room [{{.User.RoomCode}}]</button>
+                <button id="btn-global" onclick="setScope('global')" style="padding:8px 12px; cursor:pointer; background:#eee; color:#333; border:none; border-radius:4px;">Global</button>
+            </div>
+        </div>
         
         <div class="table-container">
             <table id="lb-table">
@@ -50,24 +56,93 @@
     </div>
 
     <script>
+        const userRoom = "{{.User.RoomCode}}";
+        let currentScope = 'room';
+
+        function setScope(scope) {
+            currentScope = scope;
+
+            const btnRoom = document.getElementById('btn-room');
+            const btnGlobal = document.getElementById('btn-global');
+
+            if (scope === 'room') {
+                btnRoom.style.background = '#002244';
+                btnRoom.style.color = 'white';
+                btnRoom.style.fontWeight = 'bold';
+
+                btnGlobal.style.background = '#eee';
+                btnGlobal.style.color = '#333';
+                btnGlobal.style.fontWeight = 'normal';
+            } else {
+                btnGlobal.style.background = '#002244';
+                btnGlobal.style.color = 'white';
+                btnGlobal.style.fontWeight = 'bold';
+
+                btnRoom.style.background = '#eee';
+                btnRoom.style.color = '#333';
+                btnRoom.style.fontWeight = 'normal';
+            }
+            loadLeaderboard();
+        }
+
         function loadLeaderboard() {
-            fetch('/api/leaderboard')
+            let url = '/api/leaderboard';
+            if (currentScope === 'room') {
+                url += '?room=' + encodeURIComponent(userRoom);
+            } else {
+                url += '?scope=global';
+            }
+
+            fetch(url)
             .then(res => res.json())
             .then(data => {
                 const tbody = document.getElementById('lb-body');
                 tbody.innerHTML = '';
                 
+                if (data.length === 0) {
+                     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">No players in this room yet.</td></tr>';
+                     return;
+                }
+
                 data.forEach((user, index) => {
                     const tr = document.createElement('tr');
                     // Click to view profile
                     tr.onclick = () => window.location.href = '/user/' + user.id;
                     
-                    tr.innerHTML = `
-                        <td class="rank-cell">${index + 1}</td>
-                        <td><strong>${user.username}</strong></td>
-                        <td style="color:#666;">${user.tie_breaker}</td>
-                        <td class="score-cell">${user.total_score}</td>
-                    `;
+                    // Rank
+                    const tdRank = document.createElement('td');
+                    tdRank.className = 'rank-cell';
+                    tdRank.textContent = index + 1;
+                    tr.appendChild(tdRank);
+
+                    // Player
+                    const tdPlayer = document.createElement('td');
+                    const strong = document.createElement('strong');
+                    strong.textContent = user.username;
+                    tdPlayer.appendChild(strong);
+
+                    if (currentScope === 'global') {
+                        const span = document.createElement('span');
+                        span.style.fontSize = '0.8rem';
+                        span.style.color = '#666';
+                        span.style.marginLeft = '5px';
+                        span.textContent = '[' + user.room_code + ']';
+                        tdPlayer.appendChild(span);
+                    }
+                    tr.appendChild(tdPlayer);
+
+                    // Tie Breaker
+                    const tdTie = document.createElement('td');
+                    tdTie.style.color = '#666';
+                    tdTie.textContent = user.tie_breaker;
+                    tr.appendChild(tdTie);
+
+                    // Score
+                    const tdScore = document.createElement('td');
+                    tdScore.className = 'score-cell';
+                    tdScore.textContent = user.total_score;
+                    tr.appendChild(tdScore);
+
                     tbody.appendChild(tr);
                 });
             });

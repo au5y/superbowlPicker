@@ -101,6 +101,41 @@
                 {{end}}
             </tbody>
         </table>
+
+        <div style="margin-top: 40px; margin-bottom: 20px;">
+            <h2>👤 Player Management</h2>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Room</th>
+                    <th>Score</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Users}}
+                <tr>
+                    <td>{{.ID}}</td>
+                    <td>{{.Username}}</td>
+                    <td>{{.RoomCode}}</td>
+                    <td>{{.TotalScore}}</td>
+                    <td style="display:flex; gap:10px;">
+                        <form action="/admin/users?key=touchdown" method="POST" onsubmit="return confirm('Reset PIN for {{.Username}}?');">
+                            <input type="hidden" name="user_id" value="{{.ID}}">
+                            <button type="submit" name="action" value="reset_pin" style="background:#ffc107; color:black;">Reset PIN</button>
+                        </form>
+                        <form action="/admin/users?key=touchdown" method="POST" onsubmit="return confirm('DELETE {{.Username}}? This cannot be undone.');">
+                            <input type="hidden" name="user_id" value="{{.ID}}">
+                            <button type="submit" name="action" value="delete" style="background:#dc3545; color:white;">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
     </div>
 
     <div id="toast">Prediction Resolved & Scores Updated!</div>

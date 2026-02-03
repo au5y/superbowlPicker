@@ -50,7 +50,8 @@ func createTables() {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			username TEXT UNIQUE,
 			pin_hash TEXT,
-			total_score INTEGER DEFAULT 0
+			total_score INTEGER DEFAULT 0,
+			room_code TEXT DEFAULT 'MAIN'
 		);`,
 		// Added 'correct_text_input' column
 		`CREATE TABLE IF NOT EXISTS questions (
@@ -89,6 +90,16 @@ func createTables() {
 	for _, query := range queries {
 		if _, err := db.Exec(query); err != nil {
 			log.Fatalf("Error creating table: %s\nQuery: %s", err, query)
+		}
+	}
+
+	// Migration: Add room_code column if not exists
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('users') WHERE name='room_code'").Scan(&count)
+	if err == nil && count == 0 {
+		log.Println("Migrating: Adding room_code to users table...")
+		if _, err := db.Exec("ALTER TABLE users ADD COLUMN room_code TEXT DEFAULT 'MAIN'"); err != nil {
+			log.Fatalf("Error migrating users table: %v", err)
 		}
 	}
 }

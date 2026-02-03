@@ -32,6 +32,7 @@ type User struct {
 	Username   string `json:"username"`
 	TotalScore int    `json:"total_score"`
 	TieBreaker string `json:"tie_breaker"`
+	RoomCode   string `json:"room_code"`
 }
 
 type QuestionData struct {
@@ -82,6 +83,7 @@ func main() {
 	http.HandleFunc("/admin", handleAdmin)
 	http.HandleFunc("/admin/resolve", handleResolve)
 	http.HandleFunc("/admin/state", handleGameState)
+	http.HandleFunc("/admin/users", handleAdminUsers)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	port := ":4884"
@@ -98,7 +100,7 @@ func getUser(r *http.Request) *User {
 	if err != nil || cookie.Value == "" { return nil }
 	userID, _ := strconv.Atoi(cookie.Value)
 	user := &User{ID: userID}
-	err = db.QueryRow("SELECT username, total_score FROM users WHERE id = ?", userID).Scan(&user.Username, &user.TotalScore)
+	err = db.QueryRow("SELECT username, total_score, room_code FROM users WHERE id = ?", userID).Scan(&user.Username, &user.TotalScore, &user.RoomCode)
 	if err != nil { return nil }
 	return user
 }
@@ -243,13 +245,30 @@ func handleUserProfile(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleLeaderboardAPI(w http.ResponseWriter, r *http.Request) {
-	query := `SELECT u.id, u.username, u.total_score, COALESCE((SELECT p.text_input FROM predictions p JOIN questions q ON p.question_id = q.id WHERE p.user_id = u.id AND q.type = 'number' AND q.text LIKE '%Total Points%' LIMIT 1), '-') as tie_breaker FROM users u ORDER BY u.total_score DESC, u.username ASC`
-	rows, _ := db.Query(query)
+	room := r.URL.Query().Get("room")
+	scope := r.URL.Query().Get("scope")
+
+	query := `SELECT u.id, u.username, u.total_score, COALESCE((SELECT p.text_input FROM predictions p JOIN questions q ON p.question_id = q.id WHERE p.user_id = u.id AND q.type = 'number' AND q.text LIKE '%Total Points%' LIMIT 1), '-') as tie_breaker, u.room_code FROM users u`
+
+	var args []interface{}
+	if scope != "global" && room != "" {
+		query += " WHERE u.room_code = ?"
+		args = append(args, room)
+	}
+
+	query += " ORDER BY u.total_score DESC, u.username ASC"
+
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "DB Error", 500)
+		return
+	}
 	defer rows.Close()
 	var users []User
 	for rows.Next() {
 		u := User{}
-		rows.Scan(&u.ID, &u.Username, &u.TotalScore, &u.TieBreaker)
+		rows.Scan(&u.ID, &u.Username, &u.TotalScore, &u.TieBreaker, &u.RoomCode)
 		users = append(users, u)
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -279,9 +298,32 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost { http.Redirect(w, r, "/", 302); return }
 	username := r.FormValue("username")
 	pin := r.FormValue("pin")
+	roomCode := strings.ToUpper(strings.TrimSpace(r.FormValue("room_code")))
+	if roomCode == "" {
+		roomCode = "MAIN"
+	}
+
 	var userID int
-	if err := db.QueryRow("SELECT id FROM users WHERE username=?", username).Scan(&userID); err != nil {
-		res, _ := db.Exec("INSERT INTO users (username, pin_hash) VALUES (?, ?)", username, pin)
+	var pinHash string
+	// Check if user exists
+	if err := db.QueryRow("SELECT id, pin_hash FROM users WHERE username=?", username).Scan(&userID, &pinHash); err == nil {
+		// User exists
+		// If PIN is set and doesn't match, reject
+		if pinHash != "" && pinHash != pin {
+			http.Redirect(w, r, "/?error=invalid_pin", 302)
+			return
+		}
+
+		// If PIN was reset (empty), update it
+		if pinHash == "" {
+			db.Exec("UPDATE users SET pin_hash = ? WHERE id = ?", pin, userID)
+		}
+
+		// Update room code for existing user
+		db.Exec("UPDATE users SET room_code = ? WHERE id = ?", roomCode, userID)
+	} else {
+		// Create new user
+		res, _ := db.Exec("INSERT INTO users (username, pin_hash, room_code) VALUES (?, ?, ?)", username, pin, roomCode)
 		id, _ := res.LastInsertId()
 		userID = int(id)
 	}
@@ -321,7 +363,24 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		}
 		questions = append(questions, q)
 	}
-	render(w, "admin.html", struct{Questions []QuestionData; GameStatus string}{questions, getGameStatus()})
+
+	// Fetch Users
+	var users []User
+	uRows, err := db.Query("SELECT id, username, room_code, total_score FROM users ORDER BY username ASC")
+	if err == nil {
+		defer uRows.Close()
+		for uRows.Next() {
+			u := User{}
+			uRows.Scan(&u.ID, &u.Username, &u.RoomCode, &u.TotalScore)
+			users = append(users, u)
+		}
+	}
+
+	render(w, "admin.html", struct {
+		Questions  []QuestionData
+		GameStatus string
+		Users      []User
+	}{questions, getGameStatus(), users})
 }
 
 func handleResolve(w http.ResponseWriter, r *http.Request) {
@@ -352,6 +411,51 @@ func handleResolve(w http.ResponseWriter, r *http.Request) {
 func handleGameState(w http.ResponseWriter, r *http.Request) {
 	status := r.FormValue("status")
 	if status == "OPEN" || status == "LOCKED" { setGameStatus(status) }
+	http.Redirect(w, r, "/admin?key=touchdown", 302)
+}
+
+func handleAdminUsers(w http.ResponseWriter, r *http.Request) {
+	keys, ok := r.URL.Query()["key"]
+	if !ok || len(keys[0]) < 1 || keys[0] != "touchdown" { http.Error(w, "Forbidden", 403); return }
+
+	if r.Method != http.MethodPost { http.Error(w, "Method Not Allowed", 405); return }
+
+	action := r.FormValue("action")
+	userIDStr := r.FormValue("user_id")
+
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(w, "Invalid User ID", 400)
+		return
+	}
+
+	if action == "reset_pin" {
+		_, err := db.Exec("UPDATE users SET pin_hash = '' WHERE id = ?", userID)
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "DB Error", 500)
+			return
+		}
+	} else if action == "delete" {
+		// Delete predictions first
+		_, err := db.Exec("DELETE FROM predictions WHERE user_id = ?", userID)
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "DB Error", 500)
+			return
+		}
+
+		_, err = db.Exec("DELETE FROM users WHERE id = ?", userID)
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "DB Error", 500)
+			return
+		}
+	} else {
+		http.Error(w, "Invalid Action", 400)
+		return
+	}
+
 	http.Redirect(w, r, "/admin?key=touchdown", 302)
 }
 
