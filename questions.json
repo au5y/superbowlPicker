@@ -1,0 +1,212 @@
+[
+  {
+    "text": "Who will be the winning team?",
+    "category": "Game Winner",
+    "options": [
+      {"text": "Seahawks", "color": "#00D2BE"},
+      {"text": "Patriots", "color": "#C60C30"}
+    ]
+  },
+  {
+    "text": "Will the opening coin toss land on heads or tails?",
+    "category": "Pre-Game",
+    "options": [
+      {"text": "Heads", "color": "#888888"},
+      {"text": "Tails", "color": "#888888"}
+    ]
+  },
+  {
+    "text": "Who will be the first team to score?",
+    "category": "Scoring",
+    "options": [
+      {"text": "Seahawks", "color": "#00D2BE"},
+      {"text": "Patriots", "color": "#C60C30"}
+    ]
+  },
+  {
+    "text": "Will the first score of the game be a touchdown?",
+    "category": "Scoring",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will there be a touchdown scored from 45 yards or more?",
+    "category": "Scoring",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will there be a field goal made from 45 yards or more?",
+    "category": "Scoring",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will any player rush for 100 yards or more in the game?",
+    "category": "Player Stats",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will a quarterback pass for more than 300 yards?",
+    "category": "Player Stats",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will there be more than 2 interceptions in the game?",
+    "category": "Defense",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will there be a score within the first 7 minutes of the game?",
+    "category": "Timing",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will there be more than 12 points scored in the first quarter?",
+    "category": "Timing",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will the defense or special teams of either team score?",
+    "category": "Scoring",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will there be a score within the first 7 minutes of the second half?",
+    "category": "Timing",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will there be more than 25 points scored by halftime?",
+    "category": "Timing",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will there be more than 4 total sacks in the game?",
+    "category": "Defense",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will there be more than 3 successful field goals in the game?",
+    "category": "Scoring",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will either team score in the final two minutes of the first half?",
+    "category": "Timing",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will either team score in the final two minutes of the game?",
+    "category": "Timing",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will the game be decided by more than 4 points?",
+    "category": "Game Result",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will a quarterback score a touchdown?",
+    "category": "Player Stats",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will the losing team score more than 17 points?",
+    "category": "Game Result",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Other than 0-0 will there be a tie score at any point?",
+    "category": "Game Flow",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will there be more than 3 turnovers in the game?",
+    "category": "Defense",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will the winning team score more than 32 points?",
+    "category": "Game Result",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will there be more than 50 points scored in the game?",
+    "category": "Game Result",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Tie Breaker: Total Points Scored",
+    "category": "Tie Breaker",
+    "options": [
+      {"text": "Under 40", "color": "#888888"},
+      {"text": "40-49", "color": "#888888"},
+      {"text": "50-59", "color": "#888888"},
+      {"text": "60+", "color": "#888888"}
+    ]
+  }
+]

@@ -2,10 +2,6 @@
     --bg-color: #f4f4f9;
     --card-bg: #ffffff;
     --text-color: #333;
-    --seahawks-teal: #002244; /* Official Navy */
-    --seahawks-accent: #69BE28; /* Action Green for highlights */
-    --patriots-blue: #002244;
-    --patriots-red: #C60C30;
 }
 
 body {
@@ -67,6 +63,13 @@ button.login-btn {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    transition: all 0.2s ease;
+}
+
+/* New Locked Style */
+.question-card.locked-bg {
+    background-color: #f0f0f0;
+    border: 1px solid #e0e0e0;
 }
 
 .category-badge {
@@ -99,7 +102,6 @@ button.login-btn {
     position: relative;
 }
 
-/* Hide actual radio button */
 .option-label input[type="radio"] {
     position: absolute;
     opacity: 0;
@@ -116,29 +118,52 @@ button.login-btn {
     transition: all 0.2s;
     background-color: white;
     color: #555;
+    position: relative;
+    overflow: hidden;
 }
 
-/* Hover Effect */
-.option-label:hover .option-box {
+/* --- LOCKED STATES --- */
+.option-box.locked {
+    background-color: #e9ecef !important;
+    border-color: #ced4da !important;
+    color: #adb5bd !important;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* --- RESOLVED STATES --- */
+
+/* Correct Answer (Green Overlay) */
+.option-box.resolved-correct {
+    background-color: #d4edda !important; /* Light Green */
+    border-color: #28a745 !important;
+    color: #155724 !important;
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+}
+.option-box.resolved-correct::after {
+    content: "✓";
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    color: #155724;
+    font-size: 1rem;
+}
+
+/* Wrong Answer (Red Style) */
+.option-box.resolved-wrong {
+    background-color: #f8d7da !important; /* Light Red */
+    border-color: #dc3545 !important;
+    color: #721c24 !important;
+    opacity: 0.8;
+}
+
+.option-box.resolved-missed {
+    /* If the user missed this correct option, visually indicate it was the winner */
+    border: 3px solid #28a745 !important;
+    background-color: #fff !important;
+}
+
+/* Default Hover (Only if not locked/resolved) */
+.option-label:not(.disabled) .option-box:hover {
     border-color: #999;
 }
-
-/* --- Dynamic Team Colors based on Server Data --- */
-/* These classes will be applied dynamically via Go templates if the text matches */
-
-/* Selected State Logic */
-.option-label input:checked + .option-box {
-    color: white;
-    border-color: transparent;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-}
-
-/* Default selection color (Gray) */
-.option-label input:checked + .option-box {
-    background-color: #555;
-}
-
-/* Specific Team Colors override the default gray when selected */
-/* We will use inline styles in the HTML for specific hex codes from DB, 
-   but we can map generic classes here if we wanted. */

@@ -2,12 +2,27 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"log"
+	"os"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var db *sql.DB
+
+// -- JSON Config Structures --
+type SeedQuestion struct {
+	Text     string       `json:"text"`
+	Category string       `json:"category"`
+	Type     string       `json:"type"` // "select" (default) or "number"
+	Options  []SeedOption `json:"options"`
+}
+
+type SeedOption struct {
+	Text  string `json:"text"`
+	Color string `json:"color"`
+}
 
 func InitDB(filepath string) {
 	var err error
@@ -16,7 +31,7 @@ func InitDB(filepath string) {
 		log.Fatal(err)
 	}
 
-	// 1. Enable WAL mode for reliability (Recovery Strategy)
+	// 1. Enable WAL mode for reliability
 	if _, err := db.Exec("PRAGMA journal_mode=WAL;"); err != nil {
 		log.Fatal("Failed to enable WAL mode:", err)
 	}
@@ -24,7 +39,7 @@ func InitDB(filepath string) {
 	// 2. Create Tables
 	createTables()
 
-	// 3. Seed Data if empty
+	// 3. Sync Data from JSON
 	seedData()
 }
 
@@ -36,28 +51,36 @@ func createTables() {
 			pin_hash TEXT,
 			total_score INTEGER DEFAULT 0
 		);`,
+		// Added 'type' column
 		`CREATE TABLE IF NOT EXISTS questions (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			text TEXT,
 			category TEXT,
+			type TEXT DEFAULT 'select', 
 			points INTEGER DEFAULT 1,
-			status TEXT DEFAULT 'OPEN', -- OPEN, LOCKED, RESOLVED
+			status TEXT DEFAULT 'OPEN',
 			correct_option_id INTEGER
 		);`,
 		`CREATE TABLE IF NOT EXISTS options (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			question_id INTEGER,
 			text TEXT,
-			color_hex TEXT, -- Added for your Teal/Red requirement
+			color_hex TEXT,
 			FOREIGN KEY(question_id) REFERENCES questions(id)
 		);`,
+		// Added 'text_input' column
 		`CREATE TABLE IF NOT EXISTS predictions (
 			user_id INTEGER,
 			question_id INTEGER,
 			selected_option_id INTEGER,
+			text_input TEXT,
 			PRIMARY KEY (user_id, question_id),
 			FOREIGN KEY(user_id) REFERENCES users(id),
 			FOREIGN KEY(question_id) REFERENCES questions(id)
+		);`,
+		`CREATE TABLE IF NOT EXISTS settings (
+			key TEXT PRIMARY KEY,
+			value TEXT
 		);`,
 	}
 
@@ -69,36 +92,64 @@ func createTables() {
 }
 
 func seedData() {
-	// Check if questions exist
-	var count int
-	row := db.QueryRow("SELECT COUNT(*) FROM questions")
-	_ = row.Scan(&count)
+	// 1. Seed Game State
+	var stateVal string
+	err := db.QueryRow("SELECT value FROM settings WHERE key='game_status'").Scan(&stateVal)
+	if err != nil {
+		log.Println("Initializing Game State: OPEN")
+		db.Exec("INSERT INTO settings (key, value) VALUES ('game_status', 'OPEN')")
+	}
 
-	if count == 0 {
-		log.Println("Seeding default data...")
+	// 2. Load Questions from JSON
+	file, err := os.ReadFile("questions.json")
+	if err != nil {
+		log.Println("No questions.json found. Skipping seed.")
+		return
+	}
 
-		// Helper to insert question and options
-		insertQ := func(text, cat string, opts ...map[string]string) {
-			res, _ := db.Exec("INSERT INTO questions (text, category) VALUES (?, ?)", text, cat)
+	var questions []SeedQuestion
+	if err := json.Unmarshal(file, &questions); err != nil {
+		log.Printf("Error parsing questions.json: %v", err)
+		return
+	}
+
+	log.Println("Syncing questions from questions.json...")
+
+	for _, q := range questions {
+		var exists int
+		err := db.QueryRow("SELECT COUNT(*) FROM questions WHERE text = ?", q.Text).Scan(&exists)
+		if err == nil && exists == 0 {
+			
+			// Default type to 'select' if missing
+			qType := q.Type
+			if qType == "" {
+				qType = "select"
+			}
+
+			// Insert Question with Type
+			res, err := db.Exec("INSERT INTO questions (text, category, type) VALUES (?, ?, ?)", q.Text, q.Category, qType)
+			if err != nil {
+				log.Printf("Failed to insert question: %v", err)
+				continue
+			}
 			qID, _ := res.LastInsertId()
 
-			for _, o := range opts {
-				db.Exec("INSERT INTO options (question_id, text, color_hex) VALUES (?, ?, ?)", qID, o["text"], o["color"])
+			// Insert Options (only if they exist)
+			for _, o := range q.Options {
+				db.Exec("INSERT INTO options (question_id, text, color_hex) VALUES (?, ?, ?)", qID, o.Text, o.Color)
 			}
 		}
-
-		// Seahawks (Teal: #002244 - using bright teal for visibility: #00D2BE) vs Patriots (Red: #C60C30)
-		insertQ("Who will win the Super Bowl?", "Game",
-			map[string]string{"text": "Seahawks", "color": "#00D2BE"},
-			map[string]string{"text": "Patriots", "color": "#C60C30"},
-		)
-		insertQ("Who will win the Coin Toss?", "Pre-Game",
-			map[string]string{"text": "Seahawks", "color": "#00D2BE"},
-			map[string]string{"text": "Patriots", "color": "#C60C30"},
-		)
-		insertQ("Coin Toss Result?", "Pre-Game",
-			map[string]string{"text": "Heads", "color": "#888888"},
-			map[string]string{"text": "Tails", "color": "#888888"},
-		)
 	}
+}
+
+// -- Helpers --
+func getGameStatus() string {
+	var status string
+	err := db.QueryRow("SELECT value FROM settings WHERE key='game_status'").Scan(&status)
+	if err != nil { return "OPEN" }
+	return status
+}
+
+func setGameStatus(status string) {
+	db.Exec("INSERT OR REPLACE INTO settings (key, value) VALUES ('game_status', ?)", status)
 }

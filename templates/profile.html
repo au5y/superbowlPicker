@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Profile</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .profile-header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center; }
+        .locked-overlay { padding: 50px; text-align: center; background: #eee; border-radius: 8px; color: #666; }
+        .pick-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; margin-bottom: 10px; border-radius: 6px; }
+        .pick-correct { border-left: 5px solid #28a745; background: #f0fff4; }
+        .pick-wrong { border-left: 5px solid #dc3545; background: #fff5f5; }
+        .pick-pending { border-left: 5px solid #ddd; }
+        
+        .pick-result { font-weight: bold; }
+        .badge-correct { color: #28a745; }
+        .badge-wrong { color: #dc3545; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🏈 Superbowl LX Prop Pool</h1>
+        <a href="/leaderboard" style="color: #002244; text-decoration: none; font-weight: bold;">← Back to Leaderboard</a>
+    </header>
+
+    {{if not .TargetUser}}
+        <!-- Privacy Shield -->
+        <div class="locked-overlay">
+            <h2>🙈 Picks Hidden</h2>
+            <p>You cannot see other players' picks until the game is LOCKED.</p>
+        </div>
+    {{else}}
+        <!-- User Profile -->
+        <div class="profile-header">
+            <h2>{{.TargetUser.Username}}</h2>
+            <div style="font-size: 2rem; font-weight: bold; color: #002244;">{{.TargetUser.TotalScore}} Points</div>
+        </div>
+
+        <div style="max-width: 800px; margin: 0 auto;">
+            {{range .Questions}}
+            <div class="pick-row 
+                {{if .UserPrediction}}
+                    {{if eq .Status "RESOLVED"}}
+                        {{if .UserPrediction.IsCorrect}}pick-correct{{else}}pick-wrong{{end}}
+                    {{else}}pick-pending{{end}}
+                {{end}}">
+                
+                <div style="flex: 1;">
+                    <div style="font-size: 0.9rem; color: #666;">{{.Category}}</div>
+                    <strong>{{.Text}}</strong>
+                </div>
+                
+                <div class="pick-result">
+                    {{if .UserPrediction}}
+                        {{if eq .Type "select"}}
+                            <!-- Find the text for the selected option -->
+                            {{$selID := .UserPrediction.SelectedOptionID}}
+                            {{range .Options}}
+                                {{if eq (printf "%d" .ID) (printf "%d" $selID)}}{{.Text}}{{end}}
+                            {{end}}
+                        {{else}}
+                            {{.UserPrediction.TextInput}}
+                        {{end}}
+
+                        <!-- Icon -->
+                        {{if eq .Status "RESOLVED"}}
+                            {{if .UserPrediction.IsCorrect}}
+                                <span class="badge-correct">✔</span>
+                            {{else}}
+                                <span class="badge-wrong">✘</span>
+                            {{end}}
+                        {{end}}
+                    {{else}}
+                        <span style="color:#aaa;">No Pick</span>
+                    {{end}}
+                </div>
+            </div>
+            {{end}}
+        </div>
+    {{end}}
+</body>
+</html>

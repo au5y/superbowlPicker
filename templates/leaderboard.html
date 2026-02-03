@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Leaderboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .nav-bar { background: #333; padding: 10px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 10px; }
+        .nav-item { color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; }
+        .nav-item:hover { background: #555; }
+        .nav-item.active { background: #002244; border: 1px solid #69BE28; }
+        
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
+        th { background: #f4f4f4; padding: 15px; text-align: left; }
+        td { padding: 15px; border-bottom: 1px solid #eee; }
+        tr:hover { background: #f9f9f9; cursor: pointer; }
+        .score-cell { font-size: 1.2rem; font-weight: bold; color: #002244; }
+        .rank-cell { font-weight: bold; color: #888; width: 50px; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🏈 Superbowl LX Prop Pool</h1>
+        <div class="nav-bar">
+            <a href="/" class="nav-item">My Picks</a>
+            <a href="/leaderboard" class="nav-item active">Leaderboard</a>
+        </div>
+    </header>
+
+    <div style="max-width: 800px; margin: 0 auto;">
+        <h2>🏆 Live Standings</h2>
+        
+        <table id="lb-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Player</th>
+                    <th>Tie Breaker (Points)</th>
+                    <th>Score</th>
+                </tr>
+            </thead>
+            <tbody id="lb-body">
+                <tr><td colspan="4" style="text-align:center;">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function loadLeaderboard() {
+            fetch('/api/leaderboard')
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById('lb-body');
+                tbody.innerHTML = '';
+                
+                data.forEach((user, index) => {
+                    const tr = document.createElement('tr');
+                    // Click to view profile
+                    tr.onclick = () => window.location.href = '/user/' + user.id;
+                    
+                    tr.innerHTML = `
+                        <td class="rank-cell">${index + 1}</td>
+                        <td><strong>${user.username}</strong></td>
+                        <td style="color:#666;">${user.tie_breaker}</td>
+                        <td class="score-cell">${user.total_score}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            });
+        }
+
+        // Load immediately, then every 5 seconds
+        loadLeaderboard();
+        setInterval(loadLeaderboard, 5000);
+    </script>
+</body>
+</html>

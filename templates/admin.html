@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oracle Admin</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .admin-container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        
+        /* Dashboard Controls */
+        .controls { 
+            background: #f8f9fa; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin-bottom: 25px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border: 1px solid #e9ecef;
+        }
+        
+        /* State Badges */
+        .state-tag { padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .tag-OPEN { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .tag-LOCKED { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        /* Table */
+        table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        th { text-align: left; padding: 15px; border-bottom: 2px solid #dee2e6; color: #495057; }
+        td { padding: 15px; border-bottom: 1px solid #dee2e6; vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+
+        /* Row States */
+        .row-RESOLVED { background-color: #f8f9fa; }
+        .row-RESOLVED .question-title { text-decoration: line-through; color: #6c757d; }
+        .row-RESOLVED select { opacity: 0.7; }
+        
+        /* Buttons & Inputs */
+        select { padding: 8px; border-radius: 4px; border: 1px solid #ced4da; width: 100%; max-width: 200px; }
+        button { cursor: pointer; padding: 8px 16px; border-radius: 4px; border: none; font-weight: 600; transition: all 0.2s; }
+        
+        .btn-resolve { background: #002244; color: white; }
+        .btn-resolve:hover { background: #004488; transform: translateY(-1px); }
+        
+        .btn-lock { background: #dc3545; color: white; padding: 10px 20px; }
+        .btn-lock:hover { background: #c82333; }
+        
+        .btn-unlock { background: #28a745; color: white; padding: 10px 20px; }
+        .btn-unlock:hover { background: #218838; }
+
+        .category-pill { font-size: 0.75rem; background: #e9ecef; padding: 3px 8px; border-radius: 12px; color: #495057; display: inline-block; margin-top: 4px; }
+        
+        /* Toast Notification */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 4px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s, bottom 0.3s;
+        }
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+            bottom: 50px;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- HEADER & GAME STATE -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+            <h1>👮 Game Control</h1>
+            <a href="/" style="text-decoration:none; color: #002244; font-weight:bold;">← Back to Game</a>
+        </div>
+
+        <div class="controls">
+            <div>
+                <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">CURRENT STATUS</div>
+                <span class="state-tag tag-{{.GameStatus}}">{{.GameStatus}}</span>
+            </div>
+            
+            <form action="/admin/state" method="POST" style="margin:0;">
+                {{if eq .GameStatus "OPEN"}}
+                    <button type="submit" name="status" value="LOCKED" class="btn-lock">🔒 LOCK GAME (KICKOFF)</button>
+                    <div style="font-size: 0.8rem; color: #6c757d; margin-top: 5px; text-align: right;">Disables all user predictions</div>
+                {{else}}
+                    <button type="submit" name="status" value="OPEN" class="btn-unlock">🔓 UNLOCK GAME</button>
+                    <div style="font-size: 0.8rem; color: #6c757d; margin-top: 5px; text-align: right;">Allows users to edit picks</div>
+                {{end}}
+            </form>
+        </div>
+
+        <!-- PREDICTION MANAGEMENT -->
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 50px;">ID</th>
+                    <th>Question</th>
+                    <th style="width: 250px;">Winner</th>
+                    <th style="width: 100px;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Questions}}
+                <tr id="row-{{.ID}}" class="row-{{.Status}}">
+                    <td>#{{.ID}}</td>
+                    <td>
+                        <div class="question-title" style="font-weight:bold;">{{.Text}}</div>
+                        <span class="category-pill">{{.Category}}</span>
+                    </td>
+                    <td>
+                        <select id="select-{{.ID}}">
+                            <option value="" disabled selected>Select Winner...</option>
+                            {{range .Options}}
+                                <option value="{{.ID}}">{{.Text}}</option>
+                            {{end}}
+                        </select>
+                    </td>
+                    <td>
+                        <button onclick="resolveQuestion({{.ID}})" class="btn-resolve">Resolve</button>
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast">Prediction Resolved & Scores Updated!</div>
+
+    <script>
+        function resolveQuestion(qID) {
+            const select = document.getElementById('select-' + qID);
+            const optID = select.value;
+            
+            if(!optID) { 
+                alert("Please select a winning option first."); 
+                return; 
+            }
+
+            fetch('/admin/resolve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question_id: String(qID), option_id: String(optID) })
+            })
+            .then(res => {
+                if (!res.ok) throw new Error("Network response was not ok");
+                return res.json();
+            })
+            .then(data => {
+                // Visual feedback
+                const row = document.getElementById('row-' + qID);
+                row.classList.add('row-RESOLVED');
+                
+                // Show Toast
+                const toast = document.getElementById("toast");
+                toast.className = "show";
+                setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Error resolving question. Check console.");
+            });
+        }
+    </script>
+</body>
+</html>
