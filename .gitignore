@@ -43,3 +43,4 @@ Thumbs.db
 *.db-journal
 *.db-wal
 *.sqlite
+game.db-shm

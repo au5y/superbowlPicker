@@ -1,0 +1,144 @@
+:root {
+    --bg-color: #f4f4f9;
+    --card-bg: #ffffff;
+    --text-color: #333;
+    --seahawks-teal: #002244; /* Official Navy */
+    --seahawks-accent: #69BE28; /* Action Green for highlights */
+    --patriots-blue: #002244;
+    --patriots-red: #C60C30;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+h1 { margin-bottom: 20px; }
+
+/* --- Login Form --- */
+.login-container {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+}
+
+input {
+    padding: 10px;
+    margin: 10px 0;
+    width: 80%;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+button.login-btn {
+    background-color: #333;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+/* --- Game Grid --- */
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    width: 100%;
+    max-width: 1200px;
+}
+
+.question-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.category-badge {
+    background-color: #eee;
+    color: #666;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    align-self: flex-start;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.question-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+.options-container {
+    display: flex;
+    gap: 10px;
+}
+
+/* --- Radio Button Styling --- */
+.option-label {
+    flex: 1;
+    cursor: pointer;
+    position: relative;
+}
+
+/* Hide actual radio button */
+.option-label input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.option-box {
+    display: block;
+    padding: 15px 10px;
+    text-align: center;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-weight: bold;
+    transition: all 0.2s;
+    background-color: white;
+    color: #555;
+}
+
+/* Hover Effect */
+.option-label:hover .option-box {
+    border-color: #999;
+}
+
+/* --- Dynamic Team Colors based on Server Data --- */
+/* These classes will be applied dynamically via Go templates if the text matches */
+
+/* Selected State Logic */
+.option-label input:checked + .option-box {
+    color: white;
+    border-color: transparent;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+}
+
+/* Default selection color (Gray) */
+.option-label input:checked + .option-box {
+    background-color: #555;
+}
+
+/* Specific Team Colors override the default gray when selected */
+/* We will use inline styles in the HTML for specific hex codes from DB, 
+   but we can map generic classes here if we wanted. */
