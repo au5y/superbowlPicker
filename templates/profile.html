@@ -2,17 +2,23 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Profile</title>
     <link rel="stylesheet" href="/static/style.css">
     <style>
         .profile-header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center; }
         .locked-overlay { padding: 50px; text-align: center; background: #eee; border-radius: 8px; color: #666; }
-        .pick-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; margin-bottom: 10px; border-radius: 6px; }
+        .pick-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; margin-bottom: 10px; border-radius: 6px; flex-wrap: wrap; gap: 10px; }
         .pick-correct { border-left: 5px solid #28a745; background: #f0fff4; }
         .pick-wrong { border-left: 5px solid #dc3545; background: #fff5f5; }
         .pick-pending { border-left: 5px solid #ddd; }
         
         .pick-result { font-weight: bold; }
+
+        @media (max-width: 600px) {
+            .pick-row { flex-direction: column; align-items: flex-start; }
+            .pick-result { align-self: flex-end; margin-top: 5px; }
+        }
         .badge-correct { color: #28a745; }
         .badge-wrong { color: #dc3545; }
     </style>
