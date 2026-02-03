@@ -1,0 +1,45 @@
+# Binaries
+# ---------------------
+# Ignore all executable binaries. 
+# "superbowl-party" is the default name if you used 'go mod init superbowl-party'
+superbowl-party
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+
+# Test Output
+# ---------------------
+*.out
+*.test
+coverage.txt
+
+# Dependency Directories
+# ---------------------
+# Only ignore vendor if you aren't using mod vending
+vendor/
+
+# IDE / Editor Specific
+# ---------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS Specific
+# ---------------------
+.DS_Store
+Thumbs.db
+
+# ---------------------
+# PROJECT SPECIFIC
+# ---------------------
+
+# SQLite Database
+# CRITICAL: Do not commit the live database or its lock/journal files
+*.db
+*.db-journal
+*.db-wal
+*.sqlite
