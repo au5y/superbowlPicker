@@ -219,3 +219,54 @@ button.login-btn {
     letter-spacing: 1px;
     color: #ccc;
 }
+@media (max-width: 600px) {
+    body {
+        padding: 10px;
+    }
+
+    .grid-container {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .question-card {
+        padding: 15px;
+    }
+
+    .scoreboard-container {
+        padding: 15px 5px;
+        gap: 5px;
+    }
+
+    .scoreboard-half {
+        width: auto;
+        flex: 1;
+    }
+
+    .sb-logo {
+        width: 50px;
+        height: 50px;
+    }
+
+    .sb-input {
+        width: 60px;
+        font-size: 1.8rem;
+        padding: 5px 0;
+    }
+
+    .sb-divider {
+        font-size: 1.5rem;
+        margin: 0 5px;
+    }
+
+    .option-box {
+        padding: 12px 5px;
+        font-size: 0.95rem;
+    }
+
+    .login-container {
+        padding: 1.5rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+}
