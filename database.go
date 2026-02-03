@@ -15,7 +15,8 @@ var db *sql.DB
 type SeedQuestion struct {
 	Text     string       `json:"text"`
 	Category string       `json:"category"`
-	Type     string       `json:"type"` // "select" (default) or "number"
+	Type     string       `json:"type"` // "select" or "number"
+	ImageURL string       `json:"image_url"`
 	Options  []SeedOption `json:"options"`
 }
 
@@ -51,15 +52,17 @@ func createTables() {
 			pin_hash TEXT,
 			total_score INTEGER DEFAULT 0
 		);`,
-		// Added 'type' column
+		// Added 'correct_text_input' column
 		`CREATE TABLE IF NOT EXISTS questions (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			text TEXT,
 			category TEXT,
 			type TEXT DEFAULT 'select', 
+			image_url TEXT,
 			points INTEGER DEFAULT 1,
 			status TEXT DEFAULT 'OPEN',
-			correct_option_id INTEGER
+			correct_option_id INTEGER,
+			correct_text_input TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS options (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -68,7 +71,6 @@ func createTables() {
 			color_hex TEXT,
 			FOREIGN KEY(question_id) REFERENCES questions(id)
 		);`,
-		// Added 'text_input' column
 		`CREATE TABLE IF NOT EXISTS predictions (
 			user_id INTEGER,
 			question_id INTEGER,
@@ -120,21 +122,16 @@ func seedData() {
 		err := db.QueryRow("SELECT COUNT(*) FROM questions WHERE text = ?", q.Text).Scan(&exists)
 		if err == nil && exists == 0 {
 			
-			// Default type to 'select' if missing
 			qType := q.Type
-			if qType == "" {
-				qType = "select"
-			}
+			if qType == "" { qType = "select" }
 
-			// Insert Question with Type
-			res, err := db.Exec("INSERT INTO questions (text, category, type) VALUES (?, ?, ?)", q.Text, q.Category, qType)
+			res, err := db.Exec("INSERT INTO questions (text, category, type, image_url) VALUES (?, ?, ?, ?)", q.Text, q.Category, qType, q.ImageURL)
 			if err != nil {
 				log.Printf("Failed to insert question: %v", err)
 				continue
 			}
 			qID, _ := res.LastInsertId()
 
-			// Insert Options (only if they exist)
 			for _, o := range q.Options {
 				db.Exec("INSERT INTO options (question_id, text, color_hex) VALUES (?, ?, ?)", qID, o.Text, o.Color)
 			}

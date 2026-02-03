@@ -6,119 +6,230 @@
     <title>Superbowl LX Prop Pool</title>
     <link rel="stylesheet" href="/static/style.css">
     <style>
-        .nav-bar { background: #333; padding: 10px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 10px; }
-        .nav-item { color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; }
-        .nav-item:hover { background: #555; }
-        .nav-item.active { background: #002244; border: 1px solid #69BE28; }
-        .number-input { font-size: 1.5rem; padding: 10px; width: 150px; text-align: center; border: 2px solid #ddd; border-radius: 8px; }
+        .drawer-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 900; display: none;
+        }
+        .drawer-overlay.open { display: block; }
+        .drawer {
+            position: fixed; top: 0; left: -280px; width: 280px; height: 100%;
+            background: white; z-index: 1000; transition: left 0.3s ease;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+            padding-top: 20px;
+        }
+        .drawer.open { left: 0; }
+        .drawer-header {
+            padding: 20px; border-bottom: 1px solid #eee;
+            font-size: 1.2rem; font-weight: bold; color: #002244;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .drawer-nav a {
+            display: block; padding: 15px 20px;
+            color: #333; text-decoration: none; border-bottom: 1px solid #f9f9f9;
+        }
+        .drawer-nav a:hover { background: #f0f0f0; }
+        .drawer-nav .section-link { padding-left: 30px; font-size: 0.9rem; color: #666; }
+        .mobile-header {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #002244; color: white; padding: 15px;
+            border-radius: 8px; margin-bottom: 20px;
+        }
+        .menu-btn { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+        .section-header {
+            margin: 40px 0 20px 0; border-bottom: 2px solid #ddd;
+            padding-bottom: 10px; color: #002244;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .section-icon { background: #69BE28; width: 10px; height: 25px; border-radius: 4px; display: inline-block; }
+        .number-input { font-size: 1.2rem; padding: 10px; border: 2px solid #ddd; border-radius: 6px; width: 100%; max-width: 200px; text-align: center; }
     </style>
 </head>
 <body>
-
-    <header>
-        <h1>🏈 Superbowl LX Prop Pool</h1>
-        
-        {{if .User}}
-            <!-- Navigation -->
-            <div class="nav-bar">
-                <a href="/" class="nav-item active">My Picks</a>
-                <a href="/leaderboard" class="nav-item">Leaderboard</a>
-            </div>
-
-            <div style="text-align: center; margin-bottom: 20px;">
-                Playing as: <strong>{{.User.Username}}</strong> 
-                <span style="margin-left: 10px;">Score: {{.User.TotalScore}}</span>
-                {{if eq .GameStatus "LOCKED"}}
-                    <br><span style="color: #C60C30; font-weight: bold;">🔒 LOCKED</span>
-                {{end}}
-            </div>
-        {{end}}
-    </header>
-
     {{if not .User}}
-    <div class="login-container">
-        <h2>Join the Party</h2>
-        <form action="/login" method="POST">
-            <input type="text" name="username" placeholder="Your Name" required autocomplete="off">
-            <input type="password" name="pin" placeholder="PIN (Optional)" maxlength="4">
-            <br>
-            <button type="submit" class="login-btn">Enter Arena</button>
-        </form>
+    <div style="margin-top: 50px;">
+        <div class="login-container">
+            <h1>🏈 Superbowl LX Prop Pool</h1>
+            <p>Enter your name to join the pool.</p>
+            <form action="/login" method="POST">
+                <input type="text" name="username" placeholder="Your Name" required autocomplete="off">
+                <input type="password" name="pin" placeholder="PIN (Optional)" maxlength="4">
+                <br>
+                <button type="submit" class="login-btn">Enter Arena</button>
+            </form>
+        </div>
     </div>
     {{end}}
 
     {{if .User}}
-    <div class="grid-container">
-        {{range .Questions}}
-        <div class="question-card">
-            <span class="category-badge">{{.Category}}</span>
-            <div class="question-text">{{.Text}}</div>
-            
-            <!-- Type: SELECT -->
-            {{if eq .Type "select"}}
-            <div class="options-container">
-                {{$qID := .ID}}
-                {{range .Options}}
-                <label class="option-label">
-                    <input type="radio" 
-                           name="q-{{$qID}}" 
-                           value="{{.ID}}" 
-                           data-color="{{.ColorHex}}"
-                           onchange="handleSelection(this, {{$qID}}, '{{.ID}}', null)"
-                           {{if .IsSelected}}checked{{end}}
-                           {{if eq $.GameStatus "LOCKED"}}disabled{{end}}
-                    >
-                    <div class="option-box" id="box-{{.ID}}" style="border-color: {{.ColorHex}};">
-                        {{.Text}}
-                    </div>
-                </label>
-                {{end}}
-            </div>
-            
-            <!-- Type: NUMBER / TEXT -->
-            {{else}}
-            <div style="text-align: center;">
-                <input type="number" 
-                       class="number-input" 
-                       placeholder="0"
-                       value="{{if .UserPrediction}}{{.UserPrediction.TextInput}}{{end}}"
-                       onblur="handleSelection(this, {{.ID}}, null, this.value)"
-                       {{if eq $.GameStatus "LOCKED"}}disabled{{end}}
-                >
-            </div>
-            {{end}}
+    <div class="drawer-overlay" id="overlay" onclick="toggleDrawer()"></div>
+    <div class="drawer" id="drawer">
+        <div class="drawer-header">
+            <span>Menu</span>
+            <button onclick="toggleDrawer()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
         </div>
-        {{end}}
+        <div class="drawer-nav">
+            <a href="/">🏈 My Picks</a>
+            <a href="/leaderboard">🏆 Leaderboard</a>
+            <a href="/user/{{.User.ID}}">👤 My Profile</a>
+            <hr style="border:0; border-top:1px solid #eee;">
+            <div style="padding: 10px 20px; font-weight:bold; color:#aaa; font-size:0.8rem;">JUMP TO SECTION</div>
+            {{range .Categories}}
+                <a href="#{{.Anchor}}" class="section-link" onclick="toggleDrawer()">{{.Name}}</a>
+            {{end}}
+            <hr style="border:0; border-top:1px solid #eee;">
+            <a href="/logout" style="color: #C60C30;">Log Out</a>
+        </div>
+    </div>
+
+    <div class="mobile-header">
+        <button class="menu-btn" onclick="toggleDrawer()">☰</button>
+        <div style="font-weight: bold;">{{.User.Username}} ({{.User.TotalScore}} pts)</div>
+        {{if eq .GameStatus "LOCKED"}}<span style="background:#C60C30; padding:2px 8px; border-radius:4px; font-size:0.8rem;">LOCKED</span>{{end}}
+    </div>
+
+    <div style="padding-bottom: 50px;">
+        {{range .Categories}}
+        <div id="{{.Anchor}}">
+            <h2 class="section-header">
+                <span class="section-icon"></span> {{.Name}}
+            </h2>
+            
+            <div class="grid-container">
+                {{range .Questions}}
+
+                <!-- =============================================
+                     1. SCOREBOARD LEFT (Starts the container)
+                     ============================================= -->
+                {{if eq .Type "scoreboard-left"}}
+                <div class="scoreboard-container">
+                    <!-- Left Team -->
+                    <div class="scoreboard-half">
+                        <img src="{{.ImageURL}}" class="sb-logo">
+                        <div class="sb-team-name">{{.Text}}</div>
+                        <input type="number" 
+                               class="sb-input" 
+                               placeholder="00"
+                               value="{{if .UserPrediction}}{{.UserPrediction.TextInput}}{{end}}"
+                               onblur="handleSelection(this, {{.ID}}, null, this.value)"
+                               {{if eq $.GameStatus "LOCKED"}}disabled{{end}}
+                        >
+                    </div>
+                    
+                    <div class="sb-divider">-</div>
+
+                <!-- =============================================
+                     2. SCOREBOARD RIGHT (Ends the container)
+                     ============================================= -->
+                {{else if eq .Type "scoreboard-right"}}
+                    <!-- Right Team -->
+                    <div class="scoreboard-half">
+                        <img src="{{.ImageURL}}" class="sb-logo">
+                        <div class="sb-team-name">{{.Text}}</div>
+                        <input type="number" 
+                               class="sb-input" 
+                               placeholder="00"
+                               value="{{if .UserPrediction}}{{.UserPrediction.TextInput}}{{end}}"
+                               onblur="handleSelection(this, {{.ID}}, null, this.value)"
+                               {{if eq $.GameStatus "LOCKED"}}disabled{{end}}
+                        >
+                    </div>
+                </div> <!-- End .scoreboard-container -->
+
+                <!-- =============================================
+                     3. STANDARD CARDS
+                     ============================================= -->
+                {{else}}
+                <div class="question-card {{if eq $.GameStatus "LOCKED"}}locked-bg{{end}}">
+                    <div class="question-text">{{.Text}}</div>
+                    
+                    {{if eq .Type "select"}}
+                    <div class="options-container">
+                        {{$qID := .ID}}
+                        {{$isResolved := eq .Status "RESOLVED"}}
+                        {{$correctID := .CorrectOptionID}}
+                        
+                        {{range .Options}}
+                        <label class="option-label {{if eq $.GameStatus "LOCKED"}}disabled{{end}}">
+                            <input type="radio" 
+                                   name="q-{{$qID}}" 
+                                   value="{{.ID}}" 
+                                   data-color="{{.ColorHex}}"
+                                   onchange="handleSelection(this, {{$qID}}, '{{.ID}}', null)"
+                                   {{if .IsSelected}}checked{{end}}
+                                   {{if or (eq $.GameStatus "LOCKED") $isResolved}}disabled{{end}}
+                            >
+                            <div class="option-box 
+                                {{if $isResolved}}
+                                    {{if eq (printf "%d" .ID) (printf "%d" $correctID)}}resolved-correct{{end}}
+                                    {{if and .IsSelected (ne (printf "%d" .ID) (printf "%d" $correctID))}}resolved-wrong{{end}}
+                                {{else if eq $.GameStatus "LOCKED"}}
+                                    locked
+                                {{end}}" 
+                                id="box-{{.ID}}" 
+                                style="border-color: {{.ColorHex}};">
+                                {{.Text}}
+                            </div>
+                        </label>
+                        {{end}}
+                    </div>
+                    {{else}}
+                    <!-- Standard Number Input (e.g. Total Points) -->
+                    <div style="text-align: center;">
+                        <input type="number" 
+                               class="number-input" 
+                               placeholder="Enter Value"
+                               value="{{if .UserPrediction}}{{.UserPrediction.TextInput}}{{end}}"
+                               onblur="handleSelection(this, {{.ID}}, null, this.value)"
+                               {{if eq $.GameStatus "LOCKED"}}disabled style="background: #e9ecef;"{{end}}
+                        >
+                    </div>
+                    {{end}}
+                </div>
+                {{end}} 
+                
+                {{end}} <!-- End Questions -->
+            </div>
+        </div>
+        {{end}} <!-- End Categories -->
     </div>
 
     <div id="save-status" style="position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 10px 20px; border-radius: 5px; opacity: 0; transition: opacity 0.5s; font-weight: bold;">Saved ✓</div>
 
     <script>
+        function toggleDrawer() {
+            const drawer = document.getElementById('drawer');
+            const overlay = document.getElementById('overlay');
+            if (drawer.classList.contains('open')) {
+                drawer.classList.remove('open');
+                overlay.classList.remove('open');
+            } else {
+                drawer.classList.add('open');
+                overlay.classList.add('open');
+            }
+        }
+
         document.addEventListener("DOMContentLoaded", function() {
-            document.querySelectorAll('input[type="radio"]:checked').forEach(radio => updateVisualState(radio));
+            document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
+                if(!radio.disabled) updateVisualState(radio);
+            });
         });
 
         function handleSelection(el, questionId, optionId, textVal) {
-            // Visuals
             if(optionId) updateVisualState(el);
-
-            // API Payload
             const payload = { 
                 question_id: String(questionId), 
                 option_id: optionId ? String(optionId) : "",
                 text_input: textVal ? String(textVal) : ""
             };
-
             fetch('/predict', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
-            })
-            .then(response => { if (response.ok) showToast(); })
-            .catch(err => console.error('Error saving:', err));
+            }).then(response => { if (response.ok) showToast(); });
         }
 
         function updateVisualState(activeRadio) {
+            if(activeRadio.disabled) return;
             const color = activeRadio.getAttribute('data-color') || '#555';
             const container = activeRadio.closest('.options-container');
             container.querySelectorAll('.option-box').forEach(box => {

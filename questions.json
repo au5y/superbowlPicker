@@ -202,11 +202,21 @@
   {
     "text": "Tie Breaker: Total Points Scored",
     "category": "Tie Breaker",
-    "options": [
-      {"text": "Under 40", "color": "#888888"},
-      {"text": "40-49", "color": "#888888"},
-      {"text": "50-59", "color": "#888888"},
-      {"text": "60+", "color": "#888888"}
-    ]
+    "type": "number",
+    "options": []
+  },
+  {
+    "text": "Seahawks",
+    "category": "Tie Breaker",
+    "type": "scoreboard-left",
+    "image_url": "https://a.espncdn.com/i/teamlogos/nfl/500/sea.png",
+    "options": []
+  },
+  {
+    "text": "Patriots",
+    "category": "Tie Breaker",
+    "type": "scoreboard-right",
+    "image_url": "https://a.espncdn.com/i/teamlogos/nfl/500/ne.png",
+    "options": []
   }
 ]
