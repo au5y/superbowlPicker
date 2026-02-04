@@ -248,7 +248,15 @@ func handleLeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 	room := r.URL.Query().Get("room")
 	scope := r.URL.Query().Get("scope")
 
-	query := `SELECT u.id, u.username, u.total_score, COALESCE((SELECT p.text_input FROM predictions p JOIN questions q ON p.question_id = q.id WHERE p.user_id = u.id AND q.type = 'number' AND q.text LIKE '%Total Points%' LIMIT 1), '-') as tie_breaker, u.room_code FROM users u`
+	// Calculate tie breaker by summing up the scoreboard predictions
+	tieBreakerSQL := `COALESCE((
+		SELECT SUM(CAST(p.text_input AS INTEGER)) 
+		FROM predictions p 
+		JOIN questions q ON p.question_id = q.id 
+		WHERE p.user_id = u.id AND (q.type = 'scoreboard-left' OR q.type = 'scoreboard-right')
+	), 0)`
+
+	query := fmt.Sprintf(`SELECT u.id, u.username, u.total_score, %s as tie_breaker, u.room_code FROM users u`, tieBreakerSQL)
 
 	var args []interface{}
 	if scope != "global" && room != "" {

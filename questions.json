@@ -3,7 +3,7 @@
     "text": "Who will be the winning team?",
     "category": "Game Winner",
     "options": [
-      {"text": "Seahawks", "color": "#00D2BE"},
+      {"text": "Seahawks", "color": "#69BE28"},
       {"text": "Patriots", "color": "#002244"}
     ]
   },
@@ -11,15 +11,15 @@
     "text": "Will the opening coin toss land on heads or tails?",
     "category": "Pre-Game",
     "options": [
-      {"text": "Heads", "color": "#888888"},
-      {"text": "Tails", "color": "#888888"}
+      {"text": "Heads", "color": "#48a052"},
+      {"text": "Tails", "color": "#48a052"}
     ]
   },
   {
     "text": "Who will be the first team to score?",
     "category": "Scoring",
     "options": [
-      {"text": "Seahawks", "color": "#00D2BE"},
+      {"text": "Seahawks", "color": "#69BE28"},
       {"text": "Patriots", "color": "#C60C30"}
     ]
   },
@@ -198,12 +198,6 @@
       {"text": "Yes", "color": "#28a745"},
       {"text": "No", "color": "#dc3545"}
     ]
-  },
-  {
-    "text": "Tie Breaker: Total Points Scored",
-    "category": "Tie Breaker",
-    "type": "number",
-    "options": []
   },
   {
     "text": "Seahawks",
