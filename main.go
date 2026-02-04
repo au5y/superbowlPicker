@@ -188,6 +188,7 @@ func main() {
 	http.HandleFunc("/logout", withLogging(handleLogout))
 	http.HandleFunc("/predict", withLogging(handlePredict))
 	http.HandleFunc("/api/leaderboard", withLogging(handleLeaderboardAPI))
+	http.HandleFunc("/api/status", withLogging(handleGameStatusAPI))
 	http.HandleFunc("/admin", withLogging(requireAdmin(handleAdmin)))
 	http.HandleFunc("/admin/resolve", withLogging(requireAdmin(handleResolve)))
 	http.HandleFunc("/admin/state", withLogging(requireAdmin(handleGameState)))
@@ -498,6 +499,18 @@ func handleLeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(users)
+}
+
+func handleGameStatusAPI(w http.ResponseWriter, r *http.Request) {
+	status := getGameStatus()
+	var count int
+	db.QueryRow("SELECT COUNT(*) FROM questions WHERE status = 'RESOLVED'").Scan(&count)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":         status,
+		"resolved_count": count,
+	})
 }
 
 func handlePredict(w http.ResponseWriter, r *http.Request) {
