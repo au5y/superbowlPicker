@@ -7,40 +7,83 @@
     <link rel="stylesheet" href="/static/style.css">
     <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
     <style>
-        .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .leaderboard-table th { text-align: left; padding: 15px; border-bottom: 2px solid var(--border-color); color: var(--subtext-color); font-size: 0.9rem; text-transform: uppercase; }
-        .leaderboard-table td { padding: 15px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+        .leaderboard-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; margin-top: 10px; }
+        .leaderboard-table th { text-align: left; padding: 10px 15px; border-bottom: 2px solid var(--border-color); color: var(--subtext-color); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
         
+        /* Row Styling */
+        .leaderboard-table tbody tr {
+            background: var(--card-bg);
+            box-shadow: 0 2px 4px var(--shadow-color);
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.3s;
+            will-change: transform;
+            position: relative;
+        }
+        
+        .leaderboard-table td { padding: 12px 15px; vertical-align: middle; border: none; }
+        .leaderboard-table td:first-child { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+        .leaderboard-table td:last-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+
         /* Rank Column */
         .rank-col { font-weight: bold; font-size: 1.5rem; color: var(--subtext-color); width: 50px; text-align: center; }
-        .rank-1 { color: #FFD700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); font-size: 2rem; }
-        .rank-2 { color: #C0C0C0; font-size: 1.8rem; }
-        .rank-3 { color: #CD7F32; font-size: 1.7rem; }
+        .rank-1 { color: #FFD700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); font-size: 2.2rem; }
+        .rank-2 { color: #C0C0C0; font-size: 2rem; }
+        .rank-3 { color: #CD7F32; font-size: 1.8rem; }
 
         /* User Column */
         .user-cell { display: flex; align-items: center; gap: 15px; }
         .lb-avatar { 
-            width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--border-color); 
-            display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 1.8rem; 
-            background: var(--input-bg);
+            width: 48px; height: 48px; border-radius: 50%; border: 3px solid var(--border-color); 
+            display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 1.5rem; 
+            background: var(--input-bg); flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
         .lb-avatar img { width: 100%; height: 100%; object-fit: cover; }
         
+        /* INDUSTRY STANDARD: Clean Text + Colored Avatar */
         .lb-name { 
-            font-size: 1.3rem; 
+            font-size: 1.2rem; 
             font-weight: 700; 
-            text-shadow: 0 1px 1px rgba(0,0,0,0.2); /* Subtle shadow for contrast */
+            color: var(--text-color); /* Matches theme (White/Black) */
+            letter-spacing: 0.5px;
         }
         
-        .score-cell { font-size: 1.8rem; font-weight: bold; color: var(--text-color); text-align: right; }
+        /* Team Badge Style (The "Chip") */
+        .team-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            color: white; /* Always White Text */
+            font-weight: bold;
+            font-size: 1rem;
+            min-width: 30px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
 
+        /* Score Columns */
+        .score-cell { font-size: 1.6rem; font-weight: bold; color: var(--text-color); text-align: right; font-variant-numeric: tabular-nums; }
+        .cat-col-cell { text-align: center; font-weight: bold; color: var(--subtext-color); font-size: 1.1rem; }
+        .cat-col-header { text-align: center !important; font-size: 0.7rem !important; }
+
+        /* Config & Animations (Kept the same) */
         .config-panel {
             background: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px;
             border: 1px solid var(--border-color); display: flex; flex-wrap: wrap; gap: 15px; align-items: center;
         }
         .config-toggle { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer; user-select: none; }
-        .cat-col-header { text-align: center !important; font-size: 0.7rem !important; }
-        .cat-col-cell { text-align: center; font-weight: bold; color: var(--subtext-color); font-size: 1.1rem; }
+        .filter-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--card-bg); cursor: pointer; color: var(--text-color); font-weight: 600; transition: all 0.2s; }
+        .filter-btn.active { background: var(--accent-color); color: white; border-color: var(--accent-color); transform: scale(1.05); }
+
+        @keyframes flashGreen {
+            0% { background-color: rgba(40, 167, 69, 0.8); color: white; transform: scale(1.1); box-shadow: 0 0 15px rgba(40, 167, 69, 0.6); }
+            100% { background-color: transparent; color: inherit; transform: scale(1); box-shadow: none; }
+        }
+        @keyframes flashRed {
+            0% { background-color: rgba(220, 53, 69, 0.8); color: white; transform: scale(0.95); box-shadow: 0 0 15px rgba(220, 53, 69, 0.6); }
+            100% { background-color: transparent; color: inherit; transform: scale(1); box-shadow: none; }
+        }
+        
+        .flash-increase { animation: flashGreen 3s ease-out; border-radius: 6px; }
+        .flash-decrease { animation: flashRed 3s ease-out; border-radius: 6px; }
     </style>
 </head>
 <body>
@@ -51,10 +94,10 @@
 
     {{template "drawer" .}}
 
-    <div style="max-width: 1000px; margin: 0 auto; padding-top: 60px;">
+    <div style="max-width: 1000px; margin: 0 auto; padding-top: 60px; padding-bottom: 60px;">
         <h1 style="text-align: center; margin-bottom: 20px;">🏆 Leaderboard</h1>
 
-        <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
             <button class="filter-btn active" id="btn-global" onclick="setScope('global')">Global</button>
             {{if ne .User.RoomCode ""}}
                 {{$aliases := .RoomAliases}}
@@ -65,22 +108,21 @@
         </div>
 
         <details>
-            <summary style="cursor: pointer; color: var(--subtext-color); margin-bottom: 10px; font-weight: bold;">⚙️ Configure Columns</summary>
-            <div class="config-panel" id="column-toggles">
-                </div>
+            <summary style="cursor: pointer; color: var(--subtext-color); margin-bottom: 10px; font-weight: bold; text-align: center;">⚙️ Configure Columns</summary>
+            <div class="config-panel" id="column-toggles"></div>
         </details>
 
-        <div style="background: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 10px var(--shadow-color); overflow: hidden;">
+        <div style="overflow-x: auto;">
             <table class="leaderboard-table">
                 <thead>
                     <tr id="table-header">
-                        <th>#</th>
+                        <th style="width: 50px;">#</th>
                         <th>Player</th>
+                        <th style="text-align:center; color:var(--subtext-color); font-size:0.8rem;">SEA - NE</th>
                         <th style="text-align: right;">Score</th>
                     </tr>
                 </thead>
-                <tbody id="lb-body">
-                    </tbody>
+                <tbody id="lb-body"></tbody>
             </table>
         </div>
     </div>
@@ -88,22 +130,23 @@
     <script>
         let currentScope = "global";
         let allCategories = new Set();
-        let activeCategories = new Set(); // Stores which columns are visible
+        let activeCategories = new Set();
+        let previousDataMap = {}; 
+        let previousRowPositions = {};
 
         function setScope(scope) {
             currentScope = scope;
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             event.target.classList.add('active');
+            previousRowPositions = {}; 
+            previousDataMap = {};
             loadLeaderboard();
         }
 
         function toggleCategory(cat) {
-            if (activeCategories.has(cat)) {
-                activeCategories.delete(cat);
-            } else {
-                activeCategories.add(cat);
-            }
-            renderTable(window.lastData); // Re-render with cached data
+            if (activeCategories.has(cat)) { activeCategories.delete(cat); } 
+            else { activeCategories.add(cat); }
+            renderTable(window.lastData, false); 
         }
 
         function loadLeaderboard() {
@@ -113,60 +156,96 @@
                 .then(r => r.json())
                 .then(data => {
                     window.lastData = data;
-
+                    
                     data.forEach(user => {
                         if (user.category_scores) {
                             Object.keys(user.category_scores).forEach(c => allCategories.add(c));
                         }
                     });
 
-                    // 2. Default to "All Selected" on first load
                     if (!window.catsInitialized && allCategories.size > 0) {
                         allCategories.forEach(c => activeCategories.add(c));
                         window.catsInitialized = true;
                     }
 
-                    // 3. Render
                     renderToggles();
-                    renderTable(data);
+                    captureRowPositions();
+                    renderTable(data, true);
+                    animateRows();
                 });
         }
 
         function renderToggles() {
             const container = document.getElementById('column-toggles');
             container.innerHTML = '';
-            
-            // Add "Select All" / Clear logic if desired, but simple toggles for now
             Array.from(allCategories).sort().forEach(cat => {
                 const label = document.createElement('label');
                 label.className = 'config-toggle';
-                
                 const box = document.createElement('input');
                 box.type = 'checkbox';
                 box.checked = activeCategories.has(cat);
                 box.onchange = () => toggleCategory(cat);
-                
                 label.appendChild(box);
                 label.appendChild(document.createTextNode(cat));
                 container.appendChild(label);
             });
-            
-            if (allCategories.size === 0) {
-                container.innerHTML = '<span style="color:var(--subtext-color)">No category data available yet.</span>';
-            }
         }
 
-        function renderTable(data) {
-            // 1. Setup Header
+        function captureRowPositions() {
+            previousRowPositions = {};
+            document.querySelectorAll('#lb-body tr').forEach(row => {
+                const uid = row.getAttribute('data-uid');
+                if (uid) {
+                    previousRowPositions[uid] = row.getBoundingClientRect().top;
+                }
+            });
+        }
+
+        function animateRows() {
+            document.querySelectorAll('#lb-body tr').forEach(row => {
+                const uid = row.getAttribute('data-uid');
+                if (uid && previousRowPositions[uid]) {
+                    const newTop = row.getBoundingClientRect().top;
+                    const oldTop = previousRowPositions[uid];
+                    const delta = oldTop - newTop;
+
+                    if (delta !== 0) {
+                        row.style.transform = `translateY(${delta}px)`;
+                        row.style.transition = 'none';
+
+                        requestAnimationFrame(() => {
+                            void row.offsetHeight; 
+                            row.style.transition = 'transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)';
+                            row.style.transform = '';
+                        });
+                    }
+                }
+            });
+        }
+
+        function renderTable(data, checkAnimations) {
+            let activeCols = new Set();
+            let totalActive = false;
+
+            if (checkAnimations) {
+                data.forEach(user => {
+                    if(!previousDataMap[user.id]) return;
+                    const old = previousDataMap[user.id];
+                    
+                    if (user.total_score > old.total) totalActive = true;
+                    
+                    activeCategories.forEach(cat => {
+                        const s = user.category_scores ? (user.category_scores[cat] || 0) : 0;
+                        const oldS = old.cats[cat] || 0;
+                        if (s > oldS) activeCols.add(cat);
+                    });
+                });
+            }
+
             const headerRow = document.getElementById('table-header');
-            
-            // Clear existing dynamic columns (keep #, Player)
-            headerRow.innerHTML = '<th>#</th><th>Player</th><th style="text-align:center; color:var(--subtext-color); font-size:0.9rem;">TB</th><th style="text-align: right;">Score</th>';
-            
-            // Insert Active Category Headers
+            headerRow.innerHTML = '<th style="width:50px;">#</th><th>Player</th><th style="text-align:center; color:var(--subtext-color); font-size:0.8rem;">SEA - NE</th><th style="text-align: right;">Score</th>';
             const sortedCats = Array.from(activeCategories).sort();
-            const scoreHeader = headerRow.lastElementChild; 
-            
+            const scoreHeader = headerRow.lastElementChild;
             sortedCats.forEach(cat => {
                 const th = document.createElement('th');
                 th.textContent = cat;
@@ -174,18 +253,16 @@
                 headerRow.insertBefore(th, scoreHeader);
             });
 
-            // 2. Render Body
             const tbody = document.getElementById('lb-body');
             tbody.innerHTML = '';
 
             let rank = 1;
             for (let i = 0; i < data.length; i++) {
                 const user = data[i];
-                if (i > 0 && user.total_score < data[i-1].total_score) {
-                    rank = i + 1;
-                }
+                if (i > 0 && user.total_score < data[i-1].total_score) rank = i + 1;
 
                 const tr = document.createElement('tr');
+                tr.setAttribute('data-uid', user.id);
                 tr.onclick = () => window.location.href = `/user/${user.id}`;
                 tr.style.cursor = 'pointer';
 
@@ -202,53 +279,73 @@
                         <div class="lb-avatar" style="border-color: ${user.color_hex || '#ccc'}">
                             ${user.icon && user.icon.length > 15 ? `<img src="${user.icon}">` : user.icon}
                         </div>
-                        <div class="lb-name" style="color: ${user.color_hex || 'inherit'}">${user.username}</div>
+                        <div class="lb-name">${user.username}</div>
                     </div>
                 `;
                 tr.appendChild(playerTd);
 
+                // TB Column (Badges)
                 const tbTd = document.createElement('td');
                 tbTd.style.textAlign = 'center';
-                tbTd.style.fontWeight = 'bold';
                 
                 if (user.tb_left !== undefined && user.tb_right !== undefined) {
                     tbTd.innerHTML = `
-                        <span style="color: #69BE28;">${user.tb_left}</span>
-                        <span style="color: var(--subtext-color); margin: 0 2px;">-</span>
-                        <span style="color: #002244; text-shadow: 0 0 1px rgba(255,255,255,0.3);">${user.tb_right}</span>
+                        <span class="team-badge" style="background-color: #69BE28;">${user.tb_left}</span>
+                        <span style="color: var(--subtext-color); margin: 0 4px; font-weight:bold;">-</span>
+                        <span class="team-badge" style="background-color: #002244;">${user.tb_right}</span>
                     `;
                 } else {
                     tbTd.innerHTML = '<span style="color:var(--subtext-color);">-</span>';
                 }
                 tr.appendChild(tbTd);
 
-                // Dynamic Category Scores
+                // Categories
                 sortedCats.forEach(cat => {
                     const catTd = document.createElement('td');
                     catTd.className = 'cat-col-cell';
                     const s = user.category_scores ? (user.category_scores[cat] || 0) : 0;
                     catTd.textContent = s > 0 ? s : '-';
+                    
+                    if (checkAnimations && previousDataMap[user.id]) {
+                        const oldS = previousDataMap[user.id].cats[cat] || 0;
+                        if (s > oldS) {
+                            catTd.classList.add('flash-increase'); 
+                        } else if (s < oldS) {
+                            catTd.classList.add('flash-decrease'); 
+                        } else if (activeCols.has(cat)) {
+                            catTd.classList.add('flash-decrease');
+                        }
+                    }
                     tr.appendChild(catTd);
                 });
 
-                // Total Score
+                // Total
                 const scoreTd = document.createElement('td');
                 scoreTd.className = 'score-cell';
                 scoreTd.textContent = user.total_score;
+                
+                if (checkAnimations && previousDataMap[user.id]) {
+                    const oldTotal = previousDataMap[user.id].total;
+                    if (user.total_score > oldTotal) {
+                        scoreTd.classList.add('flash-increase');
+                    } else if (user.total_score < oldTotal) {
+                        scoreTd.classList.add('flash-decrease');
+                    } else if (totalActive) {
+                        scoreTd.classList.add('flash-decrease');
+                    }
+                }
+                
                 tr.appendChild(scoreTd);
-
                 tbody.appendChild(tr);
+
+                if (!previousDataMap[user.id]) previousDataMap[user.id] = { cats: {} };
+                previousDataMap[user.id].total = user.total_score;
+                previousDataMap[user.id].cats = user.category_scores || {};
             }
         }
 
         loadLeaderboard();
-        // Auto-refresh every 10s
-        setInterval(loadLeaderboard, 10000);
+        setInterval(loadLeaderboard, 5000);
     </script>
-
-    <style>
-        .filter-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--card-bg); cursor: pointer; color: var(--text-color); font-weight: 600; }
-        .filter-btn.active { background: var(--accent-color); color: white; border-color: var(--accent-color); }
-    </style>
 </body>
 </html>
