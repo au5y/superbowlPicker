@@ -18,7 +18,7 @@
         .controls { 
             background: var(--hover-bg); padding: 20px; border-radius: 8px; 
             margin-bottom: 25px; display: flex; justify-content: space-between; 
-            align-items: center; border: 1px solid var(--border-color); 
+            align-items: center; border: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px;
         }
         
         .state-tag { padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -42,7 +42,7 @@
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             color: var(--text-color);
-            padding: 8px 12px;
+            padding: 10px 14px; /* Larger touch target */
             font-size: 0.9rem;
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
@@ -81,6 +81,21 @@
         .drawer-nav a:hover, .drawer-nav button:hover { background: var(--hover-bg); }
         
         .fixed-menu-btn { position: fixed; top: 15px; left: 15px; z-index: 1100; background: var(--menu-btn-bg); backdrop-filter: blur(4px); border: 1px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; box-shadow: 0 2px 5px var(--shadow-color); color: var(--text-color); }
+
+        /* Responsive Mobile Table */
+        @media (max-width: 768px) {
+            .admin-container { padding: 10px; margin-top: 10px; }
+            table, thead, tbody, th, td, tr { display: block; }
+            thead tr { position: absolute; top: -9999px; left: -9999px; }
+            tr { border: 1px solid var(--border-color); margin-bottom: 15px; border-radius: 8px; background: var(--card-bg); padding: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+            td { border: none; position: relative; padding-left: 0; padding-top: 5px; padding-bottom: 15px; border-bottom: 1px solid var(--hover-bg); }
+            td:last-child { border-bottom: 0; padding-bottom: 0; }
+            
+            /* Hide ID Column logic if strict, but here we just flow content */
+            .options-grid { justify-content: flex-start; }
+            
+            h1 { font-size: 1.5rem; }
+        }
     </style>
 </head>
 <body>
@@ -152,12 +167,12 @@
             <tbody>
                 {{range .Questions}}
                 <tr id="row-{{.ID}}" class="row-{{.Status}}">
-                    <td>#{{.ID}}</td>
-                    <td>
+                    <td data-label="ID">#{{.ID}}</td>
+                    <td data-label="Question">
                         <div class="question-title" style="font-weight:bold;">{{.Text}}</div>
                         <span class="category-pill">{{.Category}}</span>
                     </td>
-                    <td>
+                    <td data-label="Selection">
                         {{$q := .}}
                         {{if eq .Type "select"}}
                             <div class="options-grid">
@@ -184,7 +199,7 @@
                             </div>
                         {{end}}
                     </td>
-                    <td style="text-align: center;">
+                    <td style="text-align: center;" data-label="Action">
                         {{if eq .Status "RESOLVED"}}
                             <button onclick="unresolveQuestion({{.ID}})" class="btn-unresolve">UNRESOLVE</button>
                         {{end}}
@@ -210,8 +225,8 @@
             <tbody>
                 {{range .Users}}
                 <tr>
-                    <td>{{.ID}}</td>
-                    <td>
+                    <td data-label="ID">{{.ID}}</td>
+                    <td data-label="User">
                         <form action="/admin/users" method="POST" style="display:flex; gap:5px;">
                             <input type="hidden" name="user_id" value="{{.ID}}">
                             <input type="hidden" name="action" value="update_username">
@@ -219,7 +234,7 @@
                             <button type="submit" class="btn-sm" style="background:var(--accent-color); color:white;">Save</button>
                         </form>
                     </td>
-                    <td>
+                    <td data-label="Rooms">
                         <form action="/admin/users" method="POST" style="display:flex; flex-direction:column; gap:6px;">
                             <input type="hidden" name="user_id" value="{{.ID}}">
                             <input type="hidden" name="action" value="update_room">
@@ -238,8 +253,8 @@
                             <button type="submit" class="btn-sm" style="background:var(--accent-color); color:white; align-self: flex-start; margin-top: 5px;">Update Groups</button>
                         </form>
                     </td>
-                    <td>{{.TotalScore}}</td>
-                    <td style="display:flex; gap:10px;">
+                    <td data-label="Score">{{.TotalScore}}</td>
+                    <td data-label="Controls" style="display:flex; gap:10px;">
                         <form action="/admin/users" method="POST" onsubmit="return confirm('Reset PIN for {{.Username}}?');">
                             <input type="hidden" name="user_id" value="{{.ID}}">
                             <button type="submit" name="action" value="reset_pin" style="background:#ffc107; color:black;" class="btn-sm">Reset PIN</button>

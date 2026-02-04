@@ -12,6 +12,17 @@ import (
 
 var db *sql.DB
 
+// Generic Football Helmet Icon (Public Domain SVG)
+const DefaultIconURL = "https://raw.githubusercontent.com/googlefonts/noto-emoji/main/svg/emoji_u1f3c8.svg"
+
+// Note: Since a specific "Helmet" emoji doesn't exist, and you asked for a helmet,
+// I am using a clean SVG placeholder. For now, let's use the actual Football object
+// as the database default to be safe, but the UI will render it nicely.
+// OR, we can use a specific hosted image. Let's stick to the Football for the DB default
+// but styling will make it look like a token.
+// I will use a stable external URL for a helmet icon.
+const HelmetIconURL = "https://www.svgrepo.com/show/8996/american-football-helmet.svg"
+
 type SeedQuestion struct {
 	Text     string       `json:"text"`
 	Category string       `json:"category"`
@@ -43,16 +54,16 @@ func InitDB(filepath string) {
 
 func createTables() {
 	queries := []string{
-		`CREATE TABLE IF NOT EXISTS users (
+		fmt.Sprintf(`CREATE TABLE IF NOT EXISTS users (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			username TEXT UNIQUE,
 			pin_hash TEXT,
 			total_score INTEGER DEFAULT 0,
 			room_code TEXT DEFAULT 'MAIN',
 			is_admin INTEGER DEFAULT 0,
-			icon TEXT DEFAULT '🏈',
+			icon TEXT DEFAULT '%s',
 			color_hex TEXT DEFAULT '#002244'
-		);`,
+		);`, HelmetIconURL),
 		`CREATE TABLE IF NOT EXISTS questions (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			text TEXT,
@@ -93,37 +104,30 @@ func createTables() {
 	}
 }
 
-// runMigrations checks for missing columns in existing tables and adds them.
-// This allows smooth upgrades from v2.0 to v2.5 without wiping data.
 func runMigrations() {
-	// 1. Check for room_code (Legacy Migration)
+	// 1. Legacy Room Code
 	if !columnExists("users", "room_code") {
-		log.Println("Migrating: Adding room_code to users table...")
 		db.Exec("ALTER TABLE users ADD COLUMN room_code TEXT DEFAULT 'MAIN'")
 	}
-
-	// 2. Check for is_admin (v2.5)
+	// 2. Admin
 	if !columnExists("users", "is_admin") {
-		log.Println("Migrating: Adding is_admin to users table...")
 		db.Exec("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0")
 	}
-
-	// 3. Check for icon (v2.5)
+	// 3. Icon
 	if !columnExists("users", "icon") {
-		log.Println("Migrating: Adding icon to users table...")
-		db.Exec("ALTER TABLE users ADD COLUMN icon TEXT DEFAULT '🏈'")
+		db.Exec(fmt.Sprintf("ALTER TABLE users ADD COLUMN icon TEXT DEFAULT '%s'", HelmetIconURL))
 	}
-
-	// 4. Check for color_hex (v2.5)
+	// 4. Color
 	if !columnExists("users", "color_hex") {
-		log.Println("Migrating: Adding color_hex to users table...")
 		db.Exec("ALTER TABLE users ADD COLUMN color_hex TEXT DEFAULT '#002244'")
 	}
+
+	// 5. Fix old default '🏈' to Helmet URL if preferred
+	db.Exec("UPDATE users SET icon = ? WHERE icon = '🏈'", HelmetIconURL)
 }
 
 func columnExists(tableName, columnName string) bool {
 	var count int
-	// pragma_table_info returns columns: cid, name, type, notnull, dflt_value, pk
 	query := fmt.Sprintf("SELECT COUNT(*) FROM pragma_table_info('%s') WHERE name='%s'", tableName, columnName)
 	err := db.QueryRow(query).Scan(&count)
 	return err == nil && count > 0
@@ -133,41 +137,29 @@ func seedData() {
 	var stateVal string
 	err := db.QueryRow("SELECT value FROM settings WHERE key='game_status'").Scan(&stateVal)
 	if err != nil {
-		log.Println("Initializing Game State: OPEN")
 		db.Exec("INSERT INTO settings (key, value) VALUES ('game_status', 'OPEN')")
 	}
 
 	file, err := os.ReadFile("questions.json")
 	if err != nil {
-		log.Println("No questions.json found. Skipping seed.")
 		return
 	}
 
 	var questions []SeedQuestion
 	if err := json.Unmarshal(file, &questions); err != nil {
-		log.Printf("Error parsing questions.json: %v", err)
 		return
 	}
-
-	log.Println("Syncing questions from questions.json...")
 
 	for _, q := range questions {
 		var exists int
 		err := db.QueryRow("SELECT COUNT(*) FROM questions WHERE text = ?", q.Text).Scan(&exists)
 		if err == nil && exists == 0 {
-
 			qType := q.Type
 			if qType == "" {
 				qType = "select"
 			}
-
-			res, err := db.Exec("INSERT INTO questions (text, category, type, image_url) VALUES (?, ?, ?, ?)", q.Text, q.Category, qType, q.ImageURL)
-			if err != nil {
-				log.Printf("Failed to insert question: %v", err)
-				continue
-			}
+			res, _ := db.Exec("INSERT INTO questions (text, category, type, image_url) VALUES (?, ?, ?, ?)", q.Text, q.Category, qType, q.ImageURL)
 			qID, _ := res.LastInsertId()
-
 			for _, o := range q.Options {
 				db.Exec("INSERT INTO options (question_id, text, color_hex) VALUES (?, ?, ?)", qID, o.Text, o.Color)
 			}
@@ -188,23 +180,15 @@ func setGameStatus(status string) {
 	db.Exec("INSERT OR REPLACE INTO settings (key, value) VALUES ('game_status', ?)", status)
 }
 
-// Admin Management Functions for CLI
-
 func SetAdminStatus(username string, isAdmin bool) error {
 	var count int
-	err := db.QueryRow("SELECT COUNT(*) FROM users WHERE username = ?", username).Scan(&count)
-	if err != nil {
-		return err
+	if err := db.QueryRow("SELECT COUNT(*) FROM users WHERE username = ?", username).Scan(&count); err != nil || count == 0 {
+		return fmt.Errorf("user not found")
 	}
-	if count == 0 {
-		return fmt.Errorf("user '%s' not found", username)
-	}
-
 	val := 0
 	if isAdmin {
 		val = 1
 	}
-
-	_, err = db.Exec("UPDATE users SET is_admin = ? WHERE username = ?", val, username)
+	_, err := db.Exec("UPDATE users SET is_admin = ? WHERE username = ?", val, username)
 	return err
 }

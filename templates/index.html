@@ -43,9 +43,10 @@
             padding: 15px; margin-bottom: 20px; text-align: center;
         }
         .user-badge {
-            font-size: 1.1rem; font-weight: bold; color: var(--heading-color);
-            margin-bottom: 5px;
+            font-size: 1.3rem; font-weight: bold; color: var(--heading-color);
+            margin-bottom: 5px; display: flex; align-items: center; gap: 8px;
         }
+        .user-badge img { width: 40px; height: 40px; object-fit: contain; }
         .room-badge {
             font-size: 0.9rem; color: var(--subtext-color); background: var(--hover-bg); 
             padding: 2px 8px; border-radius: 12px; display: inline-block;
@@ -136,6 +137,9 @@
         } else if (error === 'invalid_pin') {
             errDiv.textContent = "Incorrect PIN. Please try again.";
             errDiv.style.display = 'block';
+        } else if (error === 'invalid_username') {
+            errDiv.textContent = "Invalid Username. Alphanumeric only.";
+            errDiv.style.display = 'block';
         }
     </script>
     {{end}}
@@ -202,7 +206,14 @@
     </div>
 
     <div class="app-header">
-        <div class="user-badge">{{.User.Username}}</div>
+        <div class="user-badge">
+            {{if gt (len .User.Icon) 15}}
+                <img src="{{.User.Icon}}">
+            {{else}}
+                {{.User.Icon}}
+            {{end}}
+            {{.User.Username}}
+        </div>
         {{$aliases := .RoomAliases}}
         <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: wrap;">
             {{range split .User.RoomCode ","}}
