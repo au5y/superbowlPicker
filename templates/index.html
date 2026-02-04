@@ -381,7 +381,6 @@
         function validatePicks() {
             let missing = 0;
             
-            // 1. Check Standard Cards (Radio and Standard Number)
             document.querySelectorAll('.question-card').forEach(card => {
                 const type = card.getAttribute('data-type');
                 if (type === 'select') {
@@ -394,7 +393,6 @@
                 }
             });
 
-            // 2. Check Scoreboard inputs
             document.querySelectorAll('.scoreboard-container').forEach(container => {
                 const input = container.querySelector('.sb-input');
                 if (input && input.value.trim() === '') missing++;
