@@ -34,3 +34,9 @@ From here you can:
 
 - `PORT`: Environment variable to set the port (default: 4884).
 - `DB_NAME`: Environment variable to set the database file path (default: ./game.db).
+
+This enables you to be able to:
+```bash
+# Linux/Mac
+PORT=4885 DB_NAME=./dev.db go run .
+```
