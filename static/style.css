@@ -1,5 +1,4 @@
 :root {
-    /* Light Mode Defaults */
     --bg-color: #f4f4f9;
     --card-bg: #ffffff;
     --text-color: #333333;
@@ -15,10 +14,10 @@
     --nav-active-text: #ffffff;
     --shadow-color: rgba(0,0,0,0.1);
     --locked-bg: #f0f0f0;
+    --menu-btn-bg: rgba(255,255,255,0.8);
 }
 
 [data-theme="dark"] {
-    /* Dark Mode Overrides */
     --bg-color: #121212;
     --card-bg: #1e1e1e;
     --text-color: #e0e0e0;
@@ -34,9 +33,9 @@
     --nav-active-text: #000000;
     --shadow-color: rgba(0,0,0,0.5);
     --locked-bg: #2a2a2a;
+    --menu-btn-bg: rgba(30,30,30,0.8);
 }
 
-/* --- Mobile "App-Like" Standards --- */
 html, body {
     /* Stop the "Rubber Band" bounce effect */
     overscroll-behavior-y: none;
@@ -72,7 +71,6 @@ body {
 h1 { margin-bottom: 20px; color: var(--heading-color); }
 h2, h3, strong { color: var(--heading-color); }
 
-/* --- Login Form --- */
 .login-container {
     background: var(--card-bg);
     padding: 2rem;
@@ -103,7 +101,6 @@ button.login-btn {
     font-size: 1rem;
 }
 
-/* --- Game Grid --- */
 .grid-container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -155,7 +152,6 @@ button.login-btn {
     flex-wrap: wrap; /* Allows buttons to stack if they don't fit */
 }
 
-/* --- Radio Button Styling --- */
 .option-label {
     flex: 1 1 auto;
     min-width: 80px;
@@ -208,7 +204,6 @@ button.login-btn {
     opacity: 0.8;
 }
 
-/* --- HERO OPTION STYLES (Teams / Coins) --- */
 .hero-box {
     display: flex;
     align-items: center;
@@ -238,7 +233,6 @@ button.login-btn {
     filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));
 }
 
-/* --- DUAL SCOREBOARD STYLE --- */
 .scoreboard-container {
     grid-column: 1 / -1; /* Stretch across the grid */
     background: linear-gradient(180deg, #2b2b2b 0%, #1a1a1a 100%);
@@ -329,7 +323,6 @@ button.login-btn {
     transition: all 0.3s ease;
 }
 
-/* --- Static Validate Button (Bottom of Content) --- */
 .validate-bar {
     position: static !important; /* Inline flow, not fixed */
     width: 100%;

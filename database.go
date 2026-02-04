@@ -31,15 +31,12 @@ func InitDB(filepath string) {
 		log.Fatal(err)
 	}
 
-	// 1. Enable WAL mode for reliability
 	if _, err := db.Exec("PRAGMA journal_mode=WAL;"); err != nil {
 		log.Fatal("Failed to enable WAL mode:", err)
 	}
 
-	// 2. Create Tables
 	createTables()
 
-	// 3. Sync Data from JSON
 	seedData()
 }
 
@@ -52,7 +49,6 @@ func createTables() {
 			total_score INTEGER DEFAULT 0,
 			room_code TEXT DEFAULT 'MAIN'
 		);`,
-		// Added 'correct_text_input' column
 		`CREATE TABLE IF NOT EXISTS questions (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			text TEXT,
@@ -92,7 +88,6 @@ func createTables() {
 		}
 	}
 
-	// Migration: Add room_code column if not exists
 	var count int
 	err := db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('users') WHERE name='room_code'").Scan(&count)
 	if err == nil && count == 0 {
@@ -104,7 +99,6 @@ func createTables() {
 }
 
 func seedData() {
-	// 1. Seed Game State
 	var stateVal string
 	err := db.QueryRow("SELECT value FROM settings WHERE key='game_status'").Scan(&stateVal)
 	if err != nil {
@@ -112,7 +106,6 @@ func seedData() {
 		db.Exec("INSERT INTO settings (key, value) VALUES ('game_status', 'OPEN')")
 	}
 
-	// 2. Load Questions from JSON
 	file, err := os.ReadFile("questions.json")
 	if err != nil {
 		log.Println("No questions.json found. Skipping seed.")
@@ -149,7 +142,6 @@ func seedData() {
 	}
 }
 
-// -- Helpers --
 func getGameStatus() string {
 	var status string
 	err := db.QueryRow("SELECT value FROM settings WHERE key='game_status'").Scan(&status)

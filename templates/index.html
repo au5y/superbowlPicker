@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Austin's Superbowl LX Prop Pool</title>
     <link rel="stylesheet" href="/static/style.css">
-    <!-- Favicons -->
     <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
@@ -39,7 +38,6 @@
         .drawer-nav a:hover, .drawer-nav button.theme-toggle:hover { background: var(--hover-bg); }
         .drawer-nav .section-link { padding-left: 30px; font-size: 0.9rem; color: var(--subtext-color); }
         
-        /* Revised Header */
         .app-header {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             padding: 15px; margin-bottom: 20px; text-align: center;
@@ -53,10 +51,9 @@
             padding: 2px 8px; border-radius: 12px; display: inline-block;
         }
 
-        /* Fixed Hamburger Button */
         .fixed-menu-btn { 
             position: fixed; top: 15px; left: 15px; z-index: 1100;
-            background: rgba(255,255,255,0.8); backdrop-filter: blur(4px);
+            background: var(--menu-btn-bg); backdrop-filter: blur(4px);
             border: 1px solid var(--border-color); border-radius: 50%;
             width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
             font-size: 1.5rem; cursor: pointer; box-shadow: 0 2px 5px var(--shadow-color);
@@ -199,12 +196,12 @@
             {{end}}
             <hr style="border:0; border-top:1px solid var(--border-color);">
             <a href="/logout" style="color: #C60C30;">Log Out</a>
+            <div style="text-align:center; padding: 10px; font-size: 0.8rem; color: var(--subtext-color);">v1.0.0</div>
         </div>
     </div>
 
     <div class="app-header">
         <div class="user-badge">{{.User.Username}}</div>
-        <!-- UPDATED: Display Room Aliases instead of raw codes -->
         {{$aliases := .RoomAliases}}
         <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: wrap;">
             {{range split .User.RoomCode ","}}
@@ -217,12 +214,10 @@
         {{end}}
     </div>
 
-    <!-- UPDATED: Moved to Top-Center to avoid being hidden -->
     <div id="save-status" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #28a745; color: white; padding: 8px 16px; border-radius: 20px; opacity: 0; transition: opacity 0.5s; font-weight: bold; z-index: 2000; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
         Saved ✓
     </div>
 
-    <!-- Main Content Wrapper -->
     <div>
         {{range .Categories}}
         <div id="{{.Anchor}}">
@@ -486,7 +481,6 @@
             }
         }
 
-        /* --- NEW: Clear Error Highlights Immediately --- */
         document.addEventListener('input', function(e) {
             const container = e.target.closest('.question-card, .scoreboard-container');
             if (container && container.classList.contains('missing-pick')) {
