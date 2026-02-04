@@ -18,83 +18,153 @@
         .pick-pending { border-left: 5px solid var(--border-color); }
         
         .pick-result { font-weight: bold; color: var(--text-color); }
-
-        @media (max-width: 600px) {
-            .pick-row { flex-direction: column; align-items: flex-start; }
-            .pick-result { align-self: flex-end; margin-top: 5px; }
-        }
         .badge-correct { color: #28a745; }
         .badge-wrong { color: #dc3545; }
+
+        /* Drawer Styles (Same as Leaderboard) */
+        .drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 900; display: none; }
+        .drawer-overlay.open { display: block; }
+        .drawer { position: fixed; top: 0; left: 0; width: 280px; height: 100%; background: var(--drawer-bg); z-index: 1000; transition: transform 0.3s ease; box-shadow: 2px 0 10px var(--shadow-color); padding-top: 20px; transform: translateX(-100%); }
+        .drawer.open { transform: translateX(0); }
+        .drawer-header { padding: 20px; border-bottom: 1px solid var(--border-color); font-size: 1.2rem; font-weight: bold; color: var(--heading-color); display: flex; justify-content: space-between; align-items: center; }
+        .drawer-nav a, .drawer-nav button.theme-toggle { display: block; padding: 15px 20px; width: 100%; text-align: left; box-sizing: border-box; color: var(--text-color); text-decoration: none; border-bottom: 1px solid var(--hover-bg); background: none; border: none; font-size: 1rem; cursor: pointer; }
+        .drawer-nav a:hover, .drawer-nav button:hover { background: var(--hover-bg); }
+        
+        .fixed-menu-btn { position: fixed; top: 15px; left: 15px; z-index: 1100; background: rgba(255,255,255,0.8); backdrop-filter: blur(4px); border: 1px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; box-shadow: 0 2px 5px var(--shadow-color); color: var(--text-color); }
     </style>
 </head>
 <body>
     <script>
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme) { document.documentElement.setAttribute('data-theme', savedTheme); }
-        else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            document.documentElement.setAttribute('data-theme', 'dark');
-        }
     </script>
 
-    <header>
-        <h1>🏈 Superbowl LX Prop Pool</h1>
-        <a href="/leaderboard" style="color: var(--accent-color); text-decoration: none; font-weight: bold;">← Back to Leaderboard</a>
-    </header>
+    <div class="drawer-overlay" id="overlay" onclick="toggleDrawer()"></div>
+    <button class="fixed-menu-btn" onclick="toggleDrawer()">☰</button>
 
-    {{if not .TargetUser}}
-        <!-- Privacy Shield -->
-        <div class="locked-overlay">
-            <h2>🙈 Picks Hidden</h2>
-            <p>You cannot see other players' picks until the game is LOCKED.</p>
+    <div class="drawer" id="drawer">
+        <div class="drawer-header">
+            <span>Menu</span>
+            <button onclick="toggleDrawer()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color: var(--text-color);">&times;</button>
         </div>
-    {{else}}
-        <!-- User Profile -->
-        <div class="profile-header">
-            <h2>{{.TargetUser.Username}}</h2>
-            <div style="font-size: 2rem; font-weight: bold; color: var(--accent-color);">{{.TargetUser.TotalScore}} Points</div>
+        <div class="drawer-nav">
+            <a href="/">🏈 My Picks</a>
+            <a href="/leaderboard">🏆 Leaderboard</a>
+            <a href="/user/{{.User.ID}}">👤 My Profile</a>
+            <button class="theme-toggle" onclick="toggleTheme()">🌗 Toggle Dark Mode</button>
+            <hr style="border:0; border-top:1px solid var(--border-color);">
+            <a href="/logout" style="color: #C60C30;">Log Out</a>
         </div>
+    </div>
 
-        <div style="max-width: 800px; margin: 0 auto;">
-            {{range .Questions}}
-            <div class="pick-row 
-                {{if .UserPrediction}}
-                    {{if eq .Status "RESOLVED"}}
-                        {{if .UserPrediction.IsCorrect}}pick-correct{{else}}pick-wrong{{end}}
-                    {{else}}pick-pending{{end}}
-                {{end}}">
-                
-                <div style="flex: 1;">
-                    <div style="font-size: 0.9rem; color: var(--subtext-color);">{{.Category}}</div>
-                    <strong>{{.Text}}</strong>
+    <div style="max-width: 800px; margin: 0 auto; padding-top: 60px;">
+        
+        {{if not .TargetUser}}
+            <div class="locked-overlay">
+                <h2>🙈 Picks Hidden</h2>
+                <p>You cannot see other players' picks until the game is LOCKED.</p>
+                <div style="margin-top: 20px;">
+                    <a href="/leaderboard" style="color: var(--accent-color); font-weight: bold;">← Back to Leaderboard</a>
                 </div>
-                
-                <div class="pick-result">
-                    {{if .UserPrediction}}
-                        {{if eq .Type "select"}}
-                            <!-- Find the text for the selected option -->
-                            {{$selID := .UserPrediction.SelectedOptionID}}
-                            {{range .Options}}
-                                {{if eq (printf "%d" .ID) (printf "%d" $selID)}}{{.Text}}{{end}}
-                            {{end}}
-                        {{else}}
-                            {{.UserPrediction.TextInput}}
-                        {{end}}
+            </div>
+        {{else}}
+            <div class="profile-header">
+                <h2>{{.TargetUser.Username}}</h2>
+                <div style="font-size: 2rem; font-weight: bold; color: var(--accent-color);">{{.TargetUser.TotalScore}} Points</div>
+            </div>
 
-                        <!-- Icon -->
-                        {{if eq .Status "RESOLVED"}}
-                            {{if .UserPrediction.IsCorrect}}
-                                <span class="badge-correct">✔</span>
-                            {{else}}
-                                <span class="badge-wrong">✘</span>
-                            {{end}}
-                        {{end}}
-                    {{else}}
-                        <span style="color: var(--subtext-color);">No Pick</span>
-                    {{end}}
+            {{if eq .User.ID .TargetUser.ID}}
+            <div style="margin-bottom: 20px; text-align: center;">
+                <button onclick="toggleEdit()" style="background: var(--card-bg); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 20px; cursor: pointer; color: var(--text-color); font-weight: bold; box-shadow: 0 1px 3px var(--shadow-color);">
+                    Edit Profile
+                </button>
+                
+                <div id="edit-form-container" style="display: none; margin-top: 15px; background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); text-align: left;">
+                    <form action="/user/update" method="POST" style="display: grid; gap: 15px;">
+                        <div>
+                            <label style="display:block; font-size:0.9rem; color:var(--subtext-color); margin-bottom:5px;">Username</label>
+                            <input type="text" name="username" value="{{.User.Username}}" style="width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color); border-radius: 4px;">
+                        </div>
+                        <div>
+                            <label style="display:block; font-size:0.9rem; color:var(--subtext-color); margin-bottom:5px;">Room Codes (Comma Separated)</label>
+                            <input type="text" name="room_codes" value="{{.User.RoomCode}}" placeholder="e.g. FAMILY, BRAD" style="text-transform: uppercase; width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color); border-radius: 4px;">
+                        </div>
+                        <button type="submit" style="background: var(--accent-color); color: white; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Save Changes</button>
+                    </form>
                 </div>
             </div>
             {{end}}
-        </div>
-    {{end}}
+
+            <div>
+                {{range .Questions}}
+                <div class="pick-row 
+                    {{if .UserPrediction}}
+                        {{if eq .Status "RESOLVED"}}
+                            {{if .UserPrediction.IsCorrect}}pick-correct{{else}}pick-wrong{{end}}
+                        {{else}}pick-pending{{end}}
+                    {{end}}">
+                    
+                    <div style="flex: 1;">
+                        <div style="font-size: 0.9rem; color: var(--subtext-color);">{{.Category}}</div>
+                        <strong>{{.Text}}</strong>
+                    </div>
+                    
+                    <div class="pick-result">
+                        {{if .UserPrediction}}
+                            {{if eq .Type "select"}}
+                                {{$selID := .UserPrediction.SelectedOptionID}}
+                                {{range .Options}}
+                                    {{if eq (printf "%d" .ID) (printf "%d" $selID)}}{{.Text}}{{end}}
+                                {{end}}
+                            {{else}}
+                                {{.UserPrediction.TextInput}}
+                            {{end}}
+
+                            {{if eq .Status "RESOLVED"}}
+                                {{if .UserPrediction.IsCorrect}}
+                                    <span class="badge-correct">✔</span>
+                                {{else}}
+                                    <span class="badge-wrong">✘</span>
+                                {{end}}
+                            {{end}}
+                        {{else}}
+                            <span style="color: var(--subtext-color);">No Pick</span>
+                        {{end}}
+                    </div>
+                </div>
+                {{end}}
+            </div>
+        {{end}}
+    </div>
+
+    <script>
+        function toggleDrawer() {
+            const drawer = document.getElementById('drawer');
+            const overlay = document.getElementById('overlay');
+            if (drawer.classList.contains('open')) {
+                drawer.classList.remove('open');
+                overlay.classList.remove('open');
+            } else {
+                drawer.classList.add('open');
+                overlay.classList.add('open');
+            }
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+        }
+
+        function toggleEdit() {
+            const form = document.getElementById('edit-form-container');
+            if (form.style.display === 'none') {
+                form.style.display = 'block';
+            } else {
+                form.style.display = 'none';
+            }
+        }
+    </script>
 </body>
 </html>

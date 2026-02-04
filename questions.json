@@ -152,7 +152,7 @@
     ]
   },
   {
-    "text": "Will a quarterback score a touchdown?",
+    "text": "Will a quarterback score a rushing touchdown?",
     "category": "Player Stats",
     "options": [
       {"text": "Yes", "color": "#28a745"},

@@ -12,6 +12,20 @@ import (
 	"time"
 )
 
+var AllowedRooms = []string{"FAMILY", "BRAD", "FRIENDS", "CROSSFIT"}
+
+var funcMap = template.FuncMap{
+	"hasRoom": func(currentRooms string, roomToCheck string) bool {
+		parts := strings.Split(currentRooms, ",")
+		for _, p := range parts {
+			if strings.TrimSpace(p) == roomToCheck {
+				return true
+			}
+		}
+		return false
+	},
+}
+
 // -- Data Structures --
 
 type PageData struct {
@@ -67,7 +81,7 @@ type PredictionRequest struct {
 	TextInput  string `json:"text_input"`
 }
 
-var templates = template.Must(template.ParseGlob("templates/*.html"))
+var templates = template.Must(template.New("T").Funcs(funcMap).ParseGlob("templates/*.html"))
 
 func main() {
 	InitDB("./game.db")
@@ -84,6 +98,7 @@ func main() {
 	http.HandleFunc("/admin/resolve", handleResolve)
 	http.HandleFunc("/admin/state", handleGameState)
 	http.HandleFunc("/admin/users", handleAdminUsers)
+	http.HandleFunc("/user/update", handleUserUpdate)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	port := ":4884"
@@ -116,7 +131,6 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 
 	// Fetch ALL Questions
 	var questions []QuestionData
-	// Note: We don't fetch CorrectTextInput here usually, but we can to be consistent
 	rows, err := db.Query("SELECT id, text, category, status, type, image_url, correct_option_id FROM questions ORDER BY id ASC")
 	if err != nil { http.Error(w, "DB Error", 500); return }
 	defer rows.Close()
@@ -201,7 +215,6 @@ func handleUserProfile(w http.ResponseWriter, r *http.Request) {
 	db.QueryRow("SELECT username, total_score FROM users WHERE id = ?", targetID).Scan(&targetUser.Username, &targetUser.TotalScore)
 
 	questions := []QuestionData{}
-	// Updated Query to fetch CorrectTextInput for the profile view
 	rows, _ := db.Query("SELECT id, text, category, status, type, image_url, correct_option_id, correct_text_input FROM questions ORDER BY id ASC")
 	defer rows.Close()
 	for rows.Next() {
@@ -240,8 +253,8 @@ func handleUserProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render(w, "profile.html", struct {
-		User *User; TargetUser *User; Questions []QuestionData; GameStatus string
-	}{currentUser, targetUser, questions, gameStatus})
+		User *User; TargetUser *User; Questions []QuestionData; GameStatus string; AllowedRooms []string
+	}{currentUser, targetUser, questions, gameStatus, nil})
 }
 
 func handleLeaderboardAPI(w http.ResponseWriter, r *http.Request) {
@@ -309,56 +322,42 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	pin := r.FormValue("pin")
 	
-	// -- Room Code Validation & Formatting --
 	inputRooms := r.FormValue("room_code")
 	var validatedRooms []string
 	
-	// Allowed rooms list
-	allowed := map[string]bool{
-		"FAMILY": true,
-		"BRAD":   true,
-		"FRIENDS": true,
-		"CROSSFIT": true,
+	allowedMap := make(map[string]bool)
+	for _, room := range AllowedRooms {
+		allowedMap[room] = true
 	}
+
 	parts := strings.Split(inputRooms, ",")
 	for _, p := range parts {
 		clean := strings.ToUpper(strings.TrimSpace(p))
-		if allowed[clean] {
+		if allowedMap[clean] {
 			validatedRooms = append(validatedRooms, clean)
 		}
 	}
 	
-	// Strict Requirement: Must have at least one valid room
-	// This handles both empty inputs and inputs with invalid codes
 	if len(validatedRooms) == 0 {
 		http.Redirect(w, r, "/?error=invalid_room", 302)
 		return
 	}
 
-	// Join back to string (No default to MAIN anymore)
 	roomCode := strings.Join(validatedRooms, ",")
-	// ----------------------------------------
 
 	var userID int
 	var pinHash string
-	// Check if user exists (Case Insensitive Lookup using COLLATE NOCASE)
 	if err := db.QueryRow("SELECT id, pin_hash FROM users WHERE username = ? COLLATE NOCASE", username).Scan(&userID, &pinHash); err == nil {
-		// User exists
-		// If PIN is set and doesn't match, reject
 		if pinHash != "" && pinHash != pin {
 			http.Redirect(w, r, "/?error=invalid_pin", 302)
 			return
 		}
-
-		// If PIN was reset (empty), update it
 		if pinHash == "" {
 			db.Exec("UPDATE users SET pin_hash = ? WHERE id = ?", pin, userID)
 		}
-
-		// Update room code for existing user
+		// Update room code
 		db.Exec("UPDATE users SET room_code = ? WHERE id = ?", roomCode, userID)
 	} else {
-		// Create new user
 		res, _ := db.Exec("INSERT INTO users (username, pin_hash, room_code) VALUES (?, ?, ?)", username, pin, roomCode)
 		id, _ := res.LastInsertId()
 		userID = int(id)
@@ -376,6 +375,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	keys, ok := r.URL.Query()["key"]
 	if !ok || len(keys[0]) < 1 || keys[0] != "touchdown" { http.Error(w, "Forbidden", 403); return }
 	
+	// ... (Question fetching logic remains the same) ...
 	var questions []QuestionData
 	rows, _ := db.Query("SELECT id, text, category, status, type, image_url, correct_option_id, correct_text_input FROM questions ORDER BY id ASC")
 	defer rows.Close()
@@ -399,7 +399,6 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		questions = append(questions, q)
 	}
 
-	// Fetch Users
 	var users []User
 	uRows, err := db.Query("SELECT id, username, room_code, total_score FROM users ORDER BY username ASC")
 	if err == nil {
@@ -411,11 +410,13 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Pass AllowedRooms to the template
 	render(w, "admin.html", struct {
-		Questions  []QuestionData
-		GameStatus string
-		Users      []User
-	}{questions, getGameStatus(), users})
+		Questions    []QuestionData
+		GameStatus   string
+		Users        []User
+		AllowedRooms []string
+	}{questions, getGameStatus(), users, AllowedRooms})
 }
 
 func handleResolve(w http.ResponseWriter, r *http.Request) {
@@ -441,7 +442,6 @@ func handleResolve(w http.ResponseWriter, r *http.Request) {
 		db.Exec("UPDATE questions SET status='RESOLVED', correct_option_id=?, correct_text_input=? WHERE id=?", optID, txtVal, req.QuestionID)
 	}
 	
-	// Recalculate scores (Only counts matching OptionIDs, ignores text inputs for score)
 	db.Exec(`UPDATE users SET total_score = (SELECT COUNT(*) FROM predictions p JOIN questions q ON p.question_id = q.id WHERE p.user_id = users.id AND q.status = 'RESOLVED' AND p.selected_option_id = q.correct_option_id)`)
 	
 	w.Header().Set("Content-Type", "application/json")
@@ -471,56 +471,40 @@ func handleAdminUsers(w http.ResponseWriter, r *http.Request) {
 
 	if action == "reset_pin" {
 		_, err := db.Exec("UPDATE users SET pin_hash = '' WHERE id = ?", userID)
-		if err != nil {
-			log.Println(err)
-			http.Error(w, "DB Error", 500)
-			return
-		}
+		if err != nil { log.Println(err); http.Error(w, "DB Error", 500); return }
+		
 	} else if action == "delete" {
-		// Delete predictions first
 		_, err := db.Exec("DELETE FROM predictions WHERE user_id = ?", userID)
-		if err != nil {
-			log.Println(err)
-			http.Error(w, "DB Error", 500)
-			return
-		}
-
+		if err != nil { log.Println(err); http.Error(w, "DB Error", 500); return }
+		
 		_, err = db.Exec("DELETE FROM users WHERE id = ?", userID)
+		if err != nil { log.Println(err); http.Error(w, "DB Error", 500); return }
+		
+	} else if action == "update_room" {
+		r.ParseForm()
+		selectedRooms := r.Form["room_code"]
+
+		var validated []string
+		for _, s := range selectedRooms {
+			for _, a := range AllowedRooms {
+				if s == a {
+					validated = append(validated, s)
+					break
+				}
+			}
+		}
+
+		finalRoom := strings.Join(validated, ",")
+		_, err = db.Exec("UPDATE users SET room_code = ? WHERE id = ?", finalRoom, userID)
 		if err != nil {
 			log.Println(err)
 			http.Error(w, "DB Error", 500)
 			return
 		}
-	} else if action == "update_room" {
-		// Update Room Logic
-		rawRoom := r.FormValue("room_code")
-		allowed := map[string]bool{"FAMILY": true, "BRAD": true}
-		var validatedRooms []string
-
-		parts := strings.Split(rawRoom, ",")
-		for _, p := range parts {
-			clean := strings.ToUpper(strings.TrimSpace(p))
-			if allowed[clean] {
-				validatedRooms = append(validatedRooms, clean)
-			}
-		}
-
-		if len(validatedRooms) > 0 {
-			finalRoom := strings.Join(validatedRooms, ",")
-			_, err = db.Exec("UPDATE users SET room_code = ? WHERE id = ?", finalRoom, userID)
-			if err != nil {
-				log.Println(err)
-				http.Error(w, "DB Error", 500)
-				return
-			}
-		}
+		
 	} else if action == "update_username" {
-		// NEW: Update Username Logic
 		newUsername := strings.TrimSpace(r.FormValue("new_username"))
-		if newUsername == "" {
-			http.Error(w, "Username cannot be empty", 400)
-			return
-		}
+		if newUsername == "" { http.Error(w, "Username cannot be empty", 400); return }
 
 		_, err := db.Exec("UPDATE users SET username = ? WHERE id = ?", newUsername, userID)
 		if err != nil {
@@ -534,6 +518,51 @@ func handleAdminUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/admin?key=touchdown", 302)
+}
+
+func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost { http.Error(w, "Method Not Allowed", 405); return }
+
+	user := getUser(r)
+	if user == nil { http.Redirect(w, r, "/", 302); return }
+
+	// 1. Update Username
+	newUsername := strings.TrimSpace(r.FormValue("username"))
+	if newUsername != "" {
+		_, err := db.Exec("UPDATE users SET username = ? WHERE id = ?", newUsername, user.ID)
+		if err != nil {
+			log.Println("Error updating username:", err)
+		}
+	}
+
+	// 2. Update Room Codes
+	rawRooms := r.FormValue("room_codes")
+	
+	// Re-use global allowed list for validation
+	allowedMap := make(map[string]bool)
+	for _, room := range AllowedRooms {
+		allowedMap[room] = true
+	}
+
+	var validatedRooms []string
+	parts := strings.Split(rawRooms, ",")
+	for _, p := range parts {
+		clean := strings.ToUpper(strings.TrimSpace(p))
+		if allowedMap[clean] {
+			validatedRooms = append(validatedRooms, clean)
+		}
+	}
+	
+	// We allow users to be in "no rooms" (Global only) if they want, 
+	// or they can re-enter codes.
+	finalRoomCode := strings.Join(validatedRooms, ",")
+	
+	_, err := db.Exec("UPDATE users SET room_code = ? WHERE id = ?", finalRoomCode, user.ID)
+	if err != nil {
+		log.Println("Error updating rooms:", err)
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/user/%d", user.ID), 302)
 }
 
 func render(w http.ResponseWriter, tmpl string, data interface{}) {

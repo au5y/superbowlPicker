@@ -128,7 +128,7 @@
         const error = params.get('error');
         const errDiv = document.getElementById('error-msg');
         if (error === 'invalid_room') {
-            errDiv.textContent = "Invalid Room Code. Allowed: FAMILY, BRAD.";
+            errDiv.textContent = "Invalid Room Code. Ask Austin for the correct code.";
             errDiv.style.display = 'block';
         } else if (error === 'invalid_pin') {
             errDiv.textContent = "Incorrect PIN. Please try again.";
