@@ -14,23 +14,26 @@
         .drawer-header { padding: 20px; border-bottom: 1px solid var(--border-color); font-size: 1.2rem; font-weight: bold; color: var(--heading-color); display: flex; justify-content: space-between; align-items: center; }
         .drawer-nav a, .drawer-nav button.theme-toggle { display: block; padding: 15px 20px; width: 100%; text-align: left; box-sizing: border-box; color: var(--text-color); text-decoration: none; border-bottom: 1px solid var(--hover-bg); background: none; border: none; font-size: 1rem; cursor: pointer; }
         .drawer-nav a:hover, .drawer-nav button:hover { background: var(--hover-bg); }
-        
         .fixed-menu-btn { position: fixed; top: 15px; left: 15px; z-index: 1100; background: rgba(255,255,255,0.8); backdrop-filter: blur(4px); border: 1px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; box-shadow: 0 2px 5px var(--shadow-color); color: var(--text-color); }
 
         .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 20px; }
         table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 8px; overflow: hidden; }
         th { background: var(--hover-bg); padding: 15px; text-align: left; color: var(--heading-color); }
-        td { padding: 15px; border-bottom: 1px solid var(--border-color); color: var(--text-color); vertical-align: middle; }
+        td { padding: 12px 15px; border-bottom: 1px solid var(--border-color); color: var(--text-color); vertical-align: middle; }
         tr:hover { background: var(--hover-bg); cursor: pointer; }
-        .score-cell { font-size: 1.2rem; font-weight: bold; color: var(--accent-color); }
-        .rank-cell { font-weight: bold; color: var(--subtext-color); width: 50px; }
+        .score-cell { font-size: 1.1rem; font-weight: bold; color: var(--accent-color); }
+        .rank-cell { font-weight: bold; color: var(--subtext-color); width: 40px; }
         
         .scope-btn { padding: 8px 12px; cursor: pointer; border: none; border-radius: 4px; margin-right: 5px; font-weight: bold; transition: all 0.2s; }
         .scope-btn.active { background: var(--nav-active-bg); color: var(--nav-active-text); }
         .scope-btn.inactive { background: var(--hover-bg); color: var(--text-color); font-weight: normal; }
 
-        .user-icon { margin-right: 8px; font-size: 1.2rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;}
-        .user-icon img { width: 100%; height: 100%; object-fit: contain; }
+        .user-avatar-small { 
+            margin-right: 12px; display: inline-flex; align-items: center; justify-content: center; 
+            width: 32px; height: 32px; border-radius: 50%; background: var(--input-bg);
+            border: 1px solid var(--border-color); overflow: hidden; font-size: 1.1rem;
+        }
+        .user-avatar-small img { width: 100%; height: 100%; object-fit: cover; }
     </style>
 </head>
 <body>
@@ -48,11 +51,11 @@
             <button onclick="toggleDrawer()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color: var(--text-color);">&times;</button>
         </div>
         <div class="drawer-nav">
-            <a href="/">🏈 My Picks</a>
-            <a href="/leaderboard">🏆 Leaderboard</a>
-            <a href="/user/{{.User.ID}}">👤 My Profile</a>
-            {{if .User.IsAdmin}}<a href="/admin" style="color: var(--accent-color); font-weight: bold;">🔧 Admin Panel</a>{{end}}
-            <button class="theme-toggle" onclick="toggleTheme()">🌗 Toggle Dark Mode</button>
+            <a href="/">My Picks</a>
+            <a href="/leaderboard">Leaderboard</a>
+            <a href="/user/{{.User.ID}}">My Profile</a>
+            {{if .User.IsAdmin}}<a href="/admin" style="color: var(--accent-color); font-weight: bold;">Admin Panel</a>{{end}}
+            <button class="theme-toggle" onclick="toggleTheme()">Toggle Dark Mode</button>
             <hr style="border:0; border-top:1px solid var(--border-color);">
             <a href="/logout" style="color: #C60C30;">Log Out</a>
         </div>
@@ -61,17 +64,14 @@
     <div style="max-width: 800px; margin: 0 auto; padding-top: 60px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap: wrap; gap: 10px;">
             <h2 style="margin:0;">🏆 Live Standings</h2>
-            
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <div id="room-controls"></div>
-            </div>
+            <div id="room-controls"></div>
         </div>
 
         <div class="table-container">
             <table id="lb-table">
                 <thead>
                     <tr>
-                        <th style="width: 50px;">#</th>
+                        <th style="width: 40px;">#</th>
                         <th>Player</th>
                         <th>Tie Breaker</th>
                         <th style="text-align: right;">Score</th>
@@ -88,27 +88,13 @@
         const rawRoomStr = "{{.User.RoomCode}}";
         const userRooms = rawRoomStr.split(',').filter(r => r.trim() !== "");
         const roomAliases = {{.RoomAliases}};
-
         let currentRoom = userRooms.length > 0 ? userRooms[0] : "MAIN";
         let isGlobal = false;
 
-        function toggleDrawer() {
-            const drawer = document.getElementById('drawer');
-            const overlay = document.getElementById('overlay');
-            if (drawer.classList.contains('open')) {
-                drawer.classList.remove('open');
-                overlay.classList.remove('open');
-            } else {
-                drawer.classList.add('open');
-                overlay.classList.add('open');
-            }
-        }
-
+        function toggleDrawer() { document.getElementById('drawer').classList.toggle('open'); document.getElementById('overlay').classList.toggle('open'); }
         function toggleTheme() {
-            const current = document.documentElement.getAttribute('data-theme');
-            const next = current === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', next);
-            localStorage.setItem('theme', next);
+            const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next); localStorage.setItem('theme', next);
         }
 
         function initControls() {
@@ -131,81 +117,57 @@
         function setScope(room, global) {
             isGlobal = global;
             if (room) currentRoom = room;
-            const titleEl = document.querySelector('h2');
-            if(global) titleEl.textContent = "🏆 Global Standings";
-            else titleEl.textContent = "🏆 " + (roomAliases[currentRoom] || currentRoom);
-            initControls(); 
-            loadLeaderboard();
+            document.querySelector('h2').textContent = global ? "🏆 Global Standings" : "🏆 " + (roomAliases[currentRoom] || currentRoom);
+            initControls(); loadLeaderboard();
         }
 
         function loadLeaderboard() {
             let url = '/api/leaderboard';
             if (isGlobal) { url += '?scope=global'; } else { url += '?room=' + encodeURIComponent(currentRoom); }
-
-            fetch(url)
-            .then(res => res.json())
-            .then(data => {
+            fetch(url).then(res => res.json()).then(data => {
                 const tbody = document.getElementById('lb-body');
                 tbody.innerHTML = '';
-                if (!data || data.length === 0) {
-                     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">No players found.</td></tr>';
-                     return;
-                }
+                if (!data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">No players found.</td></tr>'; return; }
                 data.forEach((user, index) => {
                     const tr = document.createElement('tr');
                     tr.onclick = () => window.location.href = '/user/' + user.id;
                     
-                    // 1. Rank
                     const tdRank = document.createElement('td');
                     tdRank.className = 'rank-cell';
                     tdRank.textContent = index + 1;
                     tr.appendChild(tdRank);
 
-                    // 2. Player (Icon + Name)
                     const tdPlayer = document.createElement('td');
-                    
-                    // Icon
                     const iconSpan = document.createElement('span');
-                    iconSpan.className = 'user-icon';
+                    iconSpan.className = 'user-avatar-small';
                     if (user.icon && user.icon.length > 15) {
                         const img = document.createElement('img');
                         img.src = user.icon;
                         iconSpan.appendChild(img);
-                    } else {
-                        iconSpan.textContent = user.icon || '🏈';
-                    }
+                    } else { iconSpan.textContent = user.icon || '🏈'; }
                     tdPlayer.appendChild(iconSpan);
 
-                    // Name with Color
                     const strong = document.createElement('strong');
                     strong.textContent = user.username;
-                    if (user.color_hex && user.color_hex !== '#002244') {
-                        strong.style.color = user.color_hex;
-                    }
+                    if (user.color_hex && user.color_hex !== '#002244') { strong.style.color = user.color_hex; }
                     tdPlayer.appendChild(strong);
                     tr.appendChild(tdPlayer);
 
-                    // 3. Tie Breaker
                     const tdTie = document.createElement('td');
                     tdTie.style.color = 'var(--subtext-color)';
                     tdTie.textContent = user.tie_breaker;
                     tr.appendChild(tdTie);
 
-                    // 4. Score
                     const tdScore = document.createElement('td');
                     tdScore.className = 'score-cell';
                     tdScore.style.textAlign = 'right';
                     tdScore.textContent = user.total_score;
                     tr.appendChild(tdScore);
-
                     tbody.appendChild(tr);
                 });
             });
         }
-
-        initControls();
-        loadLeaderboard();
-        setInterval(loadLeaderboard, 5000);
+        initControls(); loadLeaderboard(); setInterval(loadLeaderboard, 5000);
     </script>
 </body>
 </html>

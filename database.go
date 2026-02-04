@@ -12,16 +12,8 @@ import (
 
 var db *sql.DB
 
-// Generic Football Helmet Icon (Public Domain SVG)
-const DefaultIconURL = "https://raw.githubusercontent.com/googlefonts/noto-emoji/main/svg/emoji_u1f3c8.svg"
-
-// Note: Since a specific "Helmet" emoji doesn't exist, and you asked for a helmet,
-// I am using a clean SVG placeholder. For now, let's use the actual Football object
-// as the database default to be safe, but the UI will render it nicely.
-// OR, we can use a specific hosted image. Let's stick to the Football for the DB default
-// but styling will make it look like a token.
-// I will use a stable external URL for a helmet icon.
-const HelmetIconURL = "https://www.svgrepo.com/show/8996/american-football-helmet.svg"
+// Generic Football Helmet Icon (Local Asset)
+const HelmetIconURL = "/static/assets/helmet.svg"
 
 type SeedQuestion struct {
 	Text     string       `json:"text"`
@@ -124,6 +116,14 @@ func runMigrations() {
 
 	// 5. Fix old default '🏈' to Helmet URL if preferred
 	db.Exec("UPDATE users SET icon = ? WHERE icon = '🏈'", HelmetIconURL)
+
+	// 6. Fix old remote URL to local asset (Migration for v2.5_dev update)
+	oldRemoteURL := "https://www.svgrepo.com/show/8996/american-football-helmet.svg"
+	db.Exec("UPDATE users SET icon = ? WHERE icon = ?", HelmetIconURL, oldRemoteURL)
+
+	// 7. Fix existing remote team URLs to local assets
+	// This replaces the ESPN CDN prefix with the local static path for all users
+	db.Exec("UPDATE users SET icon = REPLACE(icon, 'https://a.espncdn.com/i/teamlogos/nfl/500/', '/static/assets/') WHERE icon LIKE 'https://a.espncdn.com/i/teamlogos/nfl/500/%'")
 }
 
 func columnExists(tableName, columnName string) bool {

@@ -9,7 +9,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
     <style>
-        .profile-header { background: var(--card-bg); padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center; box-shadow: 0 2px 4px var(--shadow-color); border-top: 5px solid var(--accent-color); }
+        .profile-header { background: var(--card-bg); padding: 30px 20px; border-radius: 8px; margin-bottom: 20px; text-align: center; box-shadow: 0 2px 4px var(--shadow-color); border-top: 5px solid var(--accent-color); position: relative; overflow: hidden; }
         .locked-overlay { padding: 50px; text-align: center; background: var(--locked-bg); border-radius: 8px; color: var(--subtext-color); }
         .pick-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--card-bg); margin-bottom: 10px; border-radius: 6px; flex-wrap: wrap; gap: 10px; box-shadow: 0 1px 3px var(--shadow-color); border: 1px solid var(--border-color); }
         
@@ -21,26 +21,47 @@
         .badge-correct { color: #28a745; }
         .badge-wrong { color: #dc3545; }
 
-        /* Icon Grid Styles */
-        .icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 10px; margin-top: 5px; }
+        /* Avatar Styling */
+        .big-avatar {
+            width: 100px; height: 100px; margin: 0 auto 15px auto;
+            border-radius: 50%; border: 4px solid var(--border-color);
+            background: var(--input-bg);
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; font-size: 3rem;
+            box-shadow: 0 4px 10px var(--shadow-color);
+        }
+        .big-avatar img { width: 100%; height: 100%; object-fit: contain; padding: 10%; box-sizing: border-box; }
+
+        /* Icon Grid */
+        .icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(45px, 1fr)); gap: 12px; margin-top: 5px; }
         .icon-option { cursor: pointer; position: relative; }
         .icon-option input { position: absolute; opacity: 0; width: 0; height: 0; }
         .icon-display { 
             display: flex; align-items: center; justify-content: center;
-            height: 50px; padding: 5px; border: 2px solid var(--border-color); 
-            border-radius: 8px; background: var(--input-bg); transition: all 0.2s;
-            font-size: 1.5rem;
+            width: 45px; height: 45px; border: 2px solid var(--border-color); 
+            border-radius: 50%; background: var(--input-bg); transition: all 0.2s;
+            font-size: 1.5rem; overflow: hidden;
         }
-        .icon-display img { width: 100%; height: 100%; object-fit: contain; }
+        .icon-display img { width: 100%; height: 100%; object-fit: cover; }
         
         .icon-option input:checked + .icon-display {
             border-color: var(--accent-color);
-            background: var(--hover-bg);
-            transform: scale(1.1);
-            box-shadow: 0 0 5px var(--shadow-color);
+            transform: scale(1.15);
+            box-shadow: 0 0 8px var(--shadow-color);
+            z-index: 2;
         }
 
-        /* Drawer Styles */
+        /* Color Swatches */
+        .color-grid { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px; }
+        .color-swatch {
+            width: 35px; height: 35px; border-radius: 50%; cursor: pointer;
+            border: 2px solid transparent; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+        .color-swatch:hover { transform: scale(1.1); }
+        .color-swatch.active { border-color: var(--text-color); transform: scale(1.1); box-shadow: 0 0 5px var(--shadow-color); }
+
+        /* Drawer */
         .drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 900; display: none; }
         .drawer-overlay.open { display: block; }
         .drawer { position: fixed; top: 0; left: 0; width: 280px; height: 100%; background: var(--drawer-bg); z-index: 1000; transition: transform 0.3s ease; box-shadow: 2px 0 10px var(--shadow-color); padding-top: 20px; transform: translateX(-100%); }
@@ -67,11 +88,11 @@
             <button onclick="toggleDrawer()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color: var(--text-color);">&times;</button>
         </div>
         <div class="drawer-nav">
-            <a href="/">🏈 My Picks</a>
-            <a href="/leaderboard">🏆 Leaderboard</a>
-            <a href="/user/{{.User.ID}}">👤 My Profile</a>
-            {{if .User.IsAdmin}}<a href="/admin" style="color: var(--accent-color); font-weight: bold;">🔧 Admin Panel</a>{{end}}
-            <button class="theme-toggle" onclick="toggleTheme()">🌗 Toggle Dark Mode</button>
+            <a href="/">My Picks</a>
+            <a href="/leaderboard">Leaderboard</a>
+            <a href="/user/{{.User.ID}}">My Profile</a>
+            {{if .User.IsAdmin}}<a href="/admin" style="color: var(--accent-color); font-weight: bold;">Admin Panel</a>{{end}}
+            <button class="theme-toggle" onclick="toggleTheme()">Toggle Dark Mode</button>
             <hr style="border:0; border-top:1px solid var(--border-color);">
             <a href="/logout" style="color: #C60C30;">Log Out</a>
         </div>
@@ -89,21 +110,22 @@
             </div>
         {{else}}
             <div class="profile-header" style="border-top-color: {{.TargetUser.ColorHex}};">
-                <!-- Smart Icon Render -->
-                <div style="font-size: 3rem; display: flex; justify-content: center;">
+                
+                <div class="big-avatar" style="border-color: {{.TargetUser.ColorHex}};">
                     {{if gt (len .TargetUser.Icon) 15}}
-                        <img src="{{.TargetUser.Icon}}" style="width: 80px; height: 80px; object-fit: contain;">
+                        <img src="{{.TargetUser.Icon}}">
                     {{else}}
                         {{.TargetUser.Icon}}
                     {{end}}
                 </div>
                 
-                <h2 style="margin: 5px 0;">{{.TargetUser.Username}}</h2>
-                <div style="font-size: 2rem; font-weight: bold; color: var(--accent-color);">{{.TargetUser.TotalScore}} Points</div>
-                <div style="margin-top: 5px; color: var(--subtext-color);">
-                    Group(s): 
+                <h2 style="margin: 5px 0; font-size: 2rem; color: {{.TargetUser.ColorHex}};">{{.TargetUser.Username}}</h2>
+                <div style="font-size: 1.5rem; font-weight: bold; color: var(--subtext-color);">{{.TargetUser.TotalScore}} Pts</div>
+                
+                <div style="margin-top: 10px; color: var(--subtext-color); font-size: 0.9rem;">
+                    Playing in: 
                     <strong>
-                        {{if eq .TargetUser.RoomCode ""}}None{{else}}
+                        {{if eq .TargetUser.RoomCode ""}}Global Only{{else}}
                             {{$aliases := .RoomAliases}}
                             {{range $i, $code := split .TargetUser.RoomCode ","}}
                                 {{if gt $i 0}}, {{end}}
@@ -121,19 +143,25 @@
                 </button>
                 
                 <div id="edit-form-container" style="display: none; margin-top: 15px; background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); text-align: left;">
-                    <form action="/user/update" method="POST" style="display: grid; gap: 15px;">
+                    <form action="/user/update" method="POST" style="display: grid; gap: 20px;">
+                        
+                        <!-- 1. Avatar -->
                         <div>
-                            <label style="display:block; font-size:0.9rem; color:var(--subtext-color); margin-bottom:5px;">Username</label>
-                            <input type="text" name="username" value="{{.User.Username}}" maxlength="20" style="width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color); border-radius: 4px;">
-                        </div>
-
-                        <!-- Icon Selector -->
-                        <div>
-                            <label style="display:block; font-size:0.9rem; color:var(--subtext-color); margin-bottom:5px;">Choose Icon</label>
+                            <label style="display:block; font-size:0.85rem; font-weight:bold; color:var(--subtext-color); margin-bottom:8px; text-transform:uppercase;">Select Avatar</label>
                             
-                            <!-- Emojis -->
                             <div class="icon-grid">
-                                {{range $i, $emoji := split "🏈,🍺,🍕,🤡,👑,🌭,🦅,🧀,🚀,💎,🏆,🍗,🌶️,🍔,🇺🇸" ","}}
+                                <!-- Requested Priority Teams -->
+                                {{range $team := split "ne,sea" ","}}
+                                <label class="icon-option">
+                                    <input type="radio" name="icon" value="/static/assets/{{$team}}.png" {{if eq $.User.Icon (printf "/static/assets/%s.png" $team)}}checked{{end}}>
+                                    <div class="icon-display">
+                                        <img src="/static/assets/{{$team}}.png" alt="{{$team}}">
+                                    </div>
+                                </label>
+                                {{end}}
+
+                                <!-- Emojis -->
+                                {{range $i, $emoji := split "🏈,🍺,🍕,🤡,👑,🚀,💎,🏆,🇺🇸" ","}}
                                 <label class="icon-option">
                                     <input type="radio" name="icon" value="{{$emoji}}" {{if eq $.User.Icon $emoji}}checked{{end}}>
                                     <div class="icon-display">{{$emoji}}</div>
@@ -141,31 +169,44 @@
                                 {{end}}
                             </div>
 
-                            <!-- Teams -->
-                            <div style="margin-top: 15px; font-size:0.8rem; color:var(--subtext-color); border-top:1px solid var(--border-color); padding-top:5px;">NFL TEAMS</div>
+                            <div style="margin-top: 10px; font-size:0.75rem; color:var(--subtext-color); font-weight:bold;">ALL NFL TEAMS</div>
                             <div class="icon-grid">
-                                {{range $team := split "kc,sf,phi,bal,det,buf,cin,dal,ne,sea,gb,pit,lv,chi,mia,nyg" ","}}
+                                {{range $team := split "ari,atl,bal,buf,car,chi,cin,cle,dal,den,det,gb,hou,ind,jax,kc,lv,lac,lar,mia,min,no,nyg,nyj,phi,pit,sf,tb,ten,was" ","}}
                                 <label class="icon-option">
-                                    <input type="radio" name="icon" value="https://a.espncdn.com/i/teamlogos/nfl/500/{{$team}}.png" {{if eq $.User.Icon (printf "https://a.espncdn.com/i/teamlogos/nfl/500/%s.png" $team)}}checked{{end}}>
+                                    <input type="radio" name="icon" value="/static/assets/{{$team}}.png" {{if eq $.User.Icon (printf "/static/assets/%s.png" $team)}}checked{{end}}>
                                     <div class="icon-display">
-                                        <img src="https://a.espncdn.com/i/teamlogos/nfl/500/{{$team}}.png" alt="{{$team}}">
+                                        <img src="/static/assets/{{$team}}.png" alt="{{$team}}">
                                     </div>
                                 </label>
                                 {{end}}
                             </div>
                         </div>
 
+                        <!-- 2. Color -->
                         <div>
-                            <label style="display:block; font-size:0.9rem; color:var(--subtext-color); margin-bottom:5px;">Profile Color</label>
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <input type="color" name="color" value="{{.User.ColorHex}}" style="width: 50px; height: 40px; padding: 0; border: none; background: none; cursor: pointer;">
-                                <span style="font-size: 0.9rem; color: var(--subtext-color);">This color appears on the leaderboard.</span>
+                            <label style="display:block; font-size:0.85rem; font-weight:bold; color:var(--subtext-color); margin-bottom:8px; text-transform:uppercase;">Profile Color</label>
+                            <div class="color-grid">
+                                <!-- Pre-defined Swatches -->
+                                {{range $c := split "#002244,#C60C30,#69BE28,#000000,#008E97,#FFB612,#4F2683,#D50A0A,#0B162A,#101820" ","}}
+                                <div class="color-swatch" style="background-color: {{$c}};" onclick="selectColor('{{$c}}', this)"></div>
+                                {{end}}
+                                <!-- Custom Input (Hidden but functional) -->
+                                <label class="color-swatch" style="background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red); display:flex; align-items:center; justify-content:center;">
+                                    <input type="color" id="native-color-picker" name="color" value="{{.User.ColorHex}}" style="opacity:0; width:100%; height:100%; cursor:pointer;" onchange="selectColor(this.value, this.parentElement)">
+                                </label>
                             </div>
+                            <input type="hidden" id="final-color-input" name="final_color" value="{{.User.ColorHex}}">
+                        </div>
+
+                        <!-- 3. Details -->
+                        <div>
+                            <label style="display:block; font-size:0.85rem; font-weight:bold; color:var(--subtext-color); margin-bottom:8px; text-transform:uppercase;">Username</label>
+                            <input type="text" name="username" value="{{.User.Username}}" maxlength="20" style="width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color); border-radius: 4px;">
                         </div>
 
                         <div>
-                            <label style="display:block; font-size:0.9rem; color:var(--subtext-color); margin-bottom:5px;">Group Codes (Comma Separated)</label>
-                            <input type="text" name="room_codes" value="{{.User.RoomCode}}" placeholder="Group Code" style="text-transform: uppercase; width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color); border-radius: 4px;">
+                            <label style="display:block; font-size:0.85rem; font-weight:bold; color:var(--subtext-color); margin-bottom:8px; text-transform:uppercase;">Group Codes</label>
+                            <input type="text" name="room_codes" value="{{.User.RoomCode}}" placeholder="MAIN, FAMILY" style="text-transform: uppercase; width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color); border-radius: 4px;">
                         </div>
 
                         <button type="submit" style="background: var(--accent-color); color: white; padding: 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;">Save Changes</button>
@@ -238,11 +279,34 @@
 
         function toggleEdit() {
             const form = document.getElementById('edit-form-container');
-            if (form.style.display === 'none') {
-                form.style.display = 'block';
-            } else {
-                form.style.display = 'none';
+            form.style.display = (form.style.display === 'none') ? 'block' : 'none';
+        }
+
+        function selectColor(hex, el) {
+            // Update hidden input
+            document.getElementById('final-color-input').value = hex;
+            document.getElementById('native-color-picker').value = hex;
+            
+            // UI Feedback
+            document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+            if(el.classList.contains('color-swatch')) {
+                el.classList.add('active');
             }
+        }
+        
+        // Init active color swatch
+        const initColor = "{{.User.ColorHex}}";
+        document.querySelectorAll('.color-swatch').forEach(s => {
+            // simple check for style match
+            if(s.style.backgroundColor && rgbToHex(s.style.backgroundColor) === initColor.toLowerCase()) {
+                s.classList.add('active');
+            }
+        });
+        
+        function rgbToHex(col) {
+            if(col.charAt(0)=='#') return col;
+            var rgb = col.match(/\d+/g);
+            return '#' + ((1 << 24) + (parseInt(rgb[0]) << 16) + (parseInt(rgb[1]) << 8) + parseInt(rgb[2])).toString(16).slice(1);
         }
     </script>
 </body>

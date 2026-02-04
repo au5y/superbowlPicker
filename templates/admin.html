@@ -15,63 +15,54 @@
             background: var(--card-bg); padding: 20px; border-radius: 8px; 
             box-shadow: 0 2px 10px var(--shadow-color); color: var(--text-color);
         }
+        h1, h2 { font-weight: 600; color: var(--heading-color); }
+
         .controls { 
-            background: var(--hover-bg); padding: 20px; border-radius: 8px; 
+            background: var(--hover-bg); padding: 15px; border-radius: 8px; 
             margin-bottom: 25px; display: flex; justify-content: space-between; 
-            align-items: center; border: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px;
+            align-items: center; border: 1px solid var(--border-color); flex-wrap: wrap; gap: 15px;
         }
         
-        .state-tag { padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
-        .tag-OPEN { background: rgba(40, 167, 69, 0.2); color: #28a745; border: 1px solid #28a745; }
-        .tag-LOCKED { background: rgba(220, 53, 69, 0.2); color: #dc3545; border: 1px solid #dc3545; }
+        .state-tag { padding: 4px 10px; border-radius: 15px; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .tag-OPEN { background: rgba(40, 167, 69, 0.15); color: #28a745; border: 1px solid rgba(40, 167, 69, 0.3); }
+        .tag-LOCKED { background: rgba(220, 53, 69, 0.15); color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.3); }
         
         table { width: 100%; border-collapse: separate; border-spacing: 0; }
-        th { text-align: left; padding: 15px; border-bottom: 2px solid var(--border-color); color: var(--subtext-color); }
-        td { padding: 15px; border-bottom: 1px solid var(--border-color); vertical-align: middle; color: var(--text-color); }
+        th { text-align: left; padding: 12px; border-bottom: 1px solid var(--border-color); color: var(--subtext-color); font-weight: 600; font-size: 0.9rem; text-transform: uppercase; }
+        td { padding: 12px; border-bottom: 1px solid var(--border-color); vertical-align: middle; color: var(--text-color); }
         tr:last-child td { border-bottom: none; }
         
-        .row-RESOLVED { background-color: var(--hover-bg); opacity: 0.8; }
-        .row-RESOLVED .question-title { color: var(--subtext-color); }
+        .row-RESOLVED { background-color: var(--hover-bg); opacity: 0.7; }
+        .row-RESOLVED .question-title { color: var(--subtext-color); text-decoration: line-through; }
         
-        input[type="text"] { padding: 8px; border-radius: 4px; border: 1px solid var(--input-border); width: 100%; max-width: 150px; background: var(--input-bg); color: var(--text-color); }
+        input[type="text"] { padding: 6px; border-radius: 4px; border: 1px solid var(--input-border); width: 100%; max-width: 150px; background: var(--input-bg); color: var(--text-color); }
         
-        button { cursor: pointer; padding: 8px 16px; border-radius: 4px; border: none; font-weight: 600; transition: all 0.2s; }
+        button { cursor: pointer; padding: 6px 12px; border-radius: 4px; border: none; font-size: 0.9rem; transition: all 0.2s; }
         
         .options-grid { display: flex; gap: 8px; flex-wrap: wrap; }
         .btn-option {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             color: var(--text-color);
-            padding: 10px 14px; /* Larger touch target */
-            font-size: 0.9rem;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            padding: 8px 12px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
-        .btn-option:hover {
-            background: var(--hover-bg);
-            border-color: var(--subtext-color);
-            transform: translateY(-1px);
-        }
-        .btn-option.winner {
-            background-color: #28a745; color: white; border-color: #28a745;
-            box-shadow: 0 0 8px rgba(40, 167, 69, 0.4);
-        }
-        .btn-option.loser {
-            opacity: 0.4; background: transparent; border-color: transparent; pointer-events: none;
-        }
+        .btn-option:hover { background: var(--hover-bg); border-color: var(--subtext-color); }
+        .btn-option.winner { background-color: #28a745; color: white; border-color: #28a745; }
+        .btn-option.loser { opacity: 0.5; pointer-events: none; }
         
         .btn-resolve { background: var(--accent-color); color: white; }
-        .btn-resolve:hover { filter: brightness(1.1); }
         
-        .btn-unresolve { background: #dc3545; color: white; opacity: 0.8; font-size: 0.8rem; padding: 6px 12px;}
-        .btn-unresolve:hover { opacity: 1; }
+        .btn-unresolve { background: transparent; color: #dc3545; border: 1px solid #dc3545; font-size: 0.75rem; padding: 4px 8px; }
+        .btn-unresolve:hover { background: #dc3545; color: white; }
         
-        .btn-lock { background: #dc3545; color: white; padding: 10px 20px; }
-        .btn-unlock { background: #28a745; color: white; padding: 10px 20px; }
+        .btn-lock { background: #dc3545; color: white; padding: 8px 16px; }
+        .btn-unlock { background: #28a745; color: white; padding: 8px 16px; }
         
-        .category-pill { font-size: 0.75rem; background: var(--hover-bg); padding: 3px 8px; border-radius: 12px; color: var(--subtext-color); display: inline-block; margin-top: 4px; border: 1px solid var(--border-color); }
+        .category-pill { font-size: 0.7rem; background: var(--hover-bg); padding: 2px 6px; border-radius: 4px; color: var(--subtext-color); display: inline-block; margin-top: 4px; border: 1px solid var(--border-color); }
         .btn-sm { padding: 4px 8px; font-size: 0.8rem; }
 
-        /* Drawer Shared */
+        /* Drawer */
         .drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 900; display: none; }
         .drawer-overlay.open { display: block; }
         .drawer { position: fixed; top: 0; left: 0; width: 280px; height: 100%; background: var(--drawer-bg); z-index: 1000; transition: transform 0.3s ease; box-shadow: 2px 0 10px var(--shadow-color); padding-top: 20px; transform: translateX(-100%); }
@@ -79,22 +70,15 @@
         .drawer-header { padding: 20px; border-bottom: 1px solid var(--border-color); font-size: 1.2rem; font-weight: bold; color: var(--heading-color); display: flex; justify-content: space-between; align-items: center; }
         .drawer-nav a, .drawer-nav button.theme-toggle { display: block; padding: 15px 20px; width: 100%; text-align: left; box-sizing: border-box; color: var(--text-color); text-decoration: none; border-bottom: 1px solid var(--hover-bg); background: none; border: none; font-size: 1rem; cursor: pointer; }
         .drawer-nav a:hover, .drawer-nav button:hover { background: var(--hover-bg); }
-        
         .fixed-menu-btn { position: fixed; top: 15px; left: 15px; z-index: 1100; background: var(--menu-btn-bg); backdrop-filter: blur(4px); border: 1px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; box-shadow: 0 2px 5px var(--shadow-color); color: var(--text-color); }
 
-        /* Responsive Mobile Table */
         @media (max-width: 768px) {
-            .admin-container { padding: 10px; margin-top: 10px; }
+            .admin-container { padding: 10px; margin-top: 50px; }
             table, thead, tbody, th, td, tr { display: block; }
             thead tr { position: absolute; top: -9999px; left: -9999px; }
-            tr { border: 1px solid var(--border-color); margin-bottom: 15px; border-radius: 8px; background: var(--card-bg); padding: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-            td { border: none; position: relative; padding-left: 0; padding-top: 5px; padding-bottom: 15px; border-bottom: 1px solid var(--hover-bg); }
-            td:last-child { border-bottom: 0; padding-bottom: 0; }
-            
-            /* Hide ID Column logic if strict, but here we just flow content */
-            .options-grid { justify-content: flex-start; }
-            
-            h1 { font-size: 1.5rem; }
+            tr { border: 1px solid var(--border-color); margin-bottom: 15px; border-radius: 8px; background: var(--card-bg); padding: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+            td { border: none; position: relative; padding-left: 0; padding-top: 5px; padding-bottom: 10px; }
+            h1 { font-size: 1.4rem; }
         }
     </style>
 </head>
@@ -113,11 +97,11 @@
             <button onclick="toggleDrawer()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color: var(--text-color);">&times;</button>
         </div>
         <div class="drawer-nav">
-            <a href="/">🏈 My Picks</a>
-            <a href="/leaderboard">🏆 Leaderboard</a>
-            <a href="/user/{{.CurrentUser.ID}}">👤 My Profile</a>
-            <a href="/admin" style="color: var(--accent-color); font-weight: bold;">🔧 Admin Panel</a>
-            <button class="theme-toggle" onclick="toggleTheme()">🌗 Toggle Dark Mode</button>
+            <a href="/">My Picks</a>
+            <a href="/leaderboard">Leaderboard</a>
+            <a href="/user/{{.CurrentUser.ID}}">My Profile</a>
+            <a href="/admin" style="color: var(--accent-color); font-weight: bold;">Admin Panel</a>
+            <button class="theme-toggle" onclick="toggleTheme()">Toggle Dark Mode</button>
             <hr style="border:0; border-top:1px solid var(--border-color);">
             <a href="/logout" style="color: #C60C30;">Log Out</a>
         </div>
@@ -125,31 +109,26 @@
 
     <div class="admin-container">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
-            <h1>🏈 Game Control</h1>
+            <h1>Game Control</h1>
             <div>
-                 <a href="/admin/backup" style="text-decoration:none; margin-right: 15px; background: var(--hover-bg); padding: 8px 12px; border-radius: 4px; color: var(--text-color); border: 1px solid var(--border-color); font-size: 0.9rem;">💾 Backup DB</a>
-                 <a href="/" style="text-decoration:none; color: var(--accent-color); font-weight:bold;">← Game</a>
+                 <a href="/admin/backup" style="text-decoration:none; margin-right: 15px; padding: 6px 10px; border-radius: 4px; color: var(--subtext-color); border: 1px solid var(--border-color); font-size: 0.8rem;">💾 Backup</a>
             </div>
         </div>
 
         <div class="controls">
-            <div style="display:flex; align-items:center; gap: 20px; flex-wrap: wrap;">
-                <div>
-                    <div style="font-size: 0.9rem; color: var(--subtext-color); margin-bottom: 5px;">CURRENT STATUS</div>
-                    <span class="state-tag tag-{{.GameStatus}}">{{.GameStatus}}</span>
-                </div>
-                
+            <div style="display:flex; align-items:center; gap: 15px;">
+                <span class="state-tag tag-{{.GameStatus}}">{{.GameStatus}}</span>
                 <form action="/admin/state" method="POST" style="margin:0;">
                     {{if eq .GameStatus "OPEN"}}
-                        <button type="submit" name="status" value="LOCKED" class="btn-lock">🔒 LOCK GAME</button>
+                        <button type="submit" name="status" value="LOCKED" class="btn-lock">Lock Game</button>
                     {{else}}
-                        <button type="submit" name="status" value="OPEN" class="btn-unlock">🔓 UNLOCK GAME</button>
+                        <button type="submit" name="status" value="OPEN" class="btn-unlock">Unlock Game</button>
                     {{end}}
                 </form>
             </div>
 
-            <form action="/admin/refresh" method="POST" style="margin:0;" onsubmit="return confirm('Sync with questions.json? \n- New questions will be ADDED.\n- Missing questions will be DELETED (along with their answers).\n- Existing questions will be UPDATED.');">
-                <button type="submit" style="background: var(--card-bg); border: 2px solid var(--accent-color); color: var(--accent-color); padding: 10px 15px; border-radius: 4px; font-weight: bold; cursor: pointer;">
+            <form action="/admin/refresh" method="POST" style="margin:0;" onsubmit="return confirm('Sync with questions.json? This cannot be undone.');">
+                <button type="submit" style="background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color);">
                     🔄 Sync Questions
                 </button>
             </form>
@@ -158,21 +137,21 @@
         <table>
             <thead>
                 <tr>
-                    <th style="width: 50px;">ID</th>
+                    <th style="width: 40px;">ID</th>
                     <th>Question</th>
-                    <th>Select Winner / Result</th>
-                    <th style="width: 100px; text-align: center;">Action</th>
+                    <th>Select Winner</th>
+                    <th style="width: 80px; text-align: center;">Action</th>
                 </tr>
             </thead>
             <tbody>
                 {{range .Questions}}
                 <tr id="row-{{.ID}}" class="row-{{.Status}}">
-                    <td data-label="ID">#{{.ID}}</td>
-                    <td data-label="Question">
-                        <div class="question-title" style="font-weight:bold;">{{.Text}}</div>
+                    <td>#{{.ID}}</td>
+                    <td>
+                        <div class="question-title" style="font-weight:600;">{{.Text}}</div>
                         <span class="category-pill">{{.Category}}</span>
                     </td>
-                    <td data-label="Selection">
+                    <td>
                         {{$q := .}}
                         {{if eq .Type "select"}}
                             <div class="options-grid">
@@ -188,20 +167,16 @@
                             </div>
                         {{else}}
                             <div style="display: flex; gap: 5px;">
-                                <input type="text" 
-                                       id="input-{{.ID}}" 
-                                       placeholder="Value..." 
-                                       value="{{.CorrectTextInput}}"
-                                       {{if eq .Status "RESOLVED"}}disabled{{end}}>
+                                <input type="text" id="input-{{.ID}}" placeholder="Value" value="{{.CorrectTextInput}}" {{if eq .Status "RESOLVED"}}disabled{{end}}>
                                 {{if ne .Status "RESOLVED"}}
                                     <button onclick="resolveText({{.ID}})" class="btn-resolve">Save</button>
                                 {{end}}
                             </div>
                         {{end}}
                     </td>
-                    <td style="text-align: center;" data-label="Action">
+                    <td style="text-align: center;">
                         {{if eq .Status "RESOLVED"}}
-                            <button onclick="unresolveQuestion({{.ID}})" class="btn-unresolve">UNRESOLVE</button>
+                            <button onclick="unresolveQuestion({{.ID}})" class="btn-unresolve">Reset</button>
                         {{end}}
                     </td>
                 </tr>
@@ -210,14 +185,13 @@
         </table>
 
         <div style="margin-top: 40px; margin-bottom: 20px;">
-            <h2>👥 Player Management</h2>
+            <h2>Player Management</h2>
         </div>
         <table>
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Username</th>
-                    <th>Room Assignments</th>
+                    <th>User</th>
+                    <th>Groups</th>
                     <th>Score</th>
                     <th>Actions</th>
                 </tr>
@@ -225,43 +199,39 @@
             <tbody>
                 {{range .Users}}
                 <tr>
-                    <td data-label="ID">{{.ID}}</td>
-                    <td data-label="User">
+                    <td>
                         <form action="/admin/users" method="POST" style="display:flex; gap:5px;">
                             <input type="hidden" name="user_id" value="{{.ID}}">
                             <input type="hidden" name="action" value="update_username">
-                            <input type="text" name="new_username" value="{{.Username}}" style="width:120px; padding:4px;" required>
-                            <button type="submit" class="btn-sm" style="background:var(--accent-color); color:white;">Save</button>
+                            <input type="text" name="new_username" value="{{.Username}}" style="width:120px;" required>
+                            <button type="submit" class="btn-sm" style="background:var(--accent-color); color:white;">✓</button>
                         </form>
                     </td>
-                    <td data-label="Rooms">
-                        <form action="/admin/users" method="POST" style="display:flex; flex-direction:column; gap:6px;">
+                    <td>
+                        <form action="/admin/users" method="POST" style="display:flex; flex-direction:column; gap:4px;">
                             <input type="hidden" name="user_id" value="{{.ID}}">
                             <input type="hidden" name="action" value="update_room">
-                            
-                            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                            <div style="display: flex; flex-wrap: wrap; gap: 4px;">
                                 {{$userRoomCode := .RoomCode}}
                                 {{range $code, $name := $.RoomAliases}}
-                                    <label style="font-size:0.8rem; display:flex; align-items:center; gap:4px; cursor: pointer; background: var(--hover-bg); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px;">
-                                        <input type="checkbox" name="room_code" value="{{$code}}" 
-                                            {{if hasRoom $userRoomCode $code}}checked{{end}}>
-                                        <strong>{{$code}}</strong>
+                                    <label style="font-size:0.75rem; display:flex; align-items:center; gap:2px; cursor: pointer; background: var(--hover-bg); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px;">
+                                        <input type="checkbox" name="room_code" value="{{$code}}" {{if hasRoom $userRoomCode $code}}checked{{end}}>
+                                        <span>{{$code}}</span>
                                     </label>
                                 {{end}}
                             </div>
-                            
-                            <button type="submit" class="btn-sm" style="background:var(--accent-color); color:white; align-self: flex-start; margin-top: 5px;">Update Groups</button>
+                            <button type="submit" class="btn-sm" style="background:var(--accent-color); color:white; align-self: flex-start; margin-top: 2px;">Save</button>
                         </form>
                     </td>
-                    <td data-label="Score">{{.TotalScore}}</td>
-                    <td data-label="Controls" style="display:flex; gap:10px;">
-                        <form action="/admin/users" method="POST" onsubmit="return confirm('Reset PIN for {{.Username}}?');">
+                    <td>{{.TotalScore}}</td>
+                    <td style="display:flex; gap:5px;">
+                        <form action="/admin/users" method="POST" onsubmit="return confirm('Reset PIN?');">
                             <input type="hidden" name="user_id" value="{{.ID}}">
-                            <button type="submit" name="action" value="reset_pin" style="background:#ffc107; color:black;" class="btn-sm">Reset PIN</button>
+                            <button type="submit" name="action" value="reset_pin" style="background:#ffc107; color:black;" class="btn-sm">PIN</button>
                         </form>
-                        <form action="/admin/users" method="POST" onsubmit="return confirm('DELETE {{.Username}}? This cannot be undone.');">
+                        <form action="/admin/users" method="POST" onsubmit="return confirm('DELETE USER?');">
                             <input type="hidden" name="user_id" value="{{.ID}}">
-                            <button type="submit" name="action" value="delete" style="background:#dc3545; color:white;" class="btn-sm">Delete</button>
+                            <button type="submit" name="action" value="delete" style="background:#dc3545; color:white;" class="btn-sm">DEL</button>
                         </form>
                     </td>
                 </tr>
@@ -282,59 +252,23 @@
                 overlay.classList.add('open');
             }
         }
-
         function toggleTheme() {
             const current = document.documentElement.getAttribute('data-theme');
             const next = current === 'dark' ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', next);
             localStorage.setItem('theme', next);
         }
-
         function resolveImmediate(qID, optID) {
-            fetch('/admin/resolve', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    question_id: String(qID), 
-                    option_id: String(optID) 
-                })
-            })
-            .then(res => res.json())
-            .then(data => location.reload())
-            .catch(err => alert("Error resolving question"));
+            fetch('/admin/resolve', { method: 'POST', body: JSON.stringify({ question_id: String(qID), option_id: String(optID) }) })
+            .then(res => res.json()).then(data => location.reload());
         }
-
         function resolveText(qID) {
-            const val = document.getElementById('input-' + qID).value;
-            if(!val) return;
-            
-            fetch('/admin/resolve', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    question_id: String(qID), 
-                    text_input: String(val) 
-                })
-            })
-            .then(res => res.json())
-            .then(data => location.reload())
-            .catch(err => alert("Error resolving question"));
+            fetch('/admin/resolve', { method: 'POST', body: JSON.stringify({ question_id: String(qID), text_input: document.getElementById('input-'+qID).value }) })
+            .then(res => res.json()).then(data => location.reload());
         }
-
         function unresolveQuestion(qID) {
-            if(!confirm("Unresolve this question?")) return;
-
-            fetch('/admin/resolve', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    question_id: String(qID),
-                    status: "OPEN"
-                })
-            })
-            .then(res => res.json())
-            .then(data => location.reload())
-            .catch(err => alert("Error"));
+            fetch('/admin/resolve', { method: 'POST', body: JSON.stringify({ question_id: String(qID), status: "OPEN" }) })
+            .then(res => res.json()).then(data => location.reload());
         }
     </script>
 </body>
