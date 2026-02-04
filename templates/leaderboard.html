@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,26 +8,94 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
     <link rel="stylesheet" href="/static/style.css">
     <style>
-        .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 20px; }
-        table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 8px; overflow: hidden; }
-        th { background: var(--hover-bg); padding: 15px; text-align: left; color: var(--heading-color); }
-        td { padding: 12px 15px; border-bottom: 1px solid var(--border-color); color: var(--text-color); vertical-align: middle; }
-        tr:hover { background: var(--hover-bg); cursor: pointer; }
-        .score-cell { font-size: 1.1rem; font-weight: bold; color: var(--accent-color); }
-        .rank-cell { font-weight: bold; color: var(--subtext-color); width: 40px; }
-        
-        .scope-btn { padding: 8px 12px; cursor: pointer; border: none; border-radius: 4px; margin-right: 5px; font-weight: bold; transition: all 0.2s; }
-        .scope-btn.active { background: var(--nav-active-bg); color: var(--nav-active-text); }
-        .scope-btn.inactive { background: var(--hover-bg); color: var(--text-color); font-weight: normal; }
-
-        .user-avatar-small { 
-            margin-right: 12px; display: inline-flex; align-items: center; justify-content: center; 
-            width: 32px; height: 32px; border-radius: 50%; background: var(--input-bg);
-            border: 1px solid var(--border-color); overflow: hidden; font-size: 1.1rem;
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-top: 20px;
         }
-        .user-avatar-small img { width: 100%; height: 100%; object-fit: cover; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th {
+            background: var(--hover-bg);
+            padding: 15px;
+            text-align: left;
+            color: var(--heading-color);
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-color);
+            vertical-align: middle;
+        }
+
+        tr:hover {
+            background: var(--hover-bg);
+            cursor: pointer;
+        }
+
+        .score-cell {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        .rank-cell {
+            font-weight: bold;
+            color: var(--subtext-color);
+            width: 40px;
+        }
+
+        .scope-btn {
+            padding: 8px 12px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            margin-right: 5px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .scope-btn.active {
+            background: var(--nav-active-bg);
+            color: var(--nav-active-text);
+        }
+
+        .scope-btn.inactive {
+            background: var(--hover-bg);
+            color: var(--text-color);
+            font-weight: normal;
+        }
+
+        .user-avatar-small {
+            margin-right: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            font-size: 1.1rem;
+        }
+
+        .user-avatar-small img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
     </style>
 </head>
+
 <body>
     <script>
         const savedTheme = localStorage.getItem('theme');
@@ -36,7 +105,8 @@
     {{template "drawer" .}}
 
     <div style="max-width: 800px; margin: 0 auto; padding-top: 60px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap: wrap; gap: 10px;">
+        <div
+            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap: wrap; gap: 10px;">
             <h2 style="margin:0;">🏆 Live Standings</h2>
             <div id="room-controls"></div>
         </div>
@@ -52,16 +122,48 @@
                     </tr>
                 </thead>
                 <tbody id="lb-body">
-                    <tr><td colspan="4" style="text-align:center;">Loading...</td></tr>
+                    <tr>
+                        <td colspan="4" style="text-align:center;">Loading...</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
     </div>
 
     <script>
+        // High Contrast Logic
+        function getContrastYIQ(hexcolor) {
+            if (!hexcolor) return 'black';
+            if (hexcolor.startsWith('#')) hexcolor = hexcolor.substring(1);
+            if (hexcolor.length === 3) hexcolor = hexcolor.split('').map(c => c + c).join('');
+            var r = parseInt(hexcolor.substr(0, 2), 16);
+            var g = parseInt(hexcolor.substr(2, 2), 16);
+            var b = parseInt(hexcolor.substr(4, 2), 16);
+            var yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+            return (yiq >= 128) ? 'black' : 'white';
+        }
+
+        function updateUsernameContrast() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.querySelectorAll('.user-name-display').forEach(el => {
+                const hex = el.getAttribute('data-hex');
+                if (!hex || hex === "#002244") {
+                    el.style.color = 'var(--heading-color)';
+                    el.style.textShadow = 'none';
+                } else {
+                    el.style.color = hex;
+                    if (isDark) {
+                        el.style.textShadow = "0 0 4px rgba(255,255,255,0.5)";
+                    } else {
+                        el.style.textShadow = "none";
+                    }
+                }
+            });
+        }
+
         const rawRoomStr = "{{.User.RoomCode}}";
         const userRooms = rawRoomStr.split(',').filter(r => r.trim() !== "");
-        const roomAliases = {{.RoomAliases}};
+        const roomAliases = {{.RoomAliases }};
         let currentRoom = userRooms.length > 0 ? userRooms[0] : "MAIN";
         let isGlobal = false;
 
@@ -99,7 +201,7 @@
                 data.forEach((user, index) => {
                     const tr = document.createElement('tr');
                     tr.onclick = () => window.location.href = '/user/' + user.id;
-                    
+
                     const tdRank = document.createElement('td');
                     tdRank.className = 'rank-cell';
                     tdRank.textContent = index + 1;
@@ -116,8 +218,10 @@
                     tdPlayer.appendChild(iconSpan);
 
                     const strong = document.createElement('strong');
+                    strong.className = 'user-name-display';
                     strong.textContent = user.username;
-                    if (user.color_hex && user.color_hex !== '#002244') { strong.style.color = user.color_hex; }
+                    strong.setAttribute('data-hex', user.color_hex);
+
                     tdPlayer.appendChild(strong);
                     tr.appendChild(tdPlayer);
 
@@ -133,9 +237,11 @@
                     tr.appendChild(tdScore);
                     tbody.appendChild(tr);
                 });
+                updateUsernameContrast();
             });
         }
         initControls(); loadLeaderboard(); setInterval(loadLeaderboard, 5000);
     </script>
 </body>
+
 </html>

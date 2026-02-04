@@ -194,6 +194,7 @@ func main() {
 	http.HandleFunc("/admin/refresh", withLogging(requireAdmin(handleAdminRefresh)))
 	http.HandleFunc("/admin/users", withLogging(requireAdmin(handleAdminUsers)))
 	http.HandleFunc("/admin/backup", withLogging(requireAdmin(handleAdminBackup)))
+	http.HandleFunc("/api/status", withLogging(handleGameStatusAPI))
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	err := http.ListenAndServe(":"+port, nil)
@@ -771,4 +772,19 @@ func render(w http.ResponseWriter, tmpl string, data interface{}) {
 	if err := templates.ExecuteTemplate(w, tmpl, data); err != nil {
 		log.Println(err)
 	}
+}
+
+func handleGameStatusAPI(w http.ResponseWriter, r *http.Request) {
+	var resolvedCount int
+	err := db.QueryRow("SELECT COUNT(*) FROM questions WHERE status = 'RESOLVED'").Scan(&resolvedCount)
+	if err != nil {
+		http.Error(w, "DB Error", 500)
+		return
+	}
+	response := map[string]interface{}{
+		"status":         getGameStatus(),
+		"resolved_count": resolvedCount,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }

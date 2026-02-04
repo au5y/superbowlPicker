@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,27 +10,135 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
     <style>
-        .app-header { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; margin-bottom: 20px; text-align: center; }
-        .user-badge { font-size: 1.3rem; font-weight: bold; color: var(--heading-color); margin-bottom: 5px; display: flex; align-items: center; gap: 10px; }
-        
-        .user-avatar-header { 
-            width: 45px; height: 45px; border-radius: 50%; background: var(--input-bg);
-            border: 2px solid var(--border-color); overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+        .app-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
         }
-        .user-avatar-header img { width: 100%; height: 100%; object-fit: cover; }
 
-        .room-badge { font-size: 0.9rem; color: var(--subtext-color); background: var(--hover-bg); padding: 2px 8px; border-radius: 12px; display: inline-block; }
+        .user-badge {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--heading-color);
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-        .section-header { margin: 40px 0 20px 0; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; color: var(--accent-color); display: flex; align-items: center; gap: 10px; }
-        .section-icon { background: #69BE28; width: 10px; height: 25px; border-radius: 4px; display: inline-block; }
-        .number-input { font-size: 1.2rem; padding: 10px; border: 2px solid var(--border-color); border-radius: 6px; width: 100%; max-width: 200px; text-align: center; box-sizing: border-box; background: var(--input-bg); color: var(--text-color); }
-        .error-banner { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; padding: 10px; border-radius: 5px; margin-bottom: 15px; text-align: center; display: none; }
-        
-        .modal-gate { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
-        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 12px; text-align: center; max-width: 500px; width: 100%; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-        .modal-btn-primary { background: var(--accent-color); color: white; padding: 12px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1rem; }
+        .user-avatar-header {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: var(--input-bg);
+            border: 2px solid var(--border-color);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .user-avatar-header img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .room-badge {
+            font-size: 0.9rem;
+            color: var(--subtext-color);
+            background: var(--hover-bg);
+            padding: 2px 8px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+
+        .section-header {
+            margin: 40px 0 20px 0;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-icon {
+            background: #69BE28;
+            width: 10px;
+            height: 25px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .number-input {
+            font-size: 1.2rem;
+            padding: 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            width: 100%;
+            max-width: 200px;
+            text-align: center;
+            box-sizing: border-box;
+            background: var(--input-bg);
+            color: var(--text-color);
+        }
+
+        .error-banner {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            text-align: center;
+            display: none;
+        }
+
+        .modal-gate {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-btn-primary {
+            background: var(--accent-color);
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+        }
     </style>
 </head>
+
 <body>
     <script>
         const savedTheme = localStorage.getItem('theme');
@@ -46,10 +155,13 @@
             <form action="/login" method="POST">
                 <input type="text" name="username" placeholder="Your Name" required autocomplete="off">
                 <p>Enter a 4 digit pin if you don't want someone to be able to change your answers (optional).</p>
-                <input type="password" name="pin" placeholder="PIN (Optional)" maxlength="4">                
-                <br>
-                <button type="submit" class="login-btn">Submit</button>
-            </form>
+                <form action="/login" method="POST">
+                    <input type="text" name="username" placeholder="Your Name" required autocomplete="off">
+                    <input type="password" name="pin" placeholder="PIN (Optional)" maxlength="4"
+                        style="margin-top: 10px;">
+                    <br>
+                    <button type="submit" class="login-btn" style="margin-top: 15px;">Submit</button>
+                </form>
         </div>
     </div>
     <script>
@@ -60,15 +172,29 @@
     </script>
     {{end}}
 
+    <button onclick="toggleTheme()" class="theme-switch-btn" title="Toggle Theme">
+        <span id="theme-icon">☀️</span>
+    </button>
+
+    <button onclick="toggleTheme()" class="theme-switch-btn" title="Toggle Theme">
+        <span id="theme-icon">☀️</span>
+    </button>
+
     {{if .User}}
     {{if eq .User.RoomCode ""}}
     <div class="modal-gate">
         <div class="modal-content">
-            <div id="modal-error" style="color: #721c24; background: #f8d7da; padding: 10px; border-radius: 4px; margin-bottom: 15px; display: none; border: 1px solid #f5c6cb;">Invalid Group Code.</div>
+            <div id="modal-error"
+                style="color: #721c24; background: #f8d7da; padding: 10px; border-radius: 4px; margin-bottom: 15px; display: none; border: 1px solid #f5c6cb;">
+                Invalid Group Code.</div>
             <h2>👋 Welcome, {{.User.Username}}!</h2>
-            <p style="color: var(--text-color); line-height: 1.5;">To compete directly against your friends, enter your <strong>Group Code</strong> below.</p>
+            <p style="color: var(--text-color); line-height: 1.5;">To compete directly against your friends, enter your
+                <strong>Group Code</strong> below.
+            </p>
             <form action="/user/update" method="POST">
-                <input type="text" name="room_codes" placeholder="GROUP CODE" style="text-transform:uppercase; font-size: 1.2rem; text-align: center; letter-spacing: 2px;" required>
+                <input type="text" name="room_codes" placeholder="GROUP CODE"
+                    style="text-transform:uppercase; font-size: 1.2rem; text-align: center; letter-spacing: 2px;"
+                    required>
                 <button type="submit" class="modal-btn-primary">Join Group</button>
             </form>
         </div>
@@ -79,25 +205,35 @@
     {{template "drawer" .}}
 
     <div class="app-header">
-        <div class="user-badge">
-            <div class="user-avatar-header">
-                {{if gt (len .User.Icon) 15}}
-                    <img src="{{.User.Icon}}">
-                {{else}}
-                    {{.User.Icon}}
-                {{end}}
-            </div>
-            <span style="color: {{if ne .User.ColorHex "#002244"}}{{.User.ColorHex}}{{else}}inherit{{end}}">{{.User.Username}}</span>
-        </div>
+        <a href="/user/{{.User.ID}}" style="text-decoration: none;">
+            <a href="/user/{{.User.ID}}" style="text-decoration: none;">
+                <div class="user-badge">
+                    <div class="user-avatar-header">
+                        {{if gt (len .User.Icon) 15}}
+                        <img src="{{.User.Icon}}">
+                        {{else}}
+                        {{.User.Icon}}
+                        {{end}}
+                    </div>
+                    <!-- Logic for high contrast will be handled via JS/CSS class, fallback inline style kept but enhanced -->
+                    <span class="user-name-display" data-hex="{{.User.ColorHex}}">{{.User.Username}}</span>
+                </div>
+            </a>
+        </a>
         {{$aliases := .RoomAliases}}
         <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: wrap;">
             {{range split .User.RoomCode ","}}<div class="room-badge">{{roomName . $aliases}}</div>{{end}}
         </div>
-        <div style="margin-top:5px; font-size:0.9rem; font-weight:bold; color:var(--accent-color);">{{.User.TotalScore}} pts</div>
-        {{if eq .GameStatus "LOCKED"}}<div style="background:#C60C30; color:white; padding:2px 8px; border-radius:4px; font-size:0.8rem; margin-top:5px;">LOCKED</div>{{end}}
+        <div style="margin-top:5px; font-size:0.9rem; font-weight:bold; color:var(--accent-color);">{{.User.TotalScore}}
+            pts</div>
+        {{if eq .GameStatus "LOCKED"}}<div
+            style="background:#C60C30; color:white; padding:2px 8px; border-radius:4px; font-size:0.8rem; margin-top:5px;">
+            LOCKED</div>{{end}}
     </div>
 
-    <div id="save-status" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #28a745; color: white; padding: 8px 16px; border-radius: 20px; opacity: 0; transition: opacity 0.5s; font-weight: bold; z-index: 2000; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">Saved ✓</div>
+    <div id="save-status"
+        style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #28a745; color: white; padding: 8px 16px; border-radius: 20px; opacity: 0; transition: opacity 0.5s; font-weight: bold; z-index: 2000; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+        Saved ✓</div>
 
     <div>
         {{range .Categories}}
@@ -111,33 +247,51 @@
                     <div class="scoreboard-half">
                         <img src="{{.ImageURL}}" class="sb-logo">
                         <div class="sb-team-name">{{.Text}}</div>
-                        <input type="number" class="sb-input" placeholder="00" value="{{if .UserPrediction}}{{.UserPrediction.TextInput}}{{end}}" onblur="handleSelection(this, {{.ID}}, null, this.value)" {{if eq $.GameStatus "LOCKED"}}disabled{{end}}>
+                        <input type="number" class="sb-input" placeholder="00"
+                            value="{{if .UserPrediction}}{{.UserPrediction.TextInput}}{{end}}"
+                            onblur="handleSelection(this, {{.ID}}, null, this.value)" {{if eq $.GameStatus "LOCKED"
+                            }}disabled{{end}}>
                     </div>
                     <!-- Divider -->
                     <div class="sb-divider">-</div>
-                {{else if eq .Type "scoreboard-right"}}
+                    {{else if eq .Type "scoreboard-right"}}
                     <!-- Right Team -->
                     <div class="scoreboard-half">
                         <img src="{{.ImageURL}}" class="sb-logo">
                         <div class="sb-team-name">{{.Text}}</div>
-                        <input type="number" class="sb-input" placeholder="00" value="{{if .UserPrediction}}{{.UserPrediction.TextInput}}{{end}}" onblur="handleSelection(this, {{.ID}}, null, this.value)" {{if eq $.GameStatus "LOCKED"}}disabled{{end}}>
+                        <input type="number" class="sb-input" placeholder="00"
+                            value="{{if .UserPrediction}}{{.UserPrediction.TextInput}}{{end}}"
+                            onblur="handleSelection(this, {{.ID}}, null, this.value)" {{if eq $.GameStatus "LOCKED"
+                            }}disabled{{end}}>
                     </div>
                 </div> <!-- Close container only after right -->
                 {{else}}
-                <div class="question-card {{if eq $.GameStatus "LOCKED"}}locked-bg{{end}}" data-qid="{{.ID}}" data-type="{{.Type}}">
+                <div class="question-card {{if eq $.GameStatus " LOCKED"}}locked-bg{{end}}" data-qid="{{.ID}}"
+                    data-type="{{.Type}}">
                     <div class="question-text">{{.Text}}</div>
                     {{if eq .Type "select"}}
                     <div class="options-container">
                         {{$qID := .ID}}{{$isResolved := eq .Status "RESOLVED"}}{{$correctID := .CorrectOptionID}}
                         {{range .Options}}
-                            {{$logoUrl := ""}}{{$secondaryColor := ""}}{{$isHero := false}}
-                            {{if eq .Text "Seahawks"}}{{$isHero = true}}{{$logoUrl = "/static/assets/sea.png"}}{{$secondaryColor = "#002244"}}{{end}}
-                            {{if eq .Text "Patriots"}}{{$isHero = true}}{{$logoUrl = "/static/assets/ne.png"}}{{$secondaryColor = "#C60C30"}}{{end}}
-                            {{if eq .Text "Heads"}}{{$isHero = true}}{{$logoUrl = "/static/assets/heads.png"}}{{$secondaryColor = "#19470e"}}{{end}}
-                            {{if eq .Text "Tails"}}{{$isHero = true}}{{$logoUrl = "/static/assets/tails.png"}}{{$secondaryColor = "#19470e"}}{{end}}
-                        <label class="option-label {{if eq $.GameStatus "LOCKED"}}disabled{{end}}">
-                            <input type="radio" name="q-{{$qID}}" value="{{.ID}}" data-color="{{.ColorHex}}" data-secondary="{{$secondaryColor}}" data-is-hero="{{$isHero}}" onchange="handleSelection(this, {{$qID}}, '{{.ID}}', null)" {{if .IsSelected}}checked{{end}} {{if or (eq $.GameStatus "LOCKED") $isResolved}}disabled{{end}}>
-                            <div class="option-box {{if $isHero}}hero-box{{end}} {{if $isResolved}}{{if eq (printf "%d" .ID) (printf "%d" $correctID)}}resolved-correct{{end}}{{if and .IsSelected (ne (printf "%d" .ID) (printf "%d" $correctID))}}resolved-wrong{{end}}{{else if eq $.GameStatus "LOCKED"}}locked{{end}}" id="box-{{.ID}}" style="border-color: {{.ColorHex}}; {{if $isHero}}background-color: {{.ColorHex}};{{end}}">
+                        {{$logoUrl := ""}}{{$secondaryColor := ""}}{{$isHero := false}}
+                        {{if eq .Text "Seahawks"}}{{$isHero = true}}{{$logoUrl =
+                        "/static/assets/sea.png"}}{{$secondaryColor = "#002244"}}{{end}}
+                        {{if eq .Text "Patriots"}}{{$isHero = true}}{{$logoUrl =
+                        "/static/assets/ne.png"}}{{$secondaryColor = "#C60C30"}}{{end}}
+                        {{if eq .Text "Heads"}}{{$isHero = true}}{{$logoUrl =
+                        "/static/assets/heads.png"}}{{$secondaryColor = "#19470e"}}{{end}}
+                        {{if eq .Text "Tails"}}{{$isHero = true}}{{$logoUrl =
+                        "/static/assets/tails.png"}}{{$secondaryColor = "#19470e"}}{{end}}
+                        <label class="option-label">
+                            <input type="radio" name="q-{{$qID}}" value="{{.ID}}" data-color="{{.ColorHex}}"
+                                data-secondary="{{$secondaryColor}}" data-is-hero="{{$isHero}}"
+                                onchange="handleSelection(this, {{$qID}}, '{{.ID}}', null)" {{if
+                                .IsSelected}}checked{{end}} {{if $isResolved}}disabled{{end}}>
+                            <div class="option-box {{if $isHero}}hero-box{{end}} {{if $isResolved}}{{if eq (printf " %d"
+                                .ID) (printf "%d" $correctID)}}resolved-correct{{end}}{{if and .IsSelected (ne
+                                (printf "%d" .ID) (printf "%d" $correctID))}}resolved-wrong{{end}}{{end}}"
+                                id="box-{{.ID}}"
+                                style="border-color: {{.ColorHex}}; {{if $isHero}}background-color: {{.ColorHex}};{{end}}">
                                 {{if and $isHero $logoUrl}}<img src="{{$logoUrl}}" class="team-logo">{{end}}{{.Text}}
                             </div>
                         </label>
@@ -145,11 +299,14 @@
                     </div>
                     {{else}}
                     <div style="text-align: center;">
-                        <input type="number" class="number-input" placeholder="Enter Value" value="{{if .UserPrediction}}{{.UserPrediction.TextInput}}{{end}}" onblur="handleSelection(this, {{.ID}}, null, this.value)" {{if eq $.GameStatus "LOCKED"}}disabled style="background: var(--locked-bg);"{{end}}>
+                        <input type="number" class="number-input" placeholder="Enter Value"
+                            value="{{if .UserPrediction}}{{.UserPrediction.TextInput}}{{end}}"
+                            onblur="handleSelection(this, {{.ID}}, null, this.value)" {{if eq $.GameStatus "LOCKED"
+                            }}disabled{{end}}>
                     </div>
                     {{end}}
                 </div>
-                {{end}} 
+                {{end}}
                 {{end}}
             </div>
         </div>
@@ -157,33 +314,107 @@
 
         {{if ne .GameStatus "LOCKED"}}
         <div class="validate-bar">
-            <div id="validation-feedback" style="margin-bottom: 8px; font-weight: bold; min-height: 1.2em; font-size: 0.95rem;"></div>
+            <div id="validation-feedback"
+                style="margin-bottom: 8px; font-weight: bold; min-height: 1.2em; font-size: 0.95rem;"></div>
             <button class="btn-validate" onclick="validatePicks()">VALIDATE PICKS</button>
         </div>
         {{end}}
     </div>
 
     <script>
+        // High Contrast Logic
+        function getContrastYIQ(hexcolor) {
+            if (!hexcolor) return 'black';
+            if (hexcolor.startsWith('#')) hexcolor = hexcolor.substring(1);
+            if (hexcolor.length === 3) hexcolor = hexcolor.split('').map(c => c + c).join('');
+            var r = parseInt(hexcolor.substr(0, 2), 16);
+            var g = parseInt(hexcolor.substr(2, 2), 16);
+            var b = parseInt(hexcolor.substr(4, 2), 16);
+            var yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+            return (yiq >= 128) ? 'black' : 'white';
+        }
+
+        function updateUsernameContrast() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.querySelectorAll('.user-name-display').forEach(el => {
+                const hex = el.getAttribute('data-hex');
+                if (!hex || hex === "#002244") {
+                    el.style.color = 'var(--heading-color)';
+                    el.style.textShadow = 'none';
+                } else {
+                    el.style.color = hex;
+                    if (isDark) {
+                        el.style.textShadow = "0 0 4px rgba(255,255,255,0.5)";
+                    } else {
+                        el.style.textShadow = "none";
+                    }
+                }
+            });
+            updateThemeIcon();
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+            updateUsernameContrast();
+        }
+
+        function updateThemeIcon() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const icon = document.getElementById('theme-icon');
+            if (icon) icon.textContent = isDark ? '🌙' : '☀️';
+        }
+
         function handleSelection(el, questionId, optionId, textVal) {
-            if(optionId) updateVisualState(el);
+            if (optionId) updateVisualState(el);
             fetch('/predict', { method: 'POST', body: JSON.stringify({ question_id: String(questionId), option_id: optionId ? String(optionId) : "", text_input: textVal ? String(textVal) : "" }) })
-            .then(response => { if (response.ok) showToast(); });
+                .then(response => { if (response.ok) showToast(); });
         }
         function updateVisualState(activeRadio) {
-            if(activeRadio.disabled) return;
+            const gameLocked = "{{.GameStatus}}" === "LOCKED";
             const container = activeRadio.closest('.options-container');
             container.querySelectorAll('.option-box').forEach(box => {
                 const radio = box.previousElementSibling;
+                const isSelected = radio.checked;
+
+                box.classList.remove('locked', 'locked-selected', 'locked-unselected');
+
                 const boxHero = radio.getAttribute('data-is-hero') === "true";
-                if (boxHero) { box.style.filter = "grayscale(100%)"; box.style.opacity = "0.7"; box.style.backgroundColor = "#ddd"; box.style.borderColor = "#bbb"; box.style.color = "#555"; } 
-                else { box.style.backgroundColor = 'var(--card-bg)'; box.style.color = 'var(--subtext-color)'; box.style.borderColor = 'var(--border-color)'; }
+                if (boxHero) {
+                    box.style.filter = isSelected ? "grayscale(0%)" : "grayscale(100%)";
+                    box.style.opacity = isSelected ? "1" : "0.7";
+                    if (!isSelected) {
+                        box.style.backgroundColor = "#ddd"; box.style.borderColor = "#bbb"; box.style.color = "#555";
+                    }
+                } else {
+                    box.style.backgroundColor = 'var(--card-bg)'; box.style.color = 'var(--subtext-color)'; box.style.borderColor = 'var(--border-color)';
+                }
+
+                if (gameLocked) {
+                    if (isSelected) {
+                        box.classList.add('locked-selected');
+                    } else {
+                        box.classList.add('locked-unselected');
+                    }
+                }
             });
+
             const activeBox = document.getElementById('box-' + activeRadio.value);
             const isHero = activeRadio.getAttribute('data-is-hero') === "true";
             const color = activeRadio.getAttribute('data-color') || '#555';
+
             if (activeBox) {
-                if (isHero) { activeBox.style.filter = "grayscale(0%)"; activeBox.style.opacity = "1"; activeBox.style.backgroundColor = color; activeBox.style.color = "white"; activeBox.style.borderColor = activeRadio.getAttribute('data-secondary') || color; } 
-                else { activeBox.style.backgroundColor = color; activeBox.style.color = 'white'; activeBox.style.borderColor = color; }
+                if (isHero) {
+                    activeBox.style.backgroundColor = color;
+                    activeBox.style.color = "white";
+                    activeBox.style.borderColor = activeRadio.getAttribute('data-secondary') || color;
+                } else {
+                    activeBox.style.backgroundColor = color;
+                    activeBox.style.color = 'white';
+                    activeBox.style.borderColor = color;
+                }
             }
         }
         function showToast() { const el = document.getElementById('save-status'); el.style.opacity = '1'; setTimeout(() => { el.style.opacity = '0'; }, 1500); }
@@ -192,7 +423,7 @@
             document.querySelectorAll('.missing-pick').forEach(el => el.classList.remove('missing-pick'));
             document.querySelectorAll('.question-card').forEach(card => {
                 let isAnswered = false;
-                if (card.getAttribute('data-type') === 'select') { if (card.querySelector('input[type="radio"]:checked')) isAnswered = true; } 
+                if (card.getAttribute('data-type') === 'select') { if (card.querySelector('input[type="radio"]:checked')) isAnswered = true; }
                 else { const input = card.querySelector('input.number-input'); if (input && input.value.trim() !== '') isAnswered = true; }
                 if (!isAnswered) { missingCount++; card.classList.add('missing-pick'); if (!firstMissingEl) firstMissingEl = card; }
             });
@@ -200,11 +431,48 @@
                 const input = container.querySelector('.sb-input'); if (input && input.value.trim() === '') { missingCount++; container.classList.add('missing-pick'); if (!firstMissingEl) firstMissingEl = container; }
             });
             const feedbackEl = document.getElementById('validation-feedback');
-            if (missingCount > 0) { feedbackEl.style.color = "#dc3545"; feedbackEl.textContent = `⚠️ ${missingCount} unfinished predictions!`; if (firstMissingEl) firstMissingEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); } 
+            if (missingCount > 0) { feedbackEl.style.color = "#dc3545"; feedbackEl.textContent = `⚠️ ${missingCount} unfinished predictions!`; if (firstMissingEl) firstMissingEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
             else { feedbackEl.style.color = "#28a745"; feedbackEl.textContent = "✅ All picks entered!"; }
         }
-        document.addEventListener("DOMContentLoaded", function() { document.querySelectorAll('input[type="radio"]:checked').forEach(radio => { if(!radio.disabled) updateVisualState(radio); }); });
+
+        let lastStatus = "{{.GameStatus}}";
+        let lastResolvedCount = -1;
+
+        function checkStatus() {
+            fetch('/api/status')
+                .then(r => r.json())
+                .then(data => {
+                    const status = data.status;
+                    const count = data.resolved_count;
+
+                    if (lastResolvedCount === -1) { lastResolvedCount = count; }
+
+                    if (status !== lastStatus) {
+                        console.log("Status changed, reloading...");
+                        location.reload();
+                    }
+                    if (status === 'LOCKED' && count !== lastResolvedCount) {
+                        console.log("Resolution changed, reloading...");
+                        location.reload();
+                    }
+
+                    lastStatus = status;
+                    lastResolvedCount = count;
+                })
+                .catch(e => console.error("Poll failed", e));
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
+                updateVisualState(radio);
+            });
+            updateUsernameContrast();
+            if (lastStatus === 'OPEN' || lastStatus === 'LOCKED') {
+                setInterval(checkStatus, 5000);
+            }
+        });
     </script>
     {{end}}
 </body>
+
 </html>

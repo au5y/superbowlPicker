@@ -1,6 +1,11 @@
 # Superbowl LX Prop Pool
 
-A simple prop pool application for Superbowl LX.
+
+## New Features
+- **Auto-Refresh**: The dashboard automatically updates when the game locks or questions are resolved.
+- **Theme Toggle**: Switch between Light and Dark mode using the icon in the top right.
+- **High Contrast**: Usernames are automatically adjusted for readability in both modes.
+
 
 ## Running the Application
 
