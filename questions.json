@@ -132,28 +132,28 @@
     "text": "Will there be a Crypto or AI commercial?",
     "category": "Broadcast & Fun",
     "options": [
-      {"text": "Yes", "color": "#dc3545"},
-      {"text": "No", "color": "#28a745"}
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
     ]
   },
   {
     "text": "Will there be a 'Futures' commercial? (Kalshi, Polymarket, etc.)",
     "category": "Broadcast & Fun",
     "options": [
-      {"text": "Yes", "color": "#dc3545"},
-      {"text": "No", "color": "#28a745"}
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
     ]
   },
   {
     "text": "What category will the first commercial be?",
     "category": "Broadcast & Fun",
     "options": [
-      {"text": "Beer", "color": "#f0ad4e"},
-      {"text": "Car", "color": "#0275d8"},
-      {"text": "Movie", "color": "#5bc0de"},
-      {"text": "Tech", "color": "#5cb85c"},
-      {"text": "Food", "color": "#d9534f"},
-      {"text": "Other", "color": "#777777"}
+      {"text": "🍻 Beer", "color": "#f0ad4e"},
+      {"text": "🚗 Car", "color": "#0275d8"},
+      {"text": "🎥 Movie", "color": "#5bc0de"},
+      {"text": "🖥️ Tech", "color": "#5cb85c"},
+      {"text": "🍝 Food", "color": "#d9534f"},
+      {"text": "❓ Other", "color": "#777777"}
     ]
   },
   {
@@ -162,7 +162,7 @@
     "options": [
       {"text": "Action/Hero", "color": "#d9534f"},
       {"text": "Comedy/Family", "color": "#f0ad4e"},
-      {"text": "Horror/Thriller", "color": "#292b2c"},
+      {"text": "Horror/Thriller", "color": "#780606"},
       {"text": "Other", "color": "#777777"}
     ]
   },
