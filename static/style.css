@@ -1,5 +1,4 @@
 :root {
-    /* Light Mode Defaults */
     --bg-color: #f4f4f9;
     --card-bg: #ffffff;
     --text-color: #333333;
@@ -15,10 +14,10 @@
     --nav-active-text: #ffffff;
     --shadow-color: rgba(0,0,0,0.1);
     --locked-bg: #f0f0f0;
+    --menu-btn-bg: rgba(255,255,255,0.8);
 }
 
 [data-theme="dark"] {
-    /* Dark Mode Overrides */
     --bg-color: #121212;
     --card-bg: #1e1e1e;
     --text-color: #e0e0e0;
@@ -34,6 +33,26 @@
     --nav-active-text: #000000;
     --shadow-color: rgba(0,0,0,0.5);
     --locked-bg: #2a2a2a;
+    --menu-btn-bg: rgba(30,30,30,0.8);
+}
+
+html, body {
+    /* Stop the "Rubber Band" bounce effect */
+    overscroll-behavior-y: none;
+    /* Disable double-tap to zoom */
+    touch-action: manipulation;
+    /* Ensure fonts don't auto-scale */
+    -webkit-text-size-adjust: 100%;
+}
+
+/* Prevent iOS zooming in when you tap a text box */
+input, select, textarea {
+    font-size: 16px !important; 
+}
+
+/* Remove the grey "highlight box" when tapping buttons on iOS */
+* {
+    -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -42,6 +61,7 @@ body {
     color: var(--text-color);
     margin: 0;
     padding: 20px;
+    padding-bottom: 40px !important; /* Standard padding, no longer needs to clear a fixed footer */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -51,7 +71,6 @@ body {
 h1 { margin-bottom: 20px; color: var(--heading-color); }
 h2, h3, strong { color: var(--heading-color); }
 
-/* --- Login Form --- */
 .login-container {
     background: var(--card-bg);
     padding: 2rem;
@@ -82,7 +101,6 @@ button.login-btn {
     font-size: 1rem;
 }
 
-/* --- Game Grid --- */
 .grid-container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -100,6 +118,8 @@ button.login-btn {
     flex-direction: column;
     justify-content: space-between;
     transition: all 0.2s ease;
+    height: 100%; /* Forces card to fill the grid cell height */
+    box-sizing: border-box;
 }
 
 .question-card.locked-bg {
@@ -129,11 +149,12 @@ button.login-btn {
 .options-container {
     display: flex;
     gap: 10px;
+    flex-wrap: wrap; /* Allows buttons to stack if they don't fit */
 }
 
-/* --- Radio Button Styling --- */
 .option-label {
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: 80px;
     cursor: pointer;
     position: relative;
 }
@@ -183,7 +204,6 @@ button.login-btn {
     opacity: 0.8;
 }
 
-/* --- HERO OPTION STYLES (Teams / Coins) --- */
 .hero-box {
     display: flex;
     align-items: center;
@@ -192,7 +212,7 @@ button.login-btn {
     border-width: 2px;
     border-style: solid;
     color: white !important;
-    /* Default state: slightly dimmed background, no border color (uses BG color as border) */
+    /* Default state: slightly dimmed background */
     opacity: 0.6; 
     filter: grayscale(30%);
     transition: all 0.2s ease-in-out;
@@ -213,7 +233,6 @@ button.login-btn {
     filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));
 }
 
-/* --- DUAL SCOREBOARD STYLE --- */
 .scoreboard-container {
     grid-column: 1 / -1; /* Stretch across the grid */
     background: linear-gradient(180deg, #2b2b2b 0%, #1a1a1a 100%);
@@ -286,9 +305,59 @@ button.login-btn {
     letter-spacing: 1px;
     color: #ccc;
 }
+
+.missing-pick {
+    border: 2px solid #dc3545 !important; /* Force red border */
+    box-shadow: 0 0 10px rgba(220, 53, 69, 0.3) !important;
+    animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+#validation-feedback {
+    transition: all 0.3s ease;
+}
+
+.validate-bar {
+    position: static !important; /* Inline flow, not fixed */
+    width: 100%;
+    max-width: 800px;
+    margin: 30px auto 10px auto;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    text-align: center;
+    z-index: 1;
+}
+
+.btn-validate {
+    width: 100%; 
+    max-width: 400px;
+    padding: 15px 0;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: white;
+    background: #002244;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    display: inline-block;
+    transition: transform 0.2s;
+}
+.btn-validate:active { transform: scale(0.95); }
+
+
 @media (max-width: 600px) {
     body {
         padding: 10px;
+        padding-bottom: 40px !important;
     }
 
     .grid-container {
@@ -335,5 +404,16 @@ button.login-btn {
         padding: 1.5rem;
         width: 100%;
         box-sizing: border-box;
+    }
+
+    /* Mobile Validate Bar */
+    .validate-bar {
+        padding: 0 !important;
+        margin-top: 20px;
+    }
+    .btn-validate {
+        width: 100%;
+        max-width: 100%;
+        border-radius: 8px !important;
     }
 }
