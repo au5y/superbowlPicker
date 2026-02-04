@@ -1,7 +1,39 @@
 :root {
+    /* Light Mode Defaults */
     --bg-color: #f4f4f9;
     --card-bg: #ffffff;
-    --text-color: #333;
+    --text-color: #333333;
+    --heading-color: #000000;
+    --subtext-color: #666666;
+    --border-color: #dddddd;
+    --input-bg: #ffffff;
+    --input-border: #dddddd;
+    --drawer-bg: #ffffff;
+    --hover-bg: #f0f0f0;
+    --accent-color: #002244;
+    --nav-active-bg: #002244;
+    --nav-active-text: #ffffff;
+    --shadow-color: rgba(0,0,0,0.1);
+    --locked-bg: #f0f0f0;
+}
+
+[data-theme="dark"] {
+    /* Dark Mode Overrides */
+    --bg-color: #121212;
+    --card-bg: #1e1e1e;
+    --text-color: #e0e0e0;
+    --heading-color: #ffffff;
+    --subtext-color: #aaaaaa;
+    --border-color: #444444;
+    --input-bg: #2d2d2d;
+    --input-border: #444444;
+    --drawer-bg: #1e1e1e;
+    --hover-bg: #333333;
+    --accent-color: #90caf9;
+    --nav-active-bg: #64b5f6;
+    --nav-active-text: #000000;
+    --shadow-color: rgba(0,0,0,0.5);
+    --locked-bg: #2a2a2a;
 }
 
 body {
@@ -13,16 +45,18 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
+    transition: background-color 0.3s, color 0.3s;
 }
 
-h1 { margin-bottom: 20px; }
+h1 { margin-bottom: 20px; color: var(--heading-color); }
+h2, h3, strong { color: var(--heading-color); }
 
 /* --- Login Form --- */
 .login-container {
     background: var(--card-bg);
     padding: 2rem;
     border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 6px var(--shadow-color);
     text-align: center;
     max-width: 400px;
     width: 100%;
@@ -32,8 +66,10 @@ input {
     padding: 10px;
     margin: 10px 0;
     width: 80%;
-    border: 1px solid #ddd;
+    border: 1px solid var(--input-border);
     border-radius: 4px;
+    background-color: var(--input-bg);
+    color: var(--text-color);
 }
 
 button.login-btn {
@@ -59,7 +95,7 @@ button.login-btn {
     background: var(--card-bg);
     border-radius: 12px;
     padding: 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px var(--shadow-color);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -67,13 +103,13 @@ button.login-btn {
 }
 
 .question-card.locked-bg {
-    background-color: #f0f0f0;
-    border: 1px solid #e0e0e0;
+    background-color: var(--locked-bg);
+    border: 1px solid var(--border-color);
 }
 
 .category-badge {
-    background-color: #eee;
-    color: #666;
+    background-color: var(--hover-bg);
+    color: var(--subtext-color);
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 0.8rem;
@@ -87,6 +123,7 @@ button.login-btn {
     font-size: 1.1rem;
     font-weight: 600;
     margin-bottom: 20px;
+    color: var(--heading-color);
 }
 
 .options-container {
@@ -111,39 +148,69 @@ button.login-btn {
     display: block;
     padding: 15px 10px;
     text-align: center;
-    border: 2px solid #ddd;
+    border: 2px solid var(--border-color);
     border-radius: 8px;
     font-weight: bold;
     transition: all 0.2s;
-    background-color: white;
-    color: #555;
+    background-color: var(--card-bg);
+    color: var(--subtext-color);
     position: relative;
     overflow: hidden;
 }
 
 .option-box.locked {
-    background-color: #e9ecef !important;
-    border-color: #ced4da !important;
-    color: #adb5bd !important;
+    background-color: var(--locked-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--subtext-color) !important;
     cursor: not-allowed;
     pointer-events: none;
 }
 .option-box.resolved-correct {
-    background-color: #d4edda !important;
+    background-color: rgba(40, 167, 69, 0.2) !important; /* Semi-transparent green */
     border-color: #28a745 !important;
-    color: #155724 !important;
+    color: #28a745 !important;
     box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
 }
 .option-box.resolved-correct::after {
     content: "✓";
     position: absolute;
-    top: 5px; right: 5px; color: #155724; font-size: 1rem;
+    top: 5px; right: 5px; color: #28a745; font-size: 1rem;
 }
 .option-box.resolved-wrong {
-    background-color: #f8d7da !important;
+    background-color: rgba(220, 53, 69, 0.1) !important;
     border-color: #dc3545 !important;
-    color: #721c24 !important;
+    color: #dc3545 !important;
     opacity: 0.8;
+}
+
+/* --- HERO OPTION STYLES (Teams / Coins) --- */
+.hero-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    border-width: 2px;
+    border-style: solid;
+    color: white !important;
+    /* Default state: slightly dimmed background, no border color (uses BG color as border) */
+    opacity: 0.6; 
+    filter: grayscale(30%);
+    transition: all 0.2s ease-in-out;
+}
+
+/* Selected Hero State */
+.option-label input[type="radio"]:checked + .hero-box {
+    opacity: 1;
+    filter: grayscale(0%);
+    box-shadow: 0 0 15px rgba(0,0,0,0.3);
+    transform: scale(1.02);
+}
+
+.team-logo {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));
 }
 
 /* --- DUAL SCOREBOARD STYLE --- */

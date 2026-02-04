@@ -252,8 +252,10 @@ func handleLeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 
 	var args []interface{}
 	if scope != "global" && room != "" {
-		query += " WHERE u.room_code = ?"
-		args = append(args, room)
+		// Use LIKE to find the room within the comma-separated list
+		// e.g. room='FAMILY' matches 'FAMILY,BRAD' or 'FAMILY'
+		query += " WHERE u.room_code LIKE ?"
+		args = append(args, "%"+room+"%")
 	}
 
 	query += " ORDER BY u.total_score DESC, u.username ASC"
@@ -298,10 +300,35 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost { http.Redirect(w, r, "/", 302); return }
 	username := r.FormValue("username")
 	pin := r.FormValue("pin")
-	roomCode := strings.ToUpper(strings.TrimSpace(r.FormValue("room_code")))
-	if roomCode == "" {
-		roomCode = "MAIN"
+	
+	// -- Room Code Validation & Formatting --
+	inputRooms := r.FormValue("room_code")
+	var validatedRooms []string
+	
+	// Allowed rooms list
+	allowed := map[string]bool{
+		"FAMILY": true,
+		"BRAD":   true,
+		"FRIENDS": true,
 	}
+	parts := strings.Split(inputRooms, ",")
+	for _, p := range parts {
+		clean := strings.ToUpper(strings.TrimSpace(p))
+		if allowed[clean] {
+			validatedRooms = append(validatedRooms, clean)
+		}
+	}
+	
+	// Strict Requirement: Must have at least one valid room
+	// This handles both empty inputs and inputs with invalid codes
+	if len(validatedRooms) == 0 {
+		http.Redirect(w, r, "/?error=invalid_room", 302)
+		return
+	}
+
+	// Join back to string (No default to MAIN anymore)
+	roomCode := strings.Join(validatedRooms, ",")
+	// ----------------------------------------
 
 	var userID int
 	var pinHash string
