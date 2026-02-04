@@ -11,11 +11,10 @@ import (
 
 var db *sql.DB
 
-// -- JSON Config Structures --
 type SeedQuestion struct {
 	Text     string       `json:"text"`
 	Category string       `json:"category"`
-	Type     string       `json:"type"` // "select" or "number"
+	Type     string       `json:"type"`
 	ImageURL string       `json:"image_url"`
 	Options  []SeedOption `json:"options"`
 }

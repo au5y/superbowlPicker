@@ -122,7 +122,7 @@ func main() {
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	port := ":4884"
-	fmt.Printf("🏈 Superbowl LX Prop Pool running at http://localhost%s\n", port)
+	fmt.Printf("🏈 Austin's Superbowl LX Prop Pool running on port %s\n", port)
 	err := http.ListenAndServe(port, nil)
 	if err != nil {
 		log.Fatal(err)
@@ -540,11 +540,12 @@ func handleAdminRefresh(w http.ResponseWriter, r *http.Request) {
 	for _, q := range fileQuestions {
 		seenTexts[q.Text] = true
 		
+		qType := q.Type
+		if qType == "" { qType = "select" }
+
 		if id, exists := dbQuestions[q.Text]; exists {
-			db.Exec("UPDATE questions SET category=?, type=?, image_url=? WHERE id=?", q.Category, q.Type, q.ImageURL, id)
+			db.Exec("UPDATE questions SET category=?, type=?, image_url=? WHERE id=?", q.Category, qType, q.ImageURL, id)
 		} else {
-			qType := q.Type
-			if qType == "" { qType = "select" }
 			res, _ := db.Exec("INSERT INTO questions (text, category, type, image_url) VALUES (?, ?, ?, ?)", q.Text, q.Category, qType, q.ImageURL)
 			newID, _ := res.LastInsertId()
 			for _, o := range q.Options {
@@ -587,7 +588,6 @@ func handleAdminUsers(w http.ResponseWriter, r *http.Request) {
 		db.Exec("DELETE FROM predictions WHERE user_id = ?", userID)
 		db.Exec("DELETE FROM users WHERE id = ?", userID)
 	} else if action == "update_room" {
-		// Update Room Logic (Strict Check against Aliases Map)
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "Form Error", 400)
 			return
