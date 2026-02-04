@@ -173,8 +173,9 @@
         <table>
             <thead>
                 <tr>
+                    <th>ID</th>
                     <th>Username</th>
-                    <th>Room</th>
+                    <th>Room Assignments</th>
                     <th>Score</th>
                     <th>Actions</th>
                 </tr>
@@ -182,8 +183,10 @@
             <tbody>
                 {{range .Users}}
                 <tr>
+                    <td>{{.ID}}</td>
                     <td>
-                         <form action="/admin/users?key=touchdown" method="POST" style="display:flex; gap:5px;">
+                        <!-- Editable Username Form -->
+                        <form action="/admin/users?key=touchdown" method="POST" style="display:flex; gap:5px;">
                             <input type="hidden" name="user_id" value="{{.ID}}">
                             <input type="hidden" name="action" value="update_username">
                             <input type="text" name="new_username" value="{{.Username}}" style="width:120px; padding:4px;" required>
@@ -197,21 +200,22 @@
                             
                             <div style="display: flex; flex-wrap: wrap; gap: 8px;">
                                 {{$userRoomCode := .RoomCode}}
-                                {{range $.AllowedRooms}}
-                                    <label style="font-size:0.85rem; display:flex; align-items:center; gap:4px; cursor: pointer; background: var(--card-bg); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px;">
-                                        <input type="checkbox" name="room_code" value="{{.}}" 
-                                            {{if hasRoom $userRoomCode .}}checked{{end}}>
-                                        {{.}}
+                                <!-- Loop through the Global Alias Map passed from Go -->
+                                {{range $code, $name := $.RoomAliases}}
+                                    <label style="font-size:0.8rem; display:flex; align-items:center; gap:4px; cursor: pointer; background: var(--hover-bg); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px;">
+                                        <input type="checkbox" name="room_code" value="{{$code}}" 
+                                            {{if hasRoom $userRoomCode $code}}checked{{end}}>
+                                        <strong>{{$code}}</strong> <!-- Changed from $name to $code -->
                                     </label>
                                 {{end}}
                             </div>
                             
-                            <button type="submit" class="btn-sm" style="background:#002244; color:white; align-self: flex-start;">Update</button>
+                            <button type="submit" class="btn-sm" style="background:#002244; color:white; align-self: flex-start; margin-top: 5px;">Update Groups</button>
                         </form>
                     </td>
                     <td>{{.TotalScore}}</td>
-                    <td>
-                        <form action="/admin/users?key=touchdown" method="POST" onsubmit="return confirm('Reset PIN?');">
+                    <td style="display:flex; gap:10px;">
+                        <form action="/admin/users?key=touchdown" method="POST" onsubmit="return confirm('Reset PIN for {{.Username}}?');">
                             <input type="hidden" name="user_id" value="{{.ID}}">
                             <button type="submit" name="action" value="reset_pin" style="background:#ffc107; color:black;" class="btn-sm">Reset PIN</button>
                         </form>

@@ -117,7 +117,8 @@
             userRooms.forEach(room => {
                 const btn = document.createElement('button');
                 btn.className = (room === currentRoom && !isGlobal) ? 'scope-btn active' : 'scope-btn inactive';
-                btn.textContent = room;
+                btn.textContent = roomAliases[room] || room;
+                
                 btn.onclick = () => setScope(room, false);
                 container.appendChild(btn);
             });
@@ -133,8 +134,12 @@
         function setScope(room, global) {
             isGlobal = global;
             if (room) currentRoom = room;
+            
+            const titleEl = document.querySelector('h2');
+            if(global) titleEl.textContent = "🏆 Global Standings";
+            else titleEl.textContent = "🏆 " + (roomAliases[currentRoom] || currentRoom);
 
-            initControls();
+            initControls(); 
             loadLeaderboard();
         }
 

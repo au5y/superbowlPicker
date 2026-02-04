@@ -163,7 +163,13 @@
 
     <div class="app-header">
         <div class="user-badge">{{.User.Username}}</div>
-        <div class="room-badge">{{.User.RoomCode}}</div>
+        {{$aliases := .RoomAliases}}
+        <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: wrap;">
+            {{range split .User.RoomCode ","}}
+                <div class="room-badge">{{roomName . $aliases}}</div>
+            {{end}}
+        </div>
+        
         <div style="margin-top:5px; font-size:0.9rem; font-weight:bold; color:var(--accent-color);">{{.User.TotalScore}} pts</div>
         {{if eq .GameStatus "LOCKED"}}
             <div style="background:#C60C30; color:white; padding:2px 8px; border-radius:4px; font-size:0.8rem; margin-top:5px;">LOCKED</div>

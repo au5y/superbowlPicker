@@ -71,6 +71,18 @@
             <div class="profile-header">
                 <h2>{{.TargetUser.Username}}</h2>
                 <div style="font-size: 2rem; font-weight: bold; color: var(--accent-color);">{{.TargetUser.TotalScore}} Points</div>
+                <div style="margin-top: 5px; color: var(--subtext-color);">
+                    Group(s): 
+                    <strong>
+                        {{if eq .TargetUser.RoomCode ""}}None{{else}}
+                            {{$aliases := .RoomAliases}}
+                            {{range $i, $code := split .TargetUser.RoomCode ","}}
+                                {{if gt $i 0}}, {{end}}
+                                {{roomName $code $aliases}}
+                            {{end}}
+                        {{end}}
+                    </strong>
+                </div>
             </div>
 
             {{if eq .User.ID .TargetUser.ID}}

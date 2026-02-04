@@ -7,33 +7,20 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
-	"os"
 )
-
-var AllowedRooms = []string{"FAMILY", "BRAD", "FRIENDS", "CROSSFIT", "DRAPER"}
-
-var funcMap = template.FuncMap{
-	"hasRoom": func(currentRooms string, roomToCheck string) bool {
-		parts := strings.Split(currentRooms, ",")
-		for _, p := range parts {
-			if strings.TrimSpace(p) == roomToCheck {
-				return true
-			}
-		}
-		return false
-	},
-}
 
 // -- Data Structures --
 
 type PageData struct {
-	User       *User
-	Categories []CategoryGroup
-	GameStatus string
-	TargetUser *User
+	User        *User
+	Categories  []CategoryGroup
+	GameStatus  string
+	TargetUser  *User
+	RoomAliases map[string]string // NEW: Pass aliases to templates
 }
 
 type CategoryGroup struct {
@@ -59,7 +46,7 @@ type QuestionData struct {
 	ImageURL         string
 	Options          []OptionData
 	CorrectOptionID  int64
-	CorrectTextInput string // NEW field
+	CorrectTextInput string
 	UserPrediction   *PredictionData
 }
 
@@ -82,6 +69,38 @@ type PredictionRequest struct {
 	TextInput  string `json:"text_input"`
 }
 
+var AllowedRooms = map[string]string{
+	"FAM":   "Miller/Young Family Pool",
+	"BRAD":     "12 Bradbury Watchparty",
+	"FRIENDS":  "Friends",
+	"CFSV":     "Crossfit Somerville",
+	"DRAPER":	"Draper",
+	"GLOBAL":   "Just for Fun (Global)",
+}
+
+var funcMap = template.FuncMap{
+	"split": func(s string, sep string) []string {
+		if s == "" { return []string{} }
+		return strings.Split(s, sep)
+	},
+	"roomName": func(code string, aliases map[string]string) string {
+		if name, ok := aliases[code]; ok {
+			return name
+		}
+		return code
+	},
+	"hasRoom": func(currentRooms string, roomToCheck string) bool {
+		parts := strings.Split(currentRooms, ",")
+		for _, p := range parts {
+			if strings.TrimSpace(p) == roomToCheck {
+				return true
+			}
+		}
+		return false
+	},
+}
+
+// Register funcs before parsing
 var templates = template.Must(template.New("T").Funcs(funcMap).ParseGlob("templates/*.html"))
 
 func main() {
@@ -91,6 +110,7 @@ func main() {
 	http.HandleFunc("/", handleIndex)
 	http.HandleFunc("/leaderboard", handleLeaderboardView)
 	http.HandleFunc("/user/", handleUserProfile)
+	http.HandleFunc("/user/update", handleUserUpdate)
 	http.HandleFunc("/login", handleLogin)
 	http.HandleFunc("/logout", handleLogout)
 	http.HandleFunc("/predict", handlePredict)
@@ -98,10 +118,9 @@ func main() {
 	http.HandleFunc("/admin", handleAdmin)
 	http.HandleFunc("/admin/resolve", handleResolve)
 	http.HandleFunc("/admin/state", handleGameState)
-	http.HandleFunc("/admin/users", handleAdminUsers)
-	http.HandleFunc("/user/update", handleUserUpdate)
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	http.HandleFunc("/admin/refresh", handleAdminRefresh)
+	http.HandleFunc("/admin/users", handleAdminUsers)
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	port := ":4884"
 	fmt.Printf("🏈 Superbowl LX Prop Pool running at http://localhost%s\n", port)
@@ -147,7 +166,6 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 		if correctOptID.Valid { q.CorrectOptionID = correctOptID.Int64 }
 		if imgURL.Valid { q.ImageURL = imgURL.String }
 
-		// Fetch Options
 		optRows, _ := db.Query("SELECT id, text, color_hex FROM options WHERE question_id = ?", q.ID)
 		for optRows.Next() {
 			o := OptionData{}
@@ -156,7 +174,6 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 		}
 		optRows.Close()
 
-		// Fetch Predictions
 		var selID sql.NullInt64
 		var txtInput sql.NullString
 		err := db.QueryRow("SELECT selected_option_id, text_input FROM predictions WHERE user_id = ? AND question_id = ?", user.ID, q.ID).Scan(&selID, &txtInput)
@@ -175,7 +192,6 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 		questions = append(questions, q)
 	}
 
-	// Grouping Logic
 	var grouped []CategoryGroup
 	groupMap := make(map[string]int)
 
@@ -191,13 +207,23 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	render(w, "index.html", PageData{User: user, Categories: grouped, GameStatus: getGameStatus()})
+	// Pass RoomAliases to template
+	render(w, "index.html", PageData{
+		User: user, 
+		Categories: grouped, 
+		GameStatus: getGameStatus(),
+		RoomAliases: AllowedRooms,
+	})
 }
 
 func handleLeaderboardView(w http.ResponseWriter, r *http.Request) {
 	user := getUser(r)
 	if user == nil { http.Redirect(w, r, "/", http.StatusFound); return }
-	render(w, "leaderboard.html", PageData{User: user, GameStatus: getGameStatus()})
+	render(w, "leaderboard.html", PageData{
+		User: user, 
+		GameStatus: getGameStatus(),
+		RoomAliases: AllowedRooms,
+	})
 }
 
 func handleUserProfile(w http.ResponseWriter, r *http.Request) {
@@ -254,16 +280,55 @@ func handleUserProfile(w http.ResponseWriter, r *http.Request) {
 		questions = append(questions, q)
 	}
 
+	// Use anonymous struct but include RoomAliases
 	render(w, "profile.html", struct {
-		User *User; TargetUser *User; Questions []QuestionData; GameStatus string; AllowedRooms []string
-	}{currentUser, targetUser, questions, gameStatus, nil})
+		User *User; TargetUser *User; Questions []QuestionData; GameStatus string; RoomAliases map[string]string
+	}{currentUser, targetUser, questions, gameStatus, AllowedRooms})
+}
+
+func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost { http.Error(w, "Method Not Allowed", 405); return }
+
+	user := getUser(r)
+	if user == nil { http.Redirect(w, r, "/", 302); return }
+
+	// 1. Update Username
+	newUsername := strings.TrimSpace(r.FormValue("username"))
+	if newUsername != "" {
+		_, err := db.Exec("UPDATE users SET username = ? WHERE id = ?", newUsername, user.ID)
+		if err != nil { log.Println("Error updating username:", err) }
+	}
+
+	// 2. Update Room Codes
+	if r.Form.Has("room_codes") {
+		rawRooms := r.FormValue("room_codes")
+		var validatedRooms []string
+		
+		parts := strings.Split(rawRooms, ",")
+		for _, p := range parts {
+			clean := strings.ToUpper(strings.TrimSpace(p))
+			// Validates against the map keys
+			if _, ok := AllowedRooms[clean]; ok {
+				validatedRooms = append(validatedRooms, clean)
+			}
+		}
+		
+		finalRoomCode := strings.Join(validatedRooms, ",")
+		if finalRoomCode == "" { finalRoomCode = "GLOBAL" }
+
+		_, err := db.Exec("UPDATE users SET room_code = ? WHERE id = ?", finalRoomCode, user.ID)
+		if err != nil { log.Println("Error updating rooms:", err) }
+	}
+
+	ref := r.Header.Get("Referer")
+	if ref == "" { ref = "/" }
+	http.Redirect(w, r, ref, 302)
 }
 
 func handleLeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 	room := r.URL.Query().Get("room")
 	scope := r.URL.Query().Get("scope")
 
-	// Calculate tie breaker by summing up the scoreboard predictions
 	tieBreakerSQL := `COALESCE((
 		SELECT SUM(CAST(p.text_input AS INTEGER)) 
 		FROM predictions p 
@@ -275,8 +340,6 @@ func handleLeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 
 	var args []interface{}
 	if scope != "global" && room != "" {
-		// Use LIKE to find the room within the comma-separated list
-		// e.g. room='FAMILY' matches 'FAMILY,BRAD' or 'FAMILY'
 		query += " WHERE u.room_code LIKE ?"
 		args = append(args, "%"+room+"%")
 	}
@@ -324,31 +387,9 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	pin := r.FormValue("pin")
 	
-	inputRooms := r.FormValue("room_code")
-	var validatedRooms []string
-	
-	allowedMap := make(map[string]bool)
-	for _, room := range AllowedRooms {
-		allowedMap[room] = true
-	}
-
-	parts := strings.Split(inputRooms, ",")
-	for _, p := range parts {
-		clean := strings.ToUpper(strings.TrimSpace(p))
-		if allowedMap[clean] {
-			validatedRooms = append(validatedRooms, clean)
-		}
-	}
-	
-	if len(validatedRooms) == 0 {
-		http.Redirect(w, r, "/?error=invalid_room", 302)
-		return
-	}
-
-	roomCode := strings.Join(validatedRooms, ",")
-
 	var userID int
 	var pinHash string
+	
 	if err := db.QueryRow("SELECT id, pin_hash FROM users WHERE username = ? COLLATE NOCASE", username).Scan(&userID, &pinHash); err == nil {
 		if pinHash != "" && pinHash != pin {
 			http.Redirect(w, r, "/?error=invalid_pin", 302)
@@ -357,13 +398,13 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		if pinHash == "" {
 			db.Exec("UPDATE users SET pin_hash = ? WHERE id = ?", pin, userID)
 		}
-		// Update room code
-		db.Exec("UPDATE users SET room_code = ? WHERE id = ?", roomCode, userID)
 	} else {
-		res, _ := db.Exec("INSERT INTO users (username, pin_hash, room_code) VALUES (?, ?, ?)", username, pin, roomCode)
+		// New user defaults to empty string room to trigger the gate
+		res, _ := db.Exec("INSERT INTO users (username, pin_hash, room_code) VALUES (?, ?, ?)", username, pin, "")
 		id, _ := res.LastInsertId()
 		userID = int(id)
 	}
+	
 	http.SetCookie(w, &http.Cookie{Name: "user_id", Value: strconv.Itoa(userID), Expires: time.Now().Add(24*time.Hour)})
 	http.Redirect(w, r, "/", 302)
 }
@@ -377,7 +418,6 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	keys, ok := r.URL.Query()["key"]
 	if !ok || len(keys[0]) < 1 || keys[0] != "touchdown" { http.Error(w, "Forbidden", 403); return }
 	
-	// ... (Question fetching logic remains the same) ...
 	var questions []QuestionData
 	rows, _ := db.Query("SELECT id, text, category, status, type, image_url, correct_option_id, correct_text_input FROM questions ORDER BY id ASC")
 	defer rows.Close()
@@ -412,12 +452,11 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Pass AllowedRooms to the template
 	render(w, "admin.html", struct {
-		Questions    []QuestionData
-		GameStatus   string
-		Users        []User
-		AllowedRooms []string
+		Questions   []QuestionData
+		GameStatus  string
+		Users       []User
+		RoomAliases map[string]string
 	}{questions, getGameStatus(), users, AllowedRooms})
 }
 
@@ -426,26 +465,21 @@ func handleResolve(w http.ResponseWriter, r *http.Request) {
 		QuestionID string `json:"question_id"`
 		OptionID   string `json:"option_id"`
 		TextInput  string `json:"text_input"` 
-		Status     string `json:"status"` // Added Status field
+		Status     string `json:"status"`
 	}
 	json.NewDecoder(r.Body).Decode(&req)
 
 	if req.Status == "OPEN" {
-		// UNRESOLVE LOGIC: Reset to OPEN and clear answers
 		db.Exec("UPDATE questions SET status='OPEN', correct_option_id=NULL, correct_text_input=NULL WHERE id=?", req.QuestionID)
 	} else {
-		// RESOLVE LOGIC
 		var optID interface{} = nil
 		if req.OptionID != "" { optID = req.OptionID }
-		
 		var txtVal interface{} = nil
 		if req.TextInput != "" { txtVal = req.TextInput }
-
 		db.Exec("UPDATE questions SET status='RESOLVED', correct_option_id=?, correct_text_input=? WHERE id=?", optID, txtVal, req.QuestionID)
 	}
 	
 	db.Exec(`UPDATE users SET total_score = (SELECT COUNT(*) FROM predictions p JOIN questions q ON p.question_id = q.id WHERE p.user_id = users.id AND q.status = 'RESOLVED' AND p.selected_option_id = q.correct_option_id)`)
-	
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
 }
@@ -454,6 +488,64 @@ func handleGameState(w http.ResponseWriter, r *http.Request) {
 	status := r.FormValue("status")
 	if status == "OPEN" || status == "LOCKED" { setGameStatus(status) }
 	http.Redirect(w, r, "/admin?key=touchdown", 302)
+}
+
+func handleAdminRefresh(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost { http.Error(w, "Method Not Allowed", 405); return }
+
+	file, err := os.ReadFile("questions.json")
+	if err != nil {
+		log.Println("Error reading questions.json:", err)
+		http.Redirect(w, r, "/admin?key=touchdown&error=read_failed", 302)
+		return
+	}
+
+	var fileQuestions []SeedQuestion
+	if err := json.Unmarshal(file, &fileQuestions); err != nil {
+		log.Println("Error parsing questions.json:", err)
+		http.Redirect(w, r, "/admin?key=touchdown&error=parse_failed", 302)
+		return
+	}
+
+	dbQuestions := make(map[string]int)
+	rows, _ := db.Query("SELECT id, text FROM questions")
+	defer rows.Close()
+	for rows.Next() {
+		var id int
+		var text string
+		rows.Scan(&id, &text)
+		dbQuestions[text] = id
+	}
+
+	seenTexts := make(map[string]bool)
+
+	for _, q := range fileQuestions {
+		seenTexts[q.Text] = true
+		
+		if id, exists := dbQuestions[q.Text]; exists {
+			db.Exec("UPDATE questions SET category=?, type=?, image_url=? WHERE id=?", q.Category, q.Type, q.ImageURL, id)
+		} else {
+			qType := q.Type
+			if qType == "" { qType = "select" }
+			res, _ := db.Exec("INSERT INTO questions (text, category, type, image_url) VALUES (?, ?, ?, ?)", q.Text, q.Category, qType, q.ImageURL)
+			newID, _ := res.LastInsertId()
+			for _, o := range q.Options {
+				db.Exec("INSERT INTO options (question_id, text, color_hex) VALUES (?, ?, ?)", newID, o.Text, o.Color)
+			}
+		}
+	}
+
+	for text, id := range dbQuestions {
+		if !seenTexts[text] {
+			db.Exec("DELETE FROM predictions WHERE question_id = ?", id)
+			db.Exec("DELETE FROM options WHERE question_id = ?", id)
+			db.Exec("DELETE FROM questions WHERE id = ?", id)
+		}
+	}
+
+	db.Exec(`UPDATE users SET total_score = (SELECT COUNT(*) FROM predictions p JOIN questions q ON p.question_id = q.id WHERE p.user_id = users.id AND q.status = 'RESOLVED' AND p.selected_option_id = q.correct_option_id)`)
+
+	http.Redirect(w, r, "/admin?key=touchdown&status=refreshed", 302)
 }
 
 func handleAdminUsers(w http.ResponseWriter, r *http.Request) {
@@ -472,176 +564,40 @@ func handleAdminUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if action == "reset_pin" {
-		_, err := db.Exec("UPDATE users SET pin_hash = '' WHERE id = ?", userID)
-		if err != nil { log.Println(err); http.Error(w, "DB Error", 500); return }
-		
+		db.Exec("UPDATE users SET pin_hash = '' WHERE id = ?", userID)
 	} else if action == "delete" {
-		_, err := db.Exec("DELETE FROM predictions WHERE user_id = ?", userID)
-		if err != nil { log.Println(err); http.Error(w, "DB Error", 500); return }
-		
-		_, err = db.Exec("DELETE FROM users WHERE id = ?", userID)
-		if err != nil { log.Println(err); http.Error(w, "DB Error", 500); return }
-		
+		db.Exec("DELETE FROM predictions WHERE user_id = ?", userID)
+		db.Exec("DELETE FROM users WHERE id = ?", userID)
 	} else if action == "update_room" {
-		r.ParseForm()
-		selectedRooms := r.Form["room_code"]
-
-		var validated []string
-		for _, s := range selectedRooms {
-			for _, a := range AllowedRooms {
-				if s == a {
-					validated = append(validated, s)
-					break
-				}
+		// r.FormValue only gets the first value, we need r.Form["room_code"]
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "Form Error", 400)
+			return
+		}
+		
+		rawRooms := r.Form["room_code"] // Returns []string
+		var validatedRooms []string
+		
+		for _, p := range rawRooms {
+			clean := strings.ToUpper(strings.TrimSpace(p))
+			if _, ok := AllowedRooms[clean]; ok {
+				validatedRooms = append(validatedRooms, clean)
 			}
 		}
-
-		finalRoom := strings.Join(validated, ",")
-		_, err = db.Exec("UPDATE users SET room_code = ? WHERE id = ?", finalRoom, userID)
-		if err != nil {
-			log.Println(err)
-			http.Error(w, "DB Error", 500)
-			return
-		}
 		
+		finalRoom := strings.Join(validatedRooms, ",")
+		if finalRoom == "" { finalRoom = "GLOBAL" } // Default to GLOBAL if they uncheck everything
+
+		db.Exec("UPDATE users SET room_code = ? WHERE id = ?", finalRoom, userID)
+
 	} else if action == "update_username" {
 		newUsername := strings.TrimSpace(r.FormValue("new_username"))
-		if newUsername == "" { http.Error(w, "Username cannot be empty", 400); return }
-
-		_, err := db.Exec("UPDATE users SET username = ? WHERE id = ?", newUsername, userID)
-		if err != nil {
-			log.Println("Error updating username:", err)
-			http.Error(w, "Error updating username (likely taken)", 500)
-			return
+		if newUsername != "" {
+			db.Exec("UPDATE users SET username = ? WHERE id = ?", newUsername, userID)
 		}
-	} else {
-		http.Error(w, "Invalid Action", 400)
-		return
 	}
 
 	http.Redirect(w, r, "/admin?key=touchdown", 302)
-}
-
-func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost { http.Error(w, "Method Not Allowed", 405); return }
-
-	user := getUser(r)
-	if user == nil { http.Redirect(w, r, "/", 302); return }
-
-	// 1. Update Username
-	newUsername := strings.TrimSpace(r.FormValue("username"))
-	if newUsername != "" {
-		_, err := db.Exec("UPDATE users SET username = ? WHERE id = ?", newUsername, user.ID)
-		if err != nil {
-			log.Println("Error updating username:", err)
-		}
-	}
-
-	// 2. Update Room Codes
-	rawRooms := r.FormValue("room_codes")
-	
-	// Re-use global allowed list for validation
-	allowedMap := make(map[string]bool)
-	for _, room := range AllowedRooms {
-		allowedMap[room] = true
-	}
-
-	var validatedRooms []string
-	parts := strings.Split(rawRooms, ",")
-	for _, p := range parts {
-		clean := strings.ToUpper(strings.TrimSpace(p))
-		if allowedMap[clean] {
-			validatedRooms = append(validatedRooms, clean)
-		}
-	}
-	
-	// We allow users to be in "no rooms" (Global only) if they want, 
-	// or they can re-enter codes.
-	finalRoomCode := strings.Join(validatedRooms, ",")
-	
-	_, err := db.Exec("UPDATE users SET room_code = ? WHERE id = ?", finalRoomCode, user.ID)
-	if err != nil {
-		log.Println("Error updating rooms:", err)
-	}
-
-	http.Redirect(w, r, fmt.Sprintf("/user/%d", user.ID), 302)
-}
-
-func handleAdminRefresh(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost { http.Error(w, "Method Not Allowed", 405); return }
-
-	// 1. Read the JSON file
-	file, err := os.ReadFile("questions.json")
-	if err != nil {
-		log.Println("Error reading questions.json:", err)
-		http.Redirect(w, r, "/admin?key=touchdown&error=read_failed", 302)
-		return
-	}
-
-	var fileQuestions []SeedQuestion
-	if err := json.Unmarshal(file, &fileQuestions); err != nil {
-		log.Println("Error parsing questions.json:", err)
-		http.Redirect(w, r, "/admin?key=touchdown&error=parse_failed", 302)
-		return
-	}
-
-	// 2. Get Current DB Questions (Map of Text -> ID)
-	dbQuestions := make(map[string]int)
-	rows, err := db.Query("SELECT id, text FROM questions")
-	if err != nil {
-		http.Error(w, "DB Error", 500)
-		return
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var id int
-		var text string
-		rows.Scan(&id, &text)
-		dbQuestions[text] = id
-	}
-
-	// 3. Process JSON Questions (Insert New & Update Existing)
-	// We keep track of which texts we saw to identify deletions later
-	seenTexts := make(map[string]bool)
-
-	for _, q := range fileQuestions {
-		seenTexts[q.Text] = true
-		
-		if id, exists := dbQuestions[q.Text]; exists {
-			// -- UPDATE EXISTING --
-			// We only update metadata (Category, Type, Image). 
-			// We do NOT touch options to preserve user pick integrity.
-			db.Exec("UPDATE questions SET category=?, type=?, image_url=? WHERE id=?", q.Category, q.Type, q.ImageURL, id)
-		} else {
-			// -- INSERT NEW --
-			qType := q.Type
-			if qType == "" { qType = "select" }
-			
-			res, err := db.Exec("INSERT INTO questions (text, category, type, image_url) VALUES (?, ?, ?, ?)", q.Text, q.Category, qType, q.ImageURL)
-			if err == nil {
-				newID, _ := res.LastInsertId()
-				for _, o := range q.Options {
-					db.Exec("INSERT INTO options (question_id, text, color_hex) VALUES (?, ?, ?)", newID, o.Text, o.Color)
-				}
-			}
-		}
-	}
-
-	// 4. Process Deletions (In DB but NOT in JSON)
-	for text, id := range dbQuestions {
-		if !seenTexts[text] {
-			log.Printf("Deleting stale question: %s (ID: %d)", text, id)
-			// Delete related data first
-			db.Exec("DELETE FROM predictions WHERE question_id = ?", id)
-			db.Exec("DELETE FROM options WHERE question_id = ?", id)
-			db.Exec("DELETE FROM questions WHERE id = ?", id)
-		}
-	}
-
-	// Recalculate scores just in case a deleted question had resolved points
-	db.Exec(`UPDATE users SET total_score = (SELECT COUNT(*) FROM predictions p JOIN questions q ON p.question_id = q.id WHERE p.user_id = users.id AND q.status = 'RESOLVED' AND p.selected_option_id = q.correct_option_id)`)
-
-	http.Redirect(w, r, "/admin?key=touchdown&status=refreshed", 302)
 }
 
 func render(w http.ResponseWriter, tmpl string, data interface{}) {
