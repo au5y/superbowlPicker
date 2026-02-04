@@ -124,7 +124,20 @@ func withLogging(next http.HandlerFunc) http.HandlerFunc {
 }
 
 func main() {
-	InitDB("./game.db")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "4884" // Default to Prod Port
+	}
+
+	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		dbName = "./game.db" // Default to local DB
+	}
+
+	fmt.Printf("Starting App on Port %s using DB %s\n", port, dbName)
+
+	// 2. Initialize with Config
+	InitDB(dbName)
 	defer db.Close()
 
 	if _, err := db.Exec("PRAGMA journal_mode=WAL;"); err != nil {
@@ -147,9 +160,7 @@ func main() {
 
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
-	port := ":4884"
-	fmt.Printf("🏈 Superbowl LX Prop Pool running at http://localhost%s\n", port)
-	err := http.ListenAndServe(port, nil)
+	err := http.ListenAndServe(":"+port, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
