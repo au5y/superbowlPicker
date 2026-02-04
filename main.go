@@ -10,9 +10,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"os"
 )
 
-var AllowedRooms = []string{"FAMILY", "BRAD", "FRIENDS", "CROSSFIT"}
+var AllowedRooms = []string{"FAMILY", "BRAD", "FRIENDS", "CROSSFIT", "DRAPER"}
 
 var funcMap = template.FuncMap{
 	"hasRoom": func(currentRooms string, roomToCheck string) bool {
@@ -100,6 +101,7 @@ func main() {
 	http.HandleFunc("/admin/users", handleAdminUsers)
 	http.HandleFunc("/user/update", handleUserUpdate)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	http.HandleFunc("/admin/refresh", handleAdminRefresh)
 
 	port := ":4884"
 	fmt.Printf("🏈 Superbowl LX Prop Pool running at http://localhost%s\n", port)
@@ -563,6 +565,83 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, fmt.Sprintf("/user/%d", user.ID), 302)
+}
+
+func handleAdminRefresh(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost { http.Error(w, "Method Not Allowed", 405); return }
+
+	// 1. Read the JSON file
+	file, err := os.ReadFile("questions.json")
+	if err != nil {
+		log.Println("Error reading questions.json:", err)
+		http.Redirect(w, r, "/admin?key=touchdown&error=read_failed", 302)
+		return
+	}
+
+	var fileQuestions []SeedQuestion
+	if err := json.Unmarshal(file, &fileQuestions); err != nil {
+		log.Println("Error parsing questions.json:", err)
+		http.Redirect(w, r, "/admin?key=touchdown&error=parse_failed", 302)
+		return
+	}
+
+	// 2. Get Current DB Questions (Map of Text -> ID)
+	dbQuestions := make(map[string]int)
+	rows, err := db.Query("SELECT id, text FROM questions")
+	if err != nil {
+		http.Error(w, "DB Error", 500)
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int
+		var text string
+		rows.Scan(&id, &text)
+		dbQuestions[text] = id
+	}
+
+	// 3. Process JSON Questions (Insert New & Update Existing)
+	// We keep track of which texts we saw to identify deletions later
+	seenTexts := make(map[string]bool)
+
+	for _, q := range fileQuestions {
+		seenTexts[q.Text] = true
+		
+		if id, exists := dbQuestions[q.Text]; exists {
+			// -- UPDATE EXISTING --
+			// We only update metadata (Category, Type, Image). 
+			// We do NOT touch options to preserve user pick integrity.
+			db.Exec("UPDATE questions SET category=?, type=?, image_url=? WHERE id=?", q.Category, q.Type, q.ImageURL, id)
+		} else {
+			// -- INSERT NEW --
+			qType := q.Type
+			if qType == "" { qType = "select" }
+			
+			res, err := db.Exec("INSERT INTO questions (text, category, type, image_url) VALUES (?, ?, ?, ?)", q.Text, q.Category, qType, q.ImageURL)
+			if err == nil {
+				newID, _ := res.LastInsertId()
+				for _, o := range q.Options {
+					db.Exec("INSERT INTO options (question_id, text, color_hex) VALUES (?, ?, ?)", newID, o.Text, o.Color)
+				}
+			}
+		}
+	}
+
+	// 4. Process Deletions (In DB but NOT in JSON)
+	for text, id := range dbQuestions {
+		if !seenTexts[text] {
+			log.Printf("Deleting stale question: %s (ID: %d)", text, id)
+			// Delete related data first
+			db.Exec("DELETE FROM predictions WHERE question_id = ?", id)
+			db.Exec("DELETE FROM options WHERE question_id = ?", id)
+			db.Exec("DELETE FROM questions WHERE id = ?", id)
+		}
+	}
+
+	// Recalculate scores just in case a deleted question had resolved points
+	db.Exec(`UPDATE users SET total_score = (SELECT COUNT(*) FROM predictions p JOIN questions q ON p.question_id = q.id WHERE p.user_id = users.id AND q.status = 'RESOLVED' AND p.selected_option_id = q.correct_option_id)`)
+
+	http.Redirect(w, r, "/admin?key=touchdown&status=refreshed", 302)
 }
 
 func render(w http.ResponseWriter, tmpl string, data interface{}) {

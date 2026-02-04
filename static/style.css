@@ -36,12 +36,33 @@
     --locked-bg: #2a2a2a;
 }
 
+/* --- Mobile "App-Like" Standards --- */
+html, body {
+    /* Stop the "Rubber Band" bounce effect */
+    overscroll-behavior-y: none;
+    /* Disable double-tap to zoom */
+    touch-action: manipulation;
+    /* Ensure fonts don't auto-scale */
+    -webkit-text-size-adjust: 100%;
+}
+
+/* Prevent iOS zooming in when you tap a text box */
+input, select, textarea {
+    font-size: 16px !important; 
+}
+
+/* Remove the grey "highlight box" when tapping buttons on iOS */
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: var(--bg-color);
     color: var(--text-color);
     margin: 0;
     padding: 20px;
+    padding-bottom: 40px !important; /* Standard padding, no longer needs to clear a fixed footer */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -100,6 +121,8 @@ button.login-btn {
     flex-direction: column;
     justify-content: space-between;
     transition: all 0.2s ease;
+    height: 100%; /* Forces card to fill the grid cell height */
+    box-sizing: border-box;
 }
 
 .question-card.locked-bg {
@@ -129,18 +152,13 @@ button.login-btn {
 .options-container {
     display: flex;
     gap: 10px;
-    flex-wrap: wrap; /* NEW: Allows buttons to stack if they don't fit */
+    flex-wrap: wrap; /* Allows buttons to stack if they don't fit */
 }
 
+/* --- Radio Button Styling --- */
 .option-label {
     flex: 1 1 auto;
     min-width: 80px;
-    cursor: pointer;
-    position: relative;
-}
-
-.option-label {
-    flex: 1;
     cursor: pointer;
     position: relative;
 }
@@ -199,7 +217,7 @@ button.login-btn {
     border-width: 2px;
     border-style: solid;
     color: white !important;
-    /* Default state: slightly dimmed background, no border color (uses BG color as border) */
+    /* Default state: slightly dimmed background */
     opacity: 0.6; 
     filter: grayscale(30%);
     transition: all 0.2s ease-in-out;
@@ -293,9 +311,60 @@ button.login-btn {
     letter-spacing: 1px;
     color: #ccc;
 }
+
+.missing-pick {
+    border: 2px solid #dc3545 !important; /* Force red border */
+    box-shadow: 0 0 10px rgba(220, 53, 69, 0.3) !important;
+    animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+#validation-feedback {
+    transition: all 0.3s ease;
+}
+
+/* --- Static Validate Button (Bottom of Content) --- */
+.validate-bar {
+    position: static !important; /* Inline flow, not fixed */
+    width: 100%;
+    max-width: 800px;
+    margin: 30px auto 10px auto;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    text-align: center;
+    z-index: 1;
+}
+
+.btn-validate {
+    width: 100%; 
+    max-width: 400px;
+    padding: 15px 0;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: white;
+    background: #002244;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    display: inline-block;
+    transition: transform 0.2s;
+}
+.btn-validate:active { transform: scale(0.95); }
+
+
 @media (max-width: 600px) {
     body {
         padding: 10px;
+        padding-bottom: 40px !important;
     }
 
     .grid-container {
@@ -343,20 +412,15 @@ button.login-btn {
         width: 100%;
         box-sizing: border-box;
     }
-}
-.missing-pick {
-    border: 2px solid #dc3545 !important; /* Force red border */
-    box-shadow: 0 0 10px rgba(220, 53, 69, 0.3) !important;
-    animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
-}
 
-@keyframes shake {
-  10%, 90% { transform: translate3d(-1px, 0, 0); }
-  20%, 80% { transform: translate3d(2px, 0, 0); }
-  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-  40%, 60% { transform: translate3d(4px, 0, 0); }
-}
-
-#validation-feedback {
-    transition: all 0.3s ease;
+    /* Mobile Validate Bar */
+    .validate-bar {
+        padding: 0 !important;
+        margin-top: 20px;
+    }
+    .btn-validate {
+        width: 100%;
+        max-width: 100%;
+        border-radius: 8px !important;
+    }
 }

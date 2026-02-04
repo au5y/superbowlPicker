@@ -91,17 +91,25 @@
         </div>
 
         <div class="controls">
-            <div>
-                <div style="font-size: 0.9rem; color: var(--subtext-color); margin-bottom: 5px;">CURRENT STATUS</div>
-                <span class="state-tag tag-{{.GameStatus}}">{{.GameStatus}}</span>
+            <div style="display:flex; align-items:center; gap: 20px;">
+                <div>
+                    <div style="font-size: 0.9rem; color: var(--subtext-color); margin-bottom: 5px;">CURRENT STATUS</div>
+                    <span class="state-tag tag-{{.GameStatus}}">{{.GameStatus}}</span>
+                </div>
+                
+                <form action="/admin/state" method="POST" style="margin:0;">
+                    {{if eq .GameStatus "OPEN"}}
+                        <button type="submit" name="status" value="LOCKED" class="btn-lock">🔒 LOCK GAME</button>
+                    {{else}}
+                        <button type="submit" name="status" value="OPEN" class="btn-unlock">🔓 UNLOCK GAME</button>
+                    {{end}}
+                </form>
             </div>
-            
-            <form action="/admin/state" method="POST" style="margin:0;">
-                {{if eq .GameStatus "OPEN"}}
-                    <button type="submit" name="status" value="LOCKED" class="btn-lock">🔒 LOCK GAME</button>
-                {{else}}
-                    <button type="submit" name="status" value="OPEN" class="btn-unlock">🔓 UNLOCK GAME</button>
-                {{end}}
+
+            <form action="/admin/refresh" method="POST" style="margin:0;" onsubmit="return confirm('Sync with questions.json? \n- New questions will be ADDED.\n- Missing questions will be DELETED (along with their answers).\n- Existing questions will be UPDATED.');">
+                <button type="submit" style="background: var(--card-bg); border: 2px solid var(--accent-color); color: var(--accent-color); padding: 10px 15px; border-radius: 4px; font-weight: bold; cursor: pointer;">
+                    🔄 Sync Questions
+                </button>
             </form>
         </div>
 

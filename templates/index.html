@@ -2,10 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>Superbowl LX Prop Pool</title>
     <link rel="stylesheet" href="/static/style.css">
-    <!-- Favicons -->
     <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
@@ -271,16 +270,18 @@
             </div>
         </div>
         {{end}}
+        {{if ne .GameStatus "LOCKED"}}
+        <div class="validate-bar">
+            <div id="validation-feedback" style="margin-bottom: 10px; font-weight: bold; min-height: 1.2em; font-size: 0.95rem;"></div>
+            
+            <button class="btn-validate" onclick="validatePicks()">LOCK IN / VALIDATE</button>
+        </div>
+        {{end}}
     </div>
 
-    {{if ne .GameStatus "LOCKED"}}
-    <div class="validate-bar">
-        <div id="validation-feedback" style="margin-bottom: 8px; font-weight: bold; min-height: 1.2em; font-size: 0.95rem;"></div>
-        <button class="btn-validate" onclick="validatePicks()">LOCK IN / VALIDATE</button>
+    <div id="save-status" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #28a745; color: white; padding: 8px 16px; border-radius: 20px; opacity: 0; transition: opacity 0.5s; font-weight: bold; z-index: 2000; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+        Saved Pick!
     </div>
-    {{end}}
-
-    <div id="save-status" style="position: fixed; bottom: 70px; right: 20px; background: #333; color: white; padding: 10px 20px; border-radius: 5px; opacity: 0; transition: opacity 0.5s; font-weight: bold;">Saved ✓</div>
 
     <script>
         function toggleDrawer() {
