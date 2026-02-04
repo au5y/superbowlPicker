@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 
@@ -36,7 +37,7 @@ func InitDB(filepath string) {
 	}
 
 	createTables()
-
+	runMigrations()
 	seedData()
 }
 
@@ -47,7 +48,10 @@ func createTables() {
 			username TEXT UNIQUE,
 			pin_hash TEXT,
 			total_score INTEGER DEFAULT 0,
-			room_code TEXT DEFAULT 'MAIN'
+			room_code TEXT DEFAULT 'MAIN',
+			is_admin INTEGER DEFAULT 0,
+			icon TEXT DEFAULT '🏈',
+			color_hex TEXT DEFAULT '#002244'
 		);`,
 		`CREATE TABLE IF NOT EXISTS questions (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -87,15 +91,42 @@ func createTables() {
 			log.Fatalf("Error creating table: %s\nQuery: %s", err, query)
 		}
 	}
+}
 
-	var count int
-	err := db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('users') WHERE name='room_code'").Scan(&count)
-	if err == nil && count == 0 {
+// runMigrations checks for missing columns in existing tables and adds them.
+// This allows smooth upgrades from v2.0 to v2.5 without wiping data.
+func runMigrations() {
+	// 1. Check for room_code (Legacy Migration)
+	if !columnExists("users", "room_code") {
 		log.Println("Migrating: Adding room_code to users table...")
-		if _, err := db.Exec("ALTER TABLE users ADD COLUMN room_code TEXT DEFAULT 'MAIN'"); err != nil {
-			log.Fatalf("Error migrating users table: %v", err)
-		}
+		db.Exec("ALTER TABLE users ADD COLUMN room_code TEXT DEFAULT 'MAIN'")
 	}
+
+	// 2. Check for is_admin (v2.5)
+	if !columnExists("users", "is_admin") {
+		log.Println("Migrating: Adding is_admin to users table...")
+		db.Exec("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0")
+	}
+
+	// 3. Check for icon (v2.5)
+	if !columnExists("users", "icon") {
+		log.Println("Migrating: Adding icon to users table...")
+		db.Exec("ALTER TABLE users ADD COLUMN icon TEXT DEFAULT '🏈'")
+	}
+
+	// 4. Check for color_hex (v2.5)
+	if !columnExists("users", "color_hex") {
+		log.Println("Migrating: Adding color_hex to users table...")
+		db.Exec("ALTER TABLE users ADD COLUMN color_hex TEXT DEFAULT '#002244'")
+	}
+}
+
+func columnExists(tableName, columnName string) bool {
+	var count int
+	// pragma_table_info returns columns: cid, name, type, notnull, dflt_value, pk
+	query := fmt.Sprintf("SELECT COUNT(*) FROM pragma_table_info('%s') WHERE name='%s'", tableName, columnName)
+	err := db.QueryRow(query).Scan(&count)
+	return err == nil && count > 0
 }
 
 func seedData() {
@@ -124,9 +155,11 @@ func seedData() {
 		var exists int
 		err := db.QueryRow("SELECT COUNT(*) FROM questions WHERE text = ?", q.Text).Scan(&exists)
 		if err == nil && exists == 0 {
-			
+
 			qType := q.Type
-			if qType == "" { qType = "select" }
+			if qType == "" {
+				qType = "select"
+			}
 
 			res, err := db.Exec("INSERT INTO questions (text, category, type, image_url) VALUES (?, ?, ?, ?)", q.Text, q.Category, qType, q.ImageURL)
 			if err != nil {
@@ -145,10 +178,33 @@ func seedData() {
 func getGameStatus() string {
 	var status string
 	err := db.QueryRow("SELECT value FROM settings WHERE key='game_status'").Scan(&status)
-	if err != nil { return "OPEN" }
+	if err != nil {
+		return "OPEN"
+	}
 	return status
 }
 
 func setGameStatus(status string) {
 	db.Exec("INSERT OR REPLACE INTO settings (key, value) VALUES ('game_status', ?)", status)
+}
+
+// Admin Management Functions for CLI
+
+func SetAdminStatus(username string, isAdmin bool) error {
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM users WHERE username = ?", username).Scan(&count)
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		return fmt.Errorf("user '%s' not found", username)
+	}
+
+	val := 0
+	if isAdmin {
+		val = 1
+	}
+
+	_, err = db.Exec("UPDATE users SET is_admin = ? WHERE username = ?", val, username)
+	return err
 }

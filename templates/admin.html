@@ -10,31 +10,33 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
 
     <style>
-        .admin-container { max-width: 1000px; margin: 0 auto; background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px var(--shadow-color); }
-        .controls { background: var(--hover-bg); padding: 20px; border-radius: 8px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-color); }
+        .admin-container { 
+            max-width: 1000px; margin: 0 auto; margin-top: 60px;
+            background: var(--card-bg); padding: 20px; border-radius: 8px; 
+            box-shadow: 0 2px 10px var(--shadow-color); color: var(--text-color);
+        }
+        .controls { 
+            background: var(--hover-bg); padding: 20px; border-radius: 8px; 
+            margin-bottom: 25px; display: flex; justify-content: space-between; 
+            align-items: center; border: 1px solid var(--border-color); 
+        }
         
-        /* Status Tags */
         .state-tag { padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
-        .tag-OPEN { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .tag-LOCKED { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .tag-OPEN { background: rgba(40, 167, 69, 0.2); color: #28a745; border: 1px solid #28a745; }
+        .tag-LOCKED { background: rgba(220, 53, 69, 0.2); color: #dc3545; border: 1px solid #dc3545; }
         
-        /* Table Styles */
         table { width: 100%; border-collapse: separate; border-spacing: 0; }
         th { text-align: left; padding: 15px; border-bottom: 2px solid var(--border-color); color: var(--subtext-color); }
         td { padding: 15px; border-bottom: 1px solid var(--border-color); vertical-align: middle; color: var(--text-color); }
         tr:last-child td { border-bottom: none; }
         
-        /* Resolved Row State */
-        .row-RESOLVED { background-color: rgba(0,0,0,0.02); }
+        .row-RESOLVED { background-color: var(--hover-bg); opacity: 0.8; }
         .row-RESOLVED .question-title { color: var(--subtext-color); }
         
-        /* Input Styles */
         input[type="text"] { padding: 8px; border-radius: 4px; border: 1px solid var(--input-border); width: 100%; max-width: 150px; background: var(--input-bg); color: var(--text-color); }
         
-        /* Button Base Styles */
         button { cursor: pointer; padding: 8px 16px; border-radius: 4px; border: none; font-weight: 600; transition: all 0.2s; }
         
-        /* Quick Resolve Option Buttons */
         .options-grid { display: flex; gap: 8px; flex-wrap: wrap; }
         .btn-option {
             background: var(--card-bg);
@@ -49,24 +51,16 @@
             border-color: var(--subtext-color);
             transform: translateY(-1px);
         }
-        
-        /* Winner/Loser States */
         .btn-option.winner {
-            background-color: #28a745;
-            color: white;
-            border-color: #28a745;
+            background-color: #28a745; color: white; border-color: #28a745;
             box-shadow: 0 0 8px rgba(40, 167, 69, 0.4);
         }
         .btn-option.loser {
-            opacity: 0.4;
-            background: transparent;
-            border-color: transparent;
-            pointer-events: none; /* Prevent clicking losers */
+            opacity: 0.4; background: transparent; border-color: transparent; pointer-events: none;
         }
         
-        /* Action Buttons */
-        .btn-resolve { background: #002244; color: white; }
-        .btn-resolve:hover { background: #004488; }
+        .btn-resolve { background: var(--accent-color); color: white; }
+        .btn-resolve:hover { filter: brightness(1.1); }
         
         .btn-unresolve { background: #dc3545; color: white; opacity: 0.8; font-size: 0.8rem; padding: 6px 12px;}
         .btn-unresolve:hover { opacity: 1; }
@@ -76,6 +70,17 @@
         
         .category-pill { font-size: 0.75rem; background: var(--hover-bg); padding: 3px 8px; border-radius: 12px; color: var(--subtext-color); display: inline-block; margin-top: 4px; border: 1px solid var(--border-color); }
         .btn-sm { padding: 4px 8px; font-size: 0.8rem; }
+
+        /* Drawer Shared */
+        .drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 900; display: none; }
+        .drawer-overlay.open { display: block; }
+        .drawer { position: fixed; top: 0; left: 0; width: 280px; height: 100%; background: var(--drawer-bg); z-index: 1000; transition: transform 0.3s ease; box-shadow: 2px 0 10px var(--shadow-color); padding-top: 20px; transform: translateX(-100%); }
+        .drawer.open { transform: translateX(0); }
+        .drawer-header { padding: 20px; border-bottom: 1px solid var(--border-color); font-size: 1.2rem; font-weight: bold; color: var(--heading-color); display: flex; justify-content: space-between; align-items: center; }
+        .drawer-nav a, .drawer-nav button.theme-toggle { display: block; padding: 15px 20px; width: 100%; text-align: left; box-sizing: border-box; color: var(--text-color); text-decoration: none; border-bottom: 1px solid var(--hover-bg); background: none; border: none; font-size: 1rem; cursor: pointer; }
+        .drawer-nav a:hover, .drawer-nav button:hover { background: var(--hover-bg); }
+        
+        .fixed-menu-btn { position: fixed; top: 15px; left: 15px; z-index: 1100; background: var(--menu-btn-bg); backdrop-filter: blur(4px); border: 1px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; box-shadow: 0 2px 5px var(--shadow-color); color: var(--text-color); }
     </style>
 </head>
 <body>
@@ -84,14 +89,36 @@
         if (savedTheme) { document.documentElement.setAttribute('data-theme', savedTheme); }
     </script>
 
+    <div class="drawer-overlay" id="overlay" onclick="toggleDrawer()"></div>
+    <button class="fixed-menu-btn" onclick="toggleDrawer()">☰</button>
+
+    <div class="drawer" id="drawer">
+        <div class="drawer-header">
+            <span>Admin Menu</span>
+            <button onclick="toggleDrawer()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color: var(--text-color);">&times;</button>
+        </div>
+        <div class="drawer-nav">
+            <a href="/">🏈 My Picks</a>
+            <a href="/leaderboard">🏆 Leaderboard</a>
+            <a href="/user/{{.CurrentUser.ID}}">👤 My Profile</a>
+            <a href="/admin" style="color: var(--accent-color); font-weight: bold;">🔧 Admin Panel</a>
+            <button class="theme-toggle" onclick="toggleTheme()">🌗 Toggle Dark Mode</button>
+            <hr style="border:0; border-top:1px solid var(--border-color);">
+            <a href="/logout" style="color: #C60C30;">Log Out</a>
+        </div>
+    </div>
+
     <div class="admin-container">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
             <h1>🏈 Game Control</h1>
-            <a href="/" style="text-decoration:none; color: var(--accent-color); font-weight:bold;">← Back to Game</a>
+            <div>
+                 <a href="/admin/backup" style="text-decoration:none; margin-right: 15px; background: var(--hover-bg); padding: 8px 12px; border-radius: 4px; color: var(--text-color); border: 1px solid var(--border-color); font-size: 0.9rem;">💾 Backup DB</a>
+                 <a href="/" style="text-decoration:none; color: var(--accent-color); font-weight:bold;">← Game</a>
+            </div>
         </div>
 
         <div class="controls">
-            <div style="display:flex; align-items:center; gap: 20px;">
+            <div style="display:flex; align-items:center; gap: 20px; flex-wrap: wrap;">
                 <div>
                     <div style="font-size: 0.9rem; color: var(--subtext-color); margin-bottom: 5px;">CURRENT STATUS</div>
                     <span class="state-tag tag-{{.GameStatus}}">{{.GameStatus}}</span>
@@ -185,41 +212,39 @@
                 <tr>
                     <td>{{.ID}}</td>
                     <td>
-                        <!-- Editable Username Form -->
-                        <form action="/admin/users?key=touchdown" method="POST" style="display:flex; gap:5px;">
+                        <form action="/admin/users" method="POST" style="display:flex; gap:5px;">
                             <input type="hidden" name="user_id" value="{{.ID}}">
                             <input type="hidden" name="action" value="update_username">
                             <input type="text" name="new_username" value="{{.Username}}" style="width:120px; padding:4px;" required>
-                            <button type="submit" class="btn-sm" style="background:#002244; color:white;">Save</button>
+                            <button type="submit" class="btn-sm" style="background:var(--accent-color); color:white;">Save</button>
                         </form>
                     </td>
                     <td>
-                        <form action="/admin/users?key=touchdown" method="POST" style="display:flex; flex-direction:column; gap:6px;">
+                        <form action="/admin/users" method="POST" style="display:flex; flex-direction:column; gap:6px;">
                             <input type="hidden" name="user_id" value="{{.ID}}">
                             <input type="hidden" name="action" value="update_room">
                             
                             <div style="display: flex; flex-wrap: wrap; gap: 8px;">
                                 {{$userRoomCode := .RoomCode}}
-                                <!-- Loop through the Global Alias Map passed from Go -->
                                 {{range $code, $name := $.RoomAliases}}
                                     <label style="font-size:0.8rem; display:flex; align-items:center; gap:4px; cursor: pointer; background: var(--hover-bg); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px;">
                                         <input type="checkbox" name="room_code" value="{{$code}}" 
                                             {{if hasRoom $userRoomCode $code}}checked{{end}}>
-                                        <strong>{{$code}}</strong> <!-- Changed from $name to $code -->
+                                        <strong>{{$code}}</strong>
                                     </label>
                                 {{end}}
                             </div>
                             
-                            <button type="submit" class="btn-sm" style="background:#002244; color:white; align-self: flex-start; margin-top: 5px;">Update Groups</button>
+                            <button type="submit" class="btn-sm" style="background:var(--accent-color); color:white; align-self: flex-start; margin-top: 5px;">Update Groups</button>
                         </form>
                     </td>
                     <td>{{.TotalScore}}</td>
                     <td style="display:flex; gap:10px;">
-                        <form action="/admin/users?key=touchdown" method="POST" onsubmit="return confirm('Reset PIN for {{.Username}}?');">
+                        <form action="/admin/users" method="POST" onsubmit="return confirm('Reset PIN for {{.Username}}?');">
                             <input type="hidden" name="user_id" value="{{.ID}}">
                             <button type="submit" name="action" value="reset_pin" style="background:#ffc107; color:black;" class="btn-sm">Reset PIN</button>
                         </form>
-                        <form action="/admin/users?key=touchdown" method="POST" onsubmit="return confirm('DELETE {{.Username}}? This cannot be undone.');">
+                        <form action="/admin/users" method="POST" onsubmit="return confirm('DELETE {{.Username}}? This cannot be undone.');">
                             <input type="hidden" name="user_id" value="{{.ID}}">
                             <button type="submit" name="action" value="delete" style="background:#dc3545; color:white;" class="btn-sm">Delete</button>
                         </form>
@@ -231,7 +256,25 @@
     </div>
 
     <script>
-        // One-Click Resolve for Buttons
+        function toggleDrawer() {
+            const drawer = document.getElementById('drawer');
+            const overlay = document.getElementById('overlay');
+            if (drawer.classList.contains('open')) {
+                drawer.classList.remove('open');
+                overlay.classList.remove('open');
+            } else {
+                drawer.classList.add('open');
+                overlay.classList.add('open');
+            }
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+        }
+
         function resolveImmediate(qID, optID) {
             fetch('/admin/resolve', {
                 method: 'POST',
@@ -242,11 +285,10 @@
                 })
             })
             .then(res => res.json())
-            .then(data => location.reload()) // Refresh to show new state
+            .then(data => location.reload())
             .catch(err => alert("Error resolving question"));
         }
 
-        // Manual Resolve for Text Inputs
         function resolveText(qID) {
             const val = document.getElementById('input-' + qID).value;
             if(!val) return;

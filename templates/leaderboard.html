@@ -49,6 +49,7 @@
             <a href="/">🏈 My Picks</a>
             <a href="/leaderboard">🏆 Leaderboard</a>
             <a href="/user/{{.User.ID}}">👤 My Profile</a>
+            {{if .User.IsAdmin}}<a href="/admin" style="color: var(--accent-color); font-weight: bold;">🔧 Admin Panel</a>{{end}}
             <button class="theme-toggle" onclick="toggleTheme()">🌗 Toggle Dark Mode</button>
             <hr style="border:0; border-top:1px solid var(--border-color);">
             <a href="/logout" style="color: #C60C30;">Log Out</a>

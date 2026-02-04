@@ -1,8 +1,7 @@
 # Binaries
 # ---------------------
 # Ignore all executable binaries. 
-# "superbowl-party" is the default name if you used 'go mod init superbowl-party'
-superbowl-party
+superbowlPicker
 *.exe
 *.exe~
 *.dll
@@ -42,8 +41,14 @@ Thumbs.db
 *.db
 *.db-journal
 *.db-wal
-*.db-shm
 *.sqlite
 game.db-shm
 server.crt
 server.key
+
+# Logs
+logs/
+*.log
+
+# Backups
+backups/

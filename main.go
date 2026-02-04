@@ -5,13 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
+
+// --- Structs ---
 
 type PageData struct {
 	User        *User
@@ -33,6 +37,9 @@ type User struct {
 	TotalScore int    `json:"total_score"`
 	TieBreaker string `json:"tie_breaker"`
 	RoomCode   string `json:"room_code"`
+	IsAdmin    bool   `json:"is_admin"`
+	Icon       string `json:"icon"`
+	ColorHex   string `json:"color_hex"`
 }
 
 type QuestionData struct {
@@ -67,6 +74,8 @@ type PredictionRequest struct {
 	TextInput  string `json:"text_input"`
 }
 
+// --- Globals ---
+
 var AllowedRooms = map[string]string{
 	"FAM":     "Miller/Young Family Pool",
 	"BRAD":    "12 Bradbury Watchparty",
@@ -100,45 +109,91 @@ var funcMap = template.FuncMap{
 }
 
 var templates = template.Must(template.New("T").Funcs(funcMap).ParseGlob("templates/*.html"))
+var usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+
+// --- Logging Setup ---
+
+func setupLogging() {
+	if _, err := os.Stat("logs"); os.IsNotExist(err) {
+		os.Mkdir("logs", 0755)
+	}
+
+	logName := fmt.Sprintf("logs/server_%s.log", time.Now().Format("2006-01-02"))
+	file, err := os.OpenFile(logName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Println("Failed to open log file, using stderr only")
+		return
+	}
+
+	mw := io.MultiWriter(os.Stdout, file)
+	log.SetOutput(mw)
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+}
 
 func withLogging(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
-		// Try to get real IP if behind Nginx proxy
+		ww := &statusWriter{ResponseWriter: w, status: http.StatusOK}
+		next(ww, r)
+
+		duration := time.Since(start)
 		clientIP := r.Header.Get("X-Forwarded-For")
 		if clientIP == "" {
 			clientIP = r.RemoteAddr
 		}
 
-		log.Printf("[REQ START] %s %s | IP: %s", r.Method, r.URL.Path, clientIP)
-
-		next(w, r)
-
-		duration := time.Since(start)
-		log.Printf("[REQ END]   %s %s | Took: %v", r.Method, r.URL.Path, duration)
+		log.Printf("| %3d | %10v | %s | %s %s", ww.status, duration, clientIP, r.Method, r.URL.Path)
 	}
 }
 
+type statusWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (w *statusWriter) WriteHeader(status int) {
+	w.status = status
+	w.ResponseWriter.WriteHeader(status)
+}
+
+// --- Main & CLI ---
+
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "4884" // Default to Prod Port
-	}
+	setupLogging()
 
 	dbName := os.Getenv("DB_NAME")
 	if dbName == "" {
-		dbName = "./game.db" // Default to local DB
+		dbName = "./game.db"
 	}
-
-	fmt.Printf("Starting App on Port %s using DB %s\n", port, dbName)
-
 	InitDB(dbName)
 	defer db.Close()
 
-	if _, err := db.Exec("PRAGMA journal_mode=WAL;"); err != nil {
-		log.Println("Error setting WAL mode:", err)
+	if len(os.Args) > 1 {
+		cmd := os.Args[1]
+		if cmd == "admin" || cmd == "deadmin" {
+			if len(os.Args) < 3 {
+				fmt.Println("Usage: go run . [admin|deadmin] <username>")
+				os.Exit(1)
+			}
+			username := os.Args[2]
+			isAdmin := (cmd == "admin")
+
+			if err := SetAdminStatus(username, isAdmin); err != nil {
+				fmt.Printf("Error: %v\n", err)
+				os.Exit(1)
+			}
+			fmt.Printf("User '%s' updated. Admin: %v\n", username, isAdmin)
+			os.Exit(0)
+		}
 	}
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "4884"
+	}
+
+	fmt.Printf("Starting App on Port %s using DB %s\n", port, dbName)
 
 	http.HandleFunc("/", withLogging(handleIndex))
 	http.HandleFunc("/leaderboard", withLogging(handleLeaderboardView))
@@ -148,17 +203,30 @@ func main() {
 	http.HandleFunc("/logout", withLogging(handleLogout))
 	http.HandleFunc("/predict", withLogging(handlePredict))
 	http.HandleFunc("/api/leaderboard", withLogging(handleLeaderboardAPI))
-	http.HandleFunc("/admin", withLogging(handleAdmin))
-	http.HandleFunc("/admin/resolve", withLogging(handleResolve))
-	http.HandleFunc("/admin/state", withLogging(handleGameState))
-	http.HandleFunc("/admin/refresh", withLogging(handleAdminRefresh))
-	http.HandleFunc("/admin/users", withLogging(handleAdminUsers))
+
+	http.HandleFunc("/admin", withLogging(requireAdmin(handleAdmin)))
+	http.HandleFunc("/admin/resolve", withLogging(requireAdmin(handleResolve)))
+	http.HandleFunc("/admin/state", withLogging(requireAdmin(handleGameState)))
+	http.HandleFunc("/admin/refresh", withLogging(requireAdmin(handleAdminRefresh)))
+	http.HandleFunc("/admin/users", withLogging(requireAdmin(handleAdminUsers)))
+	http.HandleFunc("/admin/backup", withLogging(requireAdmin(handleAdminBackup)))
 
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	err := http.ListenAndServe(":"+port, nil)
 	if err != nil {
 		log.Fatal(err)
+	}
+}
+
+func requireAdmin(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user := getUser(r)
+		if user == nil || !user.IsAdmin {
+			http.Error(w, "403 Forbidden: Admin Access Required", 403)
+			return
+		}
+		next(w, r)
 	}
 }
 
@@ -169,18 +237,22 @@ func getUser(r *http.Request) *User {
 	}
 	userID, _ := strconv.Atoi(cookie.Value)
 	user := &User{ID: userID}
-	err = db.QueryRow("SELECT username, total_score, room_code FROM users WHERE id = ?", userID).Scan(&user.Username, &user.TotalScore, &user.RoomCode)
+	var isAdminInt int
+
+	err = db.QueryRow("SELECT username, total_score, room_code, is_admin, icon, color_hex FROM users WHERE id = ?", userID).
+		Scan(&user.Username, &user.TotalScore, &user.RoomCode, &isAdminInt, &user.Icon, &user.ColorHex)
+
 	if err != nil {
 		return nil
 	}
+	user.IsAdmin = (isAdminInt == 1)
 	return user
 }
 
-func handleIndex(w http.ResponseWriter, r *http.Request) {
-	start := time.Now()
+// --- Handlers ---
 
+func handleIndex(w http.ResponseWriter, r *http.Request) {
 	user := getUser(r)
-	// We need pointers here so we can modify them in the slice later
 	questionsMap := make(map[int]*QuestionData)
 	var questionOrder []*QuestionData
 
@@ -240,7 +312,6 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 					}
 					q.UserPrediction = pred
 
-					// Mark selected option
 					if q.Type == "select" && selID.Valid {
 						for i := range q.Options {
 							if int64(q.Options[i].ID) == selID.Int64 {
@@ -253,9 +324,6 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	log.Printf("  [DB FETCH] Done in %v", time.Since(start))
-
-	// Grouping Logic
 	var grouped []CategoryGroup
 	groupMap := make(map[string]int)
 
@@ -306,15 +374,21 @@ func handleUserProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	gameStatus := getGameStatus()
-	if gameStatus == "OPEN" && currentUser.ID != targetID {
+	if gameStatus == "OPEN" && currentUser.ID != targetID && !currentUser.IsAdmin {
 		render(w, "profile.html", PageData{User: currentUser, GameStatus: gameStatus, TargetUser: nil})
 		return
 	}
 
 	targetUser := &User{ID: targetID}
-	db.QueryRow("SELECT username, total_score FROM users WHERE id = ?", targetID).Scan(&targetUser.Username, &targetUser.TotalScore)
+	var isAdminInt int
+	err = db.QueryRow("SELECT username, total_score, room_code, is_admin, icon, color_hex FROM users WHERE id = ?", targetID).
+		Scan(&targetUser.Username, &targetUser.TotalScore, &targetUser.RoomCode, &isAdminInt, &targetUser.Icon, &targetUser.ColorHex)
+	if err != nil {
+		http.Error(w, "User not found", 404)
+		return
+	}
+	targetUser.IsAdmin = (isAdminInt == 1)
 
-	// Optimized fetch for profile
 	questionsMap := make(map[int]*QuestionData)
 	var questionOrder []*QuestionData
 	rows, _ := db.Query("SELECT id, text, category, status, type, image_url, correct_option_id, correct_text_input FROM questions ORDER BY id ASC")
@@ -397,11 +471,22 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newUsername := strings.TrimSpace(r.FormValue("username"))
-	if newUsername != "" {
-		_, err := db.Exec("UPDATE users SET username = ? WHERE id = ?", newUsername, user.ID)
-		if err != nil {
-			log.Println("Error updating username:", err)
+	if r.FormValue("username") != "" {
+		newUsername := strings.TrimSpace(r.FormValue("username"))
+		if usernameRegex.MatchString(newUsername) {
+			_, err := db.Exec("UPDATE users SET username = ? WHERE id = ?", newUsername, user.ID)
+			if err != nil {
+				log.Println("Error updating username:", err)
+			}
+		}
+	}
+
+	if r.FormValue("icon") != "" {
+		newIcon := r.FormValue("icon")
+		newColor := r.FormValue("color")
+		match, _ := regexp.MatchString(`^#[0-9a-fA-F]{6}$`, newColor)
+		if match {
+			db.Exec("UPDATE users SET icon = ?, color_hex = ? WHERE id = ?", newIcon, newColor, user.ID)
 		}
 	}
 
@@ -412,7 +497,6 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 		parts := strings.Split(rawRooms, ",")
 		for _, p := range parts {
 			clean := strings.ToUpper(strings.TrimSpace(p))
-			// Only allow codes that exist in our global map
 			if _, ok := AllowedRooms[clean]; ok {
 				validatedRooms = append(validatedRooms, clean)
 			}
@@ -447,12 +531,9 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 	if ref == "" {
 		ref = "/"
 	}
-	if strings.Contains(ref, "error=invalid_code") {
-		ref = strings.ReplaceAll(ref, "error=invalid_code", "")
-		ref = strings.ReplaceAll(ref, "?&", "?")
-		ref = strings.TrimSuffix(ref, "?")
-		ref = strings.TrimSuffix(ref, "&")
-	}
+	ref = strings.ReplaceAll(ref, "error=invalid_code", "")
+	ref = strings.TrimSuffix(ref, "?")
+	ref = strings.TrimSuffix(ref, "&")
 	http.Redirect(w, r, ref, 302)
 }
 
@@ -467,7 +548,7 @@ func handleLeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 		WHERE p.user_id = u.id AND (q.type = 'scoreboard-left' OR q.type = 'scoreboard-right')
 	), 0)`
 
-	query := fmt.Sprintf(`SELECT u.id, u.username, u.total_score, %s as tie_breaker, u.room_code FROM users u`, tieBreakerSQL)
+	query := fmt.Sprintf(`SELECT u.id, u.username, u.total_score, %s as tie_breaker, u.room_code, u.icon, u.color_hex FROM users u`, tieBreakerSQL)
 
 	var args []interface{}
 	if scope != "global" && room != "" {
@@ -487,7 +568,7 @@ func handleLeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 	var users []User
 	for rows.Next() {
 		u := User{}
-		rows.Scan(&u.ID, &u.Username, &u.TotalScore, &u.TieBreaker, &u.RoomCode)
+		rows.Scan(&u.ID, &u.Username, &u.TotalScore, &u.TieBreaker, &u.RoomCode, &u.Icon, &u.ColorHex)
 		users = append(users, u)
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -535,7 +616,13 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", 302)
 		return
 	}
-	username := r.FormValue("username")
+	username := strings.TrimSpace(r.FormValue("username"))
+
+	if !usernameRegex.MatchString(username) || len(username) > 20 {
+		http.Redirect(w, r, "/?error=invalid_username", 302)
+		return
+	}
+
 	pin := r.FormValue("pin")
 
 	var userID int
@@ -555,16 +642,15 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		userID = int(id)
 	}
 
-	// Determine if we are running securely (direct TLS OR behind HTTPS proxy)
 	isSecure := r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     "user_id",
 		Value:    strconv.Itoa(userID),
-		Expires:  time.Now().Add(24 * time.Hour),
+		Expires:  time.Now().Add(24 * time.Hour * 30),
 		Path:     "/",
-		HttpOnly: true,     // Prevents XSS stealing
-		Secure:   isSecure, // REQUIRED if site is accessed via HTTPS
+		HttpOnly: true,
+		Secure:   isSecure,
 	})
 	http.Redirect(w, r, "/", 302)
 }
@@ -579,11 +665,8 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleAdmin(w http.ResponseWriter, r *http.Request) {
-	keys, ok := r.URL.Query()["key"]
-	if !ok || len(keys[0]) < 1 || keys[0] != "touchdown" {
-		http.Error(w, "Forbidden", 403)
-		return
-	}
+	// 1. Get Current User for Menu Logic
+	currentUser := getUser(r)
 
 	var questions []QuestionData
 	rows, _ := db.Query("SELECT id, text, category, status, type, image_url, correct_option_id, correct_text_input FROM questions ORDER BY id ASC")
@@ -615,22 +698,26 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var users []User
-	uRows, err := db.Query("SELECT id, username, room_code, total_score FROM users ORDER BY username ASC")
+	uRows, err := db.Query("SELECT id, username, room_code, total_score, is_admin FROM users ORDER BY username ASC")
 	if err == nil {
 		defer uRows.Close()
 		for uRows.Next() {
 			u := User{}
-			uRows.Scan(&u.ID, &u.Username, &u.RoomCode, &u.TotalScore)
+			var isAdminInt int
+			uRows.Scan(&u.ID, &u.Username, &u.RoomCode, &u.TotalScore, &isAdminInt)
+			u.IsAdmin = (isAdminInt == 1)
 			users = append(users, u)
 		}
 	}
 
+	// 2. Pass CurrentUser to Template
 	render(w, "admin.html", struct {
+		CurrentUser *User
 		Questions   []QuestionData
 		GameStatus  string
 		Users       []User
 		RoomAliases map[string]string
-	}{questions, getGameStatus(), users, AllowedRooms})
+	}{currentUser, questions, getGameStatus(), users, AllowedRooms})
 }
 
 func handleResolve(w http.ResponseWriter, r *http.Request) {
@@ -657,6 +744,7 @@ func handleResolve(w http.ResponseWriter, r *http.Request) {
 	}
 
 	db.Exec(`UPDATE users SET total_score = (SELECT COUNT(*) FROM predictions p JOIN questions q ON p.question_id = q.id WHERE p.user_id = users.id AND q.status = 'RESOLVED' AND p.selected_option_id = q.correct_option_id)`)
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
 }
@@ -666,7 +754,7 @@ func handleGameState(w http.ResponseWriter, r *http.Request) {
 	if status == "OPEN" || status == "LOCKED" {
 		setGameStatus(status)
 	}
-	http.Redirect(w, r, "/admin?key=touchdown", 302)
+	http.Redirect(w, r, "/admin", 302)
 }
 
 func handleAdminRefresh(w http.ResponseWriter, r *http.Request) {
@@ -678,14 +766,14 @@ func handleAdminRefresh(w http.ResponseWriter, r *http.Request) {
 	file, err := os.ReadFile("questions.json")
 	if err != nil {
 		log.Println("Error reading questions.json:", err)
-		http.Redirect(w, r, "/admin?key=touchdown&error=read_failed", 302)
+		http.Redirect(w, r, "/admin?error=read_failed", 302)
 		return
 	}
 
 	var fileQuestions []SeedQuestion
 	if err := json.Unmarshal(file, &fileQuestions); err != nil {
 		log.Println("Error parsing questions.json:", err)
-		http.Redirect(w, r, "/admin?key=touchdown&error=parse_failed", 302)
+		http.Redirect(w, r, "/admin?error=parse_failed", 302)
 		return
 	}
 
@@ -703,7 +791,6 @@ func handleAdminRefresh(w http.ResponseWriter, r *http.Request) {
 
 	for _, q := range fileQuestions {
 		seenTexts[q.Text] = true
-
 		qType := q.Type
 		if qType == "" {
 			qType = "select"
@@ -728,18 +815,10 @@ func handleAdminRefresh(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	db.Exec(`UPDATE users SET total_score = (SELECT COUNT(*) FROM predictions p JOIN questions q ON p.question_id = q.id WHERE p.user_id = users.id AND q.status = 'RESOLVED' AND p.selected_option_id = q.correct_option_id)`)
-
-	http.Redirect(w, r, "/admin?key=touchdown&status=refreshed", 302)
+	http.Redirect(w, r, "/admin?status=refreshed", 302)
 }
 
 func handleAdminUsers(w http.ResponseWriter, r *http.Request) {
-	keys, ok := r.URL.Query()["key"]
-	if !ok || len(keys[0]) < 1 || keys[0] != "touchdown" {
-		http.Error(w, "Forbidden", 403)
-		return
-	}
-
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method Not Allowed", 405)
 		return
@@ -754,40 +833,63 @@ func handleAdminUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if action == "reset_pin" {
+	switch action {
+	case "reset_pin":
 		db.Exec("UPDATE users SET pin_hash = '' WHERE id = ?", userID)
-	} else if action == "delete" {
+	case "delete":
 		db.Exec("DELETE FROM predictions WHERE user_id = ?", userID)
 		db.Exec("DELETE FROM users WHERE id = ?", userID)
-	} else if action == "update_room" {
+	case "update_room":
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "Form Error", 400)
 			return
 		}
 		rawRooms := r.Form["room_code"]
 		var validatedRooms []string
-
 		for _, p := range rawRooms {
 			clean := strings.ToUpper(strings.TrimSpace(p))
 			if _, ok := AllowedRooms[clean]; ok {
 				validatedRooms = append(validatedRooms, clean)
 			}
 		}
-
 		finalRoom := strings.Join(validatedRooms, ",")
 		if finalRoom == "" {
 			finalRoom = "GLOBAL"
 		}
-
 		db.Exec("UPDATE users SET room_code = ? WHERE id = ?", finalRoom, userID)
-	} else if action == "update_username" {
+	case "update_username":
 		newUsername := strings.TrimSpace(r.FormValue("new_username"))
-		if newUsername != "" {
+		if newUsername != "" && usernameRegex.MatchString(newUsername) {
 			db.Exec("UPDATE users SET username = ? WHERE id = ?", newUsername, userID)
 		}
 	}
 
-	http.Redirect(w, r, "/admin?key=touchdown", 302)
+	http.Redirect(w, r, "/admin", 302)
+}
+
+func handleAdminBackup(w http.ResponseWriter, r *http.Request) {
+	if _, err := os.Stat("backups"); os.IsNotExist(err) {
+		os.Mkdir("backups", 0755)
+	}
+
+	dbPath := os.Getenv("DB_NAME")
+	if dbPath == "" {
+		dbPath = "./game.db"
+	}
+
+	sourceFile, err := os.Open(dbPath)
+	if err != nil {
+		http.Error(w, "Failed to open DB", 500)
+		return
+	}
+	defer sourceFile.Close()
+
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=game_backup_%s.db", time.Now().Format("20060102_150405")))
+	w.Header().Set("Content-Type", "application/x-sqlite3")
+
+	if _, err := io.Copy(w, sourceFile); err != nil {
+		log.Println("Error serving backup:", err)
+	}
 }
 
 func render(w http.ResponseWriter, tmpl string, data interface{}) {
