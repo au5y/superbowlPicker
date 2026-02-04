@@ -116,6 +116,7 @@
                     tdPlayer.appendChild(iconSpan);
 
                     const strong = document.createElement('strong');
+                    strong.className = 'user-contrast';
                     strong.textContent = user.username;
                     if (user.color_hex && user.color_hex !== '#002244') { strong.style.color = user.color_hex; }
                     tdPlayer.appendChild(strong);

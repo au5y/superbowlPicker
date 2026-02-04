@@ -80,6 +80,17 @@
 
     {{template "drawer" .}}
 
+    <div class="theme-switch" onclick="toggleTheme()" title="Toggle Theme">
+        <span id="theme-icon">☀️</span>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const icon = document.getElementById('theme-icon');
+            if(icon) icon.textContent = isDark ? '🌙' : '☀️';
+        });
+    </script>
+
     <div class="admin-container">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
             <h1>Game Control</h1>

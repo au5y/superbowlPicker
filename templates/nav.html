@@ -17,7 +17,6 @@
             <a href="/admin" class="{{if eq .ActivePage "admin"}}active{{end}}" style="color: var(--accent-color); font-weight: bold;">Admin Panel</a>
         {{end}}
         
-        <button class="theme-toggle" onclick="toggleTheme()">Toggle Dark Mode</button>
         <hr style="border:0; border-top:1px solid var(--border-color);">
         
         {{if eq .ActivePage "home"}}
@@ -51,6 +50,9 @@
         const next = current === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', next);
         localStorage.setItem('theme', next);
+
+        const icon = document.getElementById('theme-icon');
+        if (icon) icon.textContent = next === 'dark' ? '🌙' : '☀️';
     }
 </script>
 {{end}}

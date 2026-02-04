@@ -79,16 +79,21 @@
     {{template "drawer" .}}
 
     <div class="app-header">
-        <div class="user-badge">
-            <div class="user-avatar-header">
-                {{if gt (len .User.Icon) 15}}
-                    <img src="{{.User.Icon}}">
-                {{else}}
-                    {{.User.Icon}}
-                {{end}}
-            </div>
-            <span style="color: {{if ne .User.ColorHex "#002244"}}{{.User.ColorHex}}{{else}}inherit{{end}}">{{.User.Username}}</span>
+        <div class="theme-switch" onclick="toggleTheme()" title="Toggle Theme">
+            <span id="theme-icon">☀️</span>
         </div>
+        <a href="/user/{{.User.ID}}" style="text-decoration: none;">
+            <div class="user-badge">
+                <div class="user-avatar-header">
+                    {{if gt (len .User.Icon) 15}}
+                        <img src="{{.User.Icon}}">
+                    {{else}}
+                        {{.User.Icon}}
+                    {{end}}
+                </div>
+                <span style="color: {{if ne .User.ColorHex "#002244"}}{{.User.ColorHex}}{{else}}inherit{{end}}">{{.User.Username}}</span>
+            </div>
+        </a>
         {{$aliases := .RoomAliases}}
         <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: wrap;">
             {{range split .User.RoomCode ","}}<div class="room-badge">{{roomName . $aliases}}</div>{{end}}
@@ -137,7 +142,7 @@
                             {{if eq .Text "Tails"}}{{$isHero = true}}{{$logoUrl = "/static/assets/tails.png"}}{{$secondaryColor = "#19470e"}}{{end}}
                         <label class="option-label {{if eq $.GameStatus "LOCKED"}}disabled{{end}}">
                             <input type="radio" name="q-{{$qID}}" value="{{.ID}}" data-color="{{.ColorHex}}" data-secondary="{{$secondaryColor}}" data-is-hero="{{$isHero}}" onchange="handleSelection(this, {{$qID}}, '{{.ID}}', null)" {{if .IsSelected}}checked{{end}} {{if or (eq $.GameStatus "LOCKED") $isResolved}}disabled{{end}}>
-                            <div class="option-box {{if $isHero}}hero-box{{end}} {{if $isResolved}}{{if eq (printf "%d" .ID) (printf "%d" $correctID)}}resolved-correct{{end}}{{if and .IsSelected (ne (printf "%d" .ID) (printf "%d" $correctID))}}resolved-wrong{{end}}{{else if eq $.GameStatus "LOCKED"}}locked{{end}}" id="box-{{.ID}}" style="border-color: {{.ColorHex}}; {{if $isHero}}background-color: {{.ColorHex}};{{end}}">
+                            <div class="option-box {{if $isHero}}hero-box{{end}} {{if $isResolved}}{{if eq (printf "%d" .ID) (printf "%d" $correctID)}}resolved-correct{{end}}{{if and .IsSelected (ne (printf "%d" .ID) (printf "%d" $correctID))}}resolved-wrong{{end}}{{else if eq $.GameStatus "LOCKED"}}{{if .IsSelected}}locked-selected{{else}}locked{{end}}{{end}}" id="box-{{.ID}}" style="border-color: {{.ColorHex}}; {{if $isHero}}background-color: {{.ColorHex}};{{end}}">
                                 {{if and $isHero $logoUrl}}<img src="{{$logoUrl}}" class="team-logo">{{end}}{{.Text}}
                             </div>
                         </label>
@@ -203,7 +208,36 @@
             if (missingCount > 0) { feedbackEl.style.color = "#dc3545"; feedbackEl.textContent = `⚠️ ${missingCount} unfinished predictions!`; if (firstMissingEl) firstMissingEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); } 
             else { feedbackEl.style.color = "#28a745"; feedbackEl.textContent = "✅ All picks entered!"; }
         }
-        document.addEventListener("DOMContentLoaded", function() { document.querySelectorAll('input[type="radio"]:checked').forEach(radio => { if(!radio.disabled) updateVisualState(radio); }); });
+        document.addEventListener("DOMContentLoaded", function() {
+            document.querySelectorAll('input[type="radio"]:checked').forEach(radio => { if(!radio.disabled) updateVisualState(radio); });
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const icon = document.getElementById('theme-icon');
+            if(icon) icon.textContent = isDark ? '🌙' : '☀️';
+        });
+
+        // Polling Logic
+        let lastStatus = "{{.GameStatus}}";
+        let lastResolved = -1;
+
+        function pollStatus() {
+            fetch('/api/status')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status !== lastStatus) {
+                        location.reload();
+                    }
+                    if (data.status === 'LOCKED') {
+                        if (lastResolved !== -1 && data.resolved_count !== lastResolved) {
+                            location.reload();
+                        }
+                        lastResolved = data.resolved_count;
+                    }
+                })
+                .catch(e => console.error("Poll error", e));
+        }
+        // Initial fetch to set resolved count
+        fetch('/api/status').then(r=>r.json()).then(d=>{ lastResolved = d.resolved_count; });
+        setInterval(pollStatus, 5000);
     </script>
     {{end}}
 </body>
