@@ -106,6 +106,15 @@ func main() {
 	InitDB("./game.db")
 	defer db.Close()
 
+	// This allows readers (viewing the page) to not be blocked by writers (saving picks)
+	if _, err := db.Exec("PRAGMA journal_mode=WAL;"); err != nil {
+		log.Println("Error setting WAL mode:", err)
+	}
+	// Increase busy timeout to wait for locks instead of failing immediately
+	if _, err := db.Exec("PRAGMA busy_timeout=5000;"); err != nil {
+		log.Println("Error setting busy timeout:", err)
+	}
+
 	http.HandleFunc("/", handleIndex)
 	http.HandleFunc("/leaderboard", handleLeaderboardView)
 	http.HandleFunc("/user/", handleUserProfile)
@@ -122,27 +131,10 @@ func main() {
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	port := ":4884"
-	certFile := "server.crt"
-	keyFile := "server.key"
-
-	// Check if SSL files exist
-	_, certErr := os.Stat(certFile)
-	_, keyErr := os.Stat(keyFile)
-
-	if certErr == nil && keyErr == nil {
-		fmt.Printf("🔒 Superbowl LX Prop Pool running SECURELY at https://localhost%s\n", port)
-		// Redirects aren't automatic here, but the server will now accept HTTPS connections
-		err := http.ListenAndServeTLS(port, certFile, keyFile, nil)
-		if err != nil {
-			log.Fatal(err)
-		}
-	} else {
-		fmt.Printf("🏈 Superbowl LX Prop Pool running at http://localhost%s\n", port)
-		fmt.Println("⚠️  To enable HTTPS, place 'server.crt' and 'server.key' in the application directory.")
-		err := http.ListenAndServe(port, nil)
-		if err != nil {
-			log.Fatal(err)
-		}
+	fmt.Printf("🏈 Superbowl LX Prop Pool running at http://localhost%s\n", port)
+	err := http.ListenAndServe(port, nil)
+	if err != nil {
+		log.Fatal(err)
 	}
 }
 
@@ -166,60 +158,81 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Fetch ALL Questions
-	var questions []QuestionData
+	// We need pointers here so we can modify them in the slice later
+	questionsMap := make(map[int]*QuestionData)
+	var questionOrder []*QuestionData
+
 	rows, err := db.Query("SELECT id, text, category, status, type, image_url, correct_option_id FROM questions ORDER BY id ASC")
 	if err != nil { http.Error(w, "DB Error", 500); return }
 	defer rows.Close()
 
 	for rows.Next() {
-		q := QuestionData{}
+		q := &QuestionData{}
 		var correctOptID sql.NullInt64
 		var imgURL sql.NullString
-		
 		rows.Scan(&q.ID, &q.Text, &q.Category, &q.Status, &q.Type, &imgURL, &correctOptID)
-		
 		if correctOptID.Valid { q.CorrectOptionID = correctOptID.Int64 }
 		if imgURL.Valid { q.ImageURL = imgURL.String }
+		
+		questionsMap[q.ID] = q
+		questionOrder = append(questionOrder, q)
+	}
 
-		optRows, _ := db.Query("SELECT id, text, color_hex FROM options WHERE question_id = ?", q.ID)
+	// 2. Fetch ALL Options in ONE Query
+	optRows, err := db.Query("SELECT id, question_id, text, color_hex FROM options")
+	if err == nil {
+		defer optRows.Close()
 		for optRows.Next() {
+			var qID int
 			o := OptionData{}
-			optRows.Scan(&o.ID, &o.Text, &o.ColorHex)
-			q.Options = append(q.Options, o)
+			optRows.Scan(&o.ID, &qID, &o.Text, &o.ColorHex)
+			if q, ok := questionsMap[qID]; ok {
+				q.Options = append(q.Options, o)
+			}
 		}
-		optRows.Close()
+	}
 
-		var selID sql.NullInt64
-		var txtInput sql.NullString
-		err := db.QueryRow("SELECT selected_option_id, text_input FROM predictions WHERE user_id = ? AND question_id = ?", user.ID, q.ID).Scan(&selID, &txtInput)
-		if err == nil {
-			if q.Type == "select" && selID.Valid {
-				for i := range q.Options {
-					if int64(q.Options[i].ID) == selID.Int64 {
-						q.Options[i].IsSelected = true
+	// 3. Fetch ALL Predictions for User in ONE Query
+	predRows, err := db.Query("SELECT question_id, selected_option_id, text_input FROM predictions WHERE user_id = ?", user.ID)
+	if err == nil {
+		defer predRows.Close()
+		for predRows.Next() {
+			var qID int
+			var selID sql.NullInt64
+			var txtInput sql.NullString
+			predRows.Scan(&qID, &selID, &txtInput)
+
+			if q, ok := questionsMap[qID]; ok {
+				pred := &PredictionData{}
+				if selID.Valid { pred.SelectedOptionID = selID.Int64 }
+				if txtInput.Valid { pred.TextInput = txtInput.String }
+				q.UserPrediction = pred
+
+				// Mark selected option
+				if q.Type == "select" && selID.Valid {
+					for i := range q.Options {
+						if int64(q.Options[i].ID) == selID.Int64 {
+							q.Options[i].IsSelected = true
+						}
 					}
 				}
 			}
-			if q.Type != "select" && txtInput.Valid {
-				q.UserPrediction = &PredictionData{TextInput: txtInput.String}
-			}
 		}
-		questions = append(questions, q)
 	}
 
+	// Grouping Logic
 	var grouped []CategoryGroup
 	groupMap := make(map[string]int)
 
-	for _, q := range questions {
+	for _, q := range questionOrder {
 		idx, exists := groupMap[q.Category]
 		if !exists {
 			slug := strings.ReplaceAll(strings.ToLower(q.Category), " ", "-")
-			newGroup := CategoryGroup{Name: q.Category, Anchor: slug, Questions: []QuestionData{q}}
+			newGroup := CategoryGroup{Name: q.Category, Anchor: slug, Questions: []QuestionData{*q}}
 			grouped = append(grouped, newGroup)
 			groupMap[q.Category] = len(grouped) - 1
 		} else {
-			grouped[idx].Questions = append(grouped[idx].Questions, q)
+			grouped[idx].Questions = append(grouped[idx].Questions, *q)
 		}
 	}
 
@@ -241,6 +254,7 @@ func handleLeaderboardView(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// --- OPTIMIZED: Bulk Fetching for Profile ---
 func handleUserProfile(w http.ResponseWriter, r *http.Request) {
 	currentUser := getUser(r)
 	if currentUser == nil { http.Redirect(w, r, "/", http.StatusFound); return }
@@ -257,47 +271,67 @@ func handleUserProfile(w http.ResponseWriter, r *http.Request) {
 	targetUser := &User{ID: targetID}
 	db.QueryRow("SELECT username, total_score FROM users WHERE id = ?", targetID).Scan(&targetUser.Username, &targetUser.TotalScore)
 
-	questions := []QuestionData{}
+	// 1. Fetch Questions
+	questionsMap := make(map[int]*QuestionData)
+	var questionOrder []*QuestionData
 	rows, _ := db.Query("SELECT id, text, category, status, type, image_url, correct_option_id, correct_text_input FROM questions ORDER BY id ASC")
 	defer rows.Close()
 	for rows.Next() {
-		q := QuestionData{}
+		q := &QuestionData{}
 		var cID sql.NullInt64
 		var imgURL sql.NullString
 		var correctText sql.NullString
-		
 		rows.Scan(&q.ID, &q.Text, &q.Category, &q.Status, &q.Type, &imgURL, &cID, &correctText)
-		
 		if cID.Valid { q.CorrectOptionID = cID.Int64 }
 		if imgURL.Valid { q.ImageURL = imgURL.String }
 		if correctText.Valid { q.CorrectTextInput = correctText.String }
 		
-		oRows, _ := db.Query("SELECT id, text FROM options WHERE question_id=?", q.ID)
-		for oRows.Next() {
-			o := OptionData{}
-			oRows.Scan(&o.ID, &o.Text)
+		questionsMap[q.ID] = q
+		questionOrder = append(questionOrder, q)
+	}
+
+	// 2. Fetch Options
+	oRows, _ := db.Query("SELECT id, question_id, text FROM options")
+	defer oRows.Close()
+	for oRows.Next() {
+		var qID int
+		o := OptionData{}
+		oRows.Scan(&o.ID, &qID, &o.Text)
+		if q, ok := questionsMap[qID]; ok {
 			q.Options = append(q.Options, o)
 		}
-		
+	}
+	
+	// 3. Fetch Predictions
+	pRows, _ := db.Query("SELECT question_id, selected_option_id, text_input FROM predictions WHERE user_id=?", targetID)
+	defer pRows.Close()
+	for pRows.Next() {
+		var qID int
 		var sID sql.NullInt64
 		var txt sql.NullString
-		db.QueryRow("SELECT selected_option_id, text_input FROM predictions WHERE user_id=? AND question_id=?", targetID, q.ID).Scan(&sID, &txt)
+		pRows.Scan(&qID, &sID, &txt)
 		
-		if sID.Valid || txt.Valid {
+		if q, ok := questionsMap[qID]; ok {
 			pred := &PredictionData{}
 			if sID.Valid { pred.SelectedOptionID = sID.Int64 }
 			if txt.Valid { pred.TextInput = txt.String }
+			
 			if q.Status == "RESOLVED" && q.Type == "select" {
 				pred.IsCorrect = (pred.SelectedOptionID == q.CorrectOptionID)
 			}
 			q.UserPrediction = pred
 		}
-		questions = append(questions, q)
+	}
+
+	// Convert back to slice
+	var finalQuestions []QuestionData
+	for _, q := range questionOrder {
+		finalQuestions = append(finalQuestions, *q)
 	}
 
 	render(w, "profile.html", struct {
 		User *User; TargetUser *User; Questions []QuestionData; GameStatus string; RoomAliases map[string]string
-	}{currentUser, targetUser, questions, gameStatus, AllowedRooms})
+	}{currentUser, targetUser, finalQuestions, gameStatus, AllowedRooms})
 }
 
 // --- UPDATED: Handle Profile/Room Updates with Strict Validation ---
@@ -328,6 +362,8 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		
+		// STRICT VALIDATION:
+		// If user typed something (rawRooms not empty) but matched NO valid rooms, this is an error.
 		if len(validatedRooms) == 0 && strings.TrimSpace(rawRooms) != "" {
 			ref := r.Header.Get("Referer")
 			if ref == "" { ref = "/" }
@@ -417,6 +453,7 @@ func handlePredict(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 }
 
+// --- UPDATED: Secure Cookies for HTTPS/Proxy Support ---
 func handleLogin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost { http.Redirect(w, r, "/", 302); return }
 	username := r.FormValue("username")
@@ -440,6 +477,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		userID = int(id)
 	}
 	
+	// Determine if we are running securely (direct TLS OR behind HTTPS proxy)
 	isSecure := r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
 
 	http.SetCookie(w, &http.Cookie{
@@ -538,6 +576,7 @@ func handleGameState(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin?key=touchdown", 302)
 }
 
+// --- Admin Refresh Logic ---
 func handleAdminRefresh(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost { http.Error(w, "Method Not Allowed", 405); return }
 
