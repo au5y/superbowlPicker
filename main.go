@@ -310,6 +310,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		"FAMILY": true,
 		"BRAD":   true,
 		"FRIENDS": true,
+		"CROSSFIT": true,
 	}
 	parts := strings.Split(inputRooms, ",")
 	for _, p := range parts {
@@ -368,7 +369,6 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	if !ok || len(keys[0]) < 1 || keys[0] != "touchdown" { http.Error(w, "Forbidden", 403); return }
 	
 	var questions []QuestionData
-	// Updated Query: Fetch correct_text_input
 	rows, _ := db.Query("SELECT id, text, category, status, type, image_url, correct_option_id, correct_text_input FROM questions ORDER BY id ASC")
 	defer rows.Close()
 	for rows.Next() {
@@ -414,19 +414,24 @@ func handleResolve(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		QuestionID string `json:"question_id"`
 		OptionID   string `json:"option_id"`
-		TextInput  string `json:"text_input"` // New JSON field
+		TextInput  string `json:"text_input"` 
+		Status     string `json:"status"` // Added Status field
 	}
 	json.NewDecoder(r.Body).Decode(&req)
 
-	// Prepare nullable args
-	var optID interface{} = nil
-	if req.OptionID != "" { optID = req.OptionID }
-	
-	var txtVal interface{} = nil
-	if req.TextInput != "" { txtVal = req.TextInput }
+	if req.Status == "OPEN" {
+		// UNRESOLVE LOGIC: Reset to OPEN and clear answers
+		db.Exec("UPDATE questions SET status='OPEN', correct_option_id=NULL, correct_text_input=NULL WHERE id=?", req.QuestionID)
+	} else {
+		// RESOLVE LOGIC
+		var optID interface{} = nil
+		if req.OptionID != "" { optID = req.OptionID }
+		
+		var txtVal interface{} = nil
+		if req.TextInput != "" { txtVal = req.TextInput }
 
-	// Update both option_id AND text_input (one will usually be null)
-	db.Exec("UPDATE questions SET status='RESOLVED', correct_option_id=?, correct_text_input=? WHERE id=?", optID, txtVal, req.QuestionID)
+		db.Exec("UPDATE questions SET status='RESOLVED', correct_option_id=?, correct_text_input=? WHERE id=?", optID, txtVal, req.QuestionID)
+	}
 	
 	// Recalculate scores (Only counts matching OptionIDs, ignores text inputs for score)
 	db.Exec(`UPDATE users SET total_score = (SELECT COUNT(*) FROM predictions p JOIN questions q ON p.question_id = q.id WHERE p.user_id = users.id AND q.status = 'RESOLVED' AND p.selected_option_id = q.correct_option_id)`)
@@ -476,6 +481,43 @@ func handleAdminUsers(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Println(err)
 			http.Error(w, "DB Error", 500)
+			return
+		}
+	} else if action == "update_room" {
+		// Update Room Logic
+		rawRoom := r.FormValue("room_code")
+		allowed := map[string]bool{"FAMILY": true, "BRAD": true}
+		var validatedRooms []string
+
+		parts := strings.Split(rawRoom, ",")
+		for _, p := range parts {
+			clean := strings.ToUpper(strings.TrimSpace(p))
+			if allowed[clean] {
+				validatedRooms = append(validatedRooms, clean)
+			}
+		}
+
+		if len(validatedRooms) > 0 {
+			finalRoom := strings.Join(validatedRooms, ",")
+			_, err = db.Exec("UPDATE users SET room_code = ? WHERE id = ?", finalRoom, userID)
+			if err != nil {
+				log.Println(err)
+				http.Error(w, "DB Error", 500)
+				return
+			}
+		}
+	} else if action == "update_username" {
+		// NEW: Update Username Logic
+		newUsername := strings.TrimSpace(r.FormValue("new_username"))
+		if newUsername == "" {
+			http.Error(w, "Username cannot be empty", 400)
+			return
+		}
+
+		_, err := db.Exec("UPDATE users SET username = ? WHERE id = ?", newUsername, userID)
+		if err != nil {
+			log.Println("Error updating username:", err)
+			http.Error(w, "Error updating username (likely taken)", 500)
 			return
 		}
 	} else {

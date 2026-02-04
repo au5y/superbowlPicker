@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Superbowl LX Prop Pool</title>
     <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
     <style>
         .drawer-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -76,8 +79,10 @@
             <p>Enter your name to join the pool.</p>
             <form action="/login" method="POST">
                 <input type="text" name="username" placeholder="Your Name" required autocomplete="off">
+                <p>Enter a 4 digit pin if you don't want someone to be able to change your answers (please don't make this your bank pin or something important this is stored in plain text as a hobby project).</p>
                 <input type="password" name="pin" placeholder="PIN (Optional)" maxlength="4">
-                <input type="text" name="room_code" placeholder="Room Code" style="text-transform:uppercase" required>
+                <p>Enter the group to join, ask Austin if you're not sure which group(s) to join. (Can join multiple as a comma separated list)</p>
+                <input type="text" name="room_code" placeholder="Group(s)" style="text-transform:uppercase" required>
                 <br>
                 <button type="submit" class="login-btn">Enter Arena</button>
             </form>
@@ -88,7 +93,7 @@
         const error = params.get('error');
         const errDiv = document.getElementById('error-msg');
         if (error === 'invalid_room') {
-            errDiv.textContent = "Invalid Room Code.";
+            errDiv.textContent = "Invalid Group. Ask Austin to get code";
             errDiv.style.display = 'block';
         } else if (error === 'invalid_pin') {
             errDiv.textContent = "Incorrect PIN. Please try again.";
