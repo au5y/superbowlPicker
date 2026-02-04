@@ -9,135 +9,23 @@
   },
   {
     "text": "Will the opening coin toss land on heads or tails?",
-    "category": "Pre-Game",
+    "category": "The Game",
     "options": [
       {"text": "Heads", "color": "#48a052"},
       {"text": "Tails", "color": "#48a052"}
     ]
   },
   {
-    "text": "Who will be the first team to score?",
-    "category": "Scoring",
+    "text": "Who will get penalized first?",
+    "category": "The Game",
     "options": [
       {"text": "Seahawks", "color": "#69BE28"},
-      {"text": "Patriots", "color": "#C60C30"}
+      {"text": "Patriots", "color": "#002244"}
     ]
   },
   {
-    "text": "Will the first score of the game be a touchdown?",
-    "category": "Scoring",
-    "options": [
-      {"text": "Yes", "color": "#28a745"},
-      {"text": "No", "color": "#dc3545"}
-    ]
-  },
-  {
-    "text": "Will there be a touchdown scored from 45 yards or more?",
-    "category": "Scoring",
-    "options": [
-      {"text": "Yes", "color": "#28a745"},
-      {"text": "No", "color": "#dc3545"}
-    ]
-  },
-  {
-    "text": "Will there be a field goal made from 45 yards or more?",
-    "category": "Scoring",
-    "options": [
-      {"text": "Yes", "color": "#28a745"},
-      {"text": "No", "color": "#dc3545"}
-    ]
-  },
-  {
-    "text": "Will any player rush for 100 yards or more in the game?",
-    "category": "Player Stats",
-    "options": [
-      {"text": "Yes", "color": "#28a745"},
-      {"text": "No", "color": "#dc3545"}
-    ]
-  },
-  {
-    "text": "Will a quarterback pass for more than 300 yards?",
-    "category": "Player Stats",
-    "options": [
-      {"text": "Yes", "color": "#28a745"},
-      {"text": "No", "color": "#dc3545"}
-    ]
-  },
-  {
-    "text": "Will there be more than 2 interceptions in the game?",
-    "category": "Defense",
-    "options": [
-      {"text": "Yes", "color": "#28a745"},
-      {"text": "No", "color": "#dc3545"}
-    ]
-  },
-  {
-    "text": "Will there be a score within the first 7 minutes of the game?",
-    "category": "Timing",
-    "options": [
-      {"text": "Yes", "color": "#28a745"},
-      {"text": "No", "color": "#dc3545"}
-    ]
-  },
-  {
-    "text": "Will there be more than 12 points scored in the first quarter?",
-    "category": "Timing",
-    "options": [
-      {"text": "Yes", "color": "#28a745"},
-      {"text": "No", "color": "#dc3545"}
-    ]
-  },
-  {
-    "text": "Will the defense or special teams of either team score?",
-    "category": "Scoring",
-    "options": [
-      {"text": "Yes", "color": "#28a745"},
-      {"text": "No", "color": "#dc3545"}
-    ]
-  },
-  {
-    "text": "Will there be a score within the first 7 minutes of the second half?",
-    "category": "Timing",
-    "options": [
-      {"text": "Yes", "color": "#28a745"},
-      {"text": "No", "color": "#dc3545"}
-    ]
-  },
-  {
-    "text": "Will there be more than 25 points scored by halftime?",
-    "category": "Timing",
-    "options": [
-      {"text": "Yes", "color": "#28a745"},
-      {"text": "No", "color": "#dc3545"}
-    ]
-  },
-  {
-    "text": "Will there be more than 4 total sacks in the game?",
-    "category": "Defense",
-    "options": [
-      {"text": "Yes", "color": "#28a745"},
-      {"text": "No", "color": "#dc3545"}
-    ]
-  },
-  {
-    "text": "Will there be more than 3 successful field goals in the game?",
-    "category": "Scoring",
-    "options": [
-      {"text": "Yes", "color": "#28a745"},
-      {"text": "No", "color": "#dc3545"}
-    ]
-  },
-  {
-    "text": "Will either team score in the final two minutes of the first half?",
-    "category": "Timing",
-    "options": [
-      {"text": "Yes", "color": "#28a745"},
-      {"text": "No", "color": "#dc3545"}
-    ]
-  },
-  {
-    "text": "Will either team score in the final two minutes of the game?",
-    "category": "Timing",
+    "text": "Will a coach win a challenge?",
+    "category": "The Game",
     "options": [
       {"text": "Yes", "color": "#28a745"},
       {"text": "No", "color": "#dc3545"}
@@ -145,15 +33,7 @@
   },
   {
     "text": "Will the game be decided by more than 4 points?",
-    "category": "Game Result",
-    "options": [
-      {"text": "Yes", "color": "#28a745"},
-      {"text": "No", "color": "#dc3545"}
-    ]
-  },
-  {
-    "text": "Will a quarterback score a rushing touchdown?",
-    "category": "Player Stats",
+    "category": "The Game",
     "options": [
       {"text": "Yes", "color": "#28a745"},
       {"text": "No", "color": "#dc3545"}
@@ -161,39 +41,134 @@
   },
   {
     "text": "Will the losing team score more than 17 points?",
-    "category": "Game Result",
+    "category": "The Game",
     "options": [
       {"text": "Yes", "color": "#28a745"},
       {"text": "No", "color": "#dc3545"}
     ]
   },
   {
-    "text": "Other than 0-0 will there be a tie score at any point?",
-    "category": "Game Flow",
+    "text": "Which team will score first?",
+    "category": "Scoring & Stats",
+    "options": [
+      {"text": "Seahawks", "color": "#69BE28"},
+      {"text": "Patriots", "color": "#C60C30"}
+    ]
+  },
+  {
+    "text": "Which team will score last?",
+    "category": "Scoring & Stats",
+    "options": [
+      {"text": "Seahawks", "color": "#69BE28"},
+      {"text": "Patriots", "color": "#002244"}
+    ]
+  },
+  {
+    "text": "What will be the first scoring play?",
+    "category": "Scoring & Stats",
+    "options": [
+      {"text": "Touchdown", "color": "#28a745"},
+      {"text": "Field Goal", "color": "#ffc107"},
+      {"text": "Safety", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will the defense or special teams score?",
+    "category": "Scoring & Stats",
     "options": [
       {"text": "Yes", "color": "#28a745"},
       {"text": "No", "color": "#dc3545"}
     ]
   },
   {
-    "text": "Will there be more than 3 turnovers in the game?",
-    "category": "Defense",
+    "text": "Will there be a field goal made from 45+ yards?",
+    "category": "Scoring & Stats",
     "options": [
       {"text": "Yes", "color": "#28a745"},
       {"text": "No", "color": "#dc3545"}
     ]
   },
   {
-    "text": "Will the winning team score more than 32 points?",
-    "category": "Game Result",
+    "text": "Will there be more than 3 successful field goals?",
+    "category": "Scoring & Stats",
     "options": [
       {"text": "Yes", "color": "#28a745"},
       {"text": "No", "color": "#dc3545"}
     ]
   },
   {
-    "text": "Will there be more than 50 points scored in the game?",
-    "category": "Game Result",
+    "text": "Will any player rush for 100+ yards?",
+    "category": "Scoring & Stats",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will there be more than 2 interceptions?",
+    "category": "Scoring & Stats",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will there be more than 3 turnovers total?",
+    "category": "Scoring & Stats",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will there be more than 25 points scored by halftime?",
+    "category": "Scoring & Stats",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will there be a Crypto or AI commercial?",
+    "category": "Broadcast & Fun",
+    "options": [
+      {"text": "Yes", "color": "#dc3545"},
+      {"text": "No", "color": "#28a745"}
+    ]
+  },
+  {
+    "text": "Will there be a 'Futures' commercial? (Kalshi, Polymarket, etc.)",
+    "category": "Broadcast & Fun",
+    "options": [
+      {"text": "Yes", "color": "#dc3545"},
+      {"text": "No", "color": "#28a745"}
+    ]
+  },
+  {
+    "text": "What category will the first commercial be?",
+    "category": "Broadcast & Fun",
+    "options": [
+      {"text": "Beer", "color": "#f0ad4e"},
+      {"text": "Car", "color": "#0275d8"},
+      {"text": "Movie", "color": "#5bc0de"},
+      {"text": "Tech", "color": "#5cb85c"},
+      {"text": "Food", "color": "#d9534f"},
+      {"text": "Other", "color": "#777777"}
+    ]
+  },
+  {
+    "text": "What genre will the first movie trailer be?",
+    "category": "Broadcast & Fun",
+    "options": [
+      {"text": "Action/Hero", "color": "#d9534f"},
+      {"text": "Comedy/Family", "color": "#f0ad4e"},
+      {"text": "Horror/Thriller", "color": "#292b2c"},
+      {"text": "Other", "color": "#777777"}
+    ]
+  },
+  {
+    "text": "Will the Golden Gate Bridge be shown (after the coin toss)?",
+    "category": "Broadcast & Fun",
     "options": [
       {"text": "Yes", "color": "#28a745"},
       {"text": "No", "color": "#dc3545"}

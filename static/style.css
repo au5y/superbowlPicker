@@ -129,9 +129,16 @@ button.login-btn {
 .options-container {
     display: flex;
     gap: 10px;
+    flex-wrap: wrap; /* NEW: Allows buttons to stack if they don't fit */
 }
 
-/* --- Radio Button Styling --- */
+.option-label {
+    flex: 1 1 auto;
+    min-width: 80px;
+    cursor: pointer;
+    position: relative;
+}
+
 .option-label {
     flex: 1;
     cursor: pointer;
