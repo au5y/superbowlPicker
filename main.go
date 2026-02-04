@@ -332,8 +332,8 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	var userID int
 	var pinHash string
-	// Check if user exists
-	if err := db.QueryRow("SELECT id, pin_hash FROM users WHERE username=?", username).Scan(&userID, &pinHash); err == nil {
+	// Check if user exists (Case Insensitive Lookup using COLLATE NOCASE)
+	if err := db.QueryRow("SELECT id, pin_hash FROM users WHERE username = ? COLLATE NOCASE", username).Scan(&userID, &pinHash); err == nil {
 		// User exists
 		// If PIN is set and doesn't match, reject
 		if pinHash != "" && pinHash != pin {
