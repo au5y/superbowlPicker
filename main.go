@@ -13,8 +13,6 @@ import (
 	"time"
 )
 
-// -- Data Structures --
-
 type PageData struct {
 	User        *User
 	Categories  []CategoryGroup
@@ -77,7 +75,6 @@ var AllowedRooms = map[string]string{
 	"DRAPER":  "Draper",
 }
 
-// --- Template Helpers ---
 var funcMap = template.FuncMap{
 	"split": func(s string, sep string) []string {
 		if s == "" {
@@ -136,7 +133,6 @@ func main() {
 
 	fmt.Printf("Starting App on Port %s using DB %s\n", port, dbName)
 
-	// 2. Initialize with Config
 	InitDB(dbName)
 	defer db.Close()
 
@@ -166,7 +162,6 @@ func main() {
 	}
 }
 
-// -- Helpers --
 func getUser(r *http.Request) *User {
 	cookie, err := r.Cookie("user_id")
 	if err != nil || cookie.Value == "" {
@@ -181,10 +176,7 @@ func getUser(r *http.Request) *User {
 	return user
 }
 
-// -- Handlers --
-
 func handleIndex(w http.ResponseWriter, r *http.Request) {
-	// Log specific milestones inside the handler to find "slow spots"
 	start := time.Now()
 
 	user := getUser(r)
@@ -215,7 +207,6 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 		questionOrder = append(questionOrder, q)
 	}
 
-	// 2. Fetch Options
 	optRows, err := db.Query("SELECT id, question_id, text, color_hex FROM options")
 	if err == nil {
 		defer optRows.Close()
@@ -229,7 +220,6 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// 3. Fetch Predictions (if user logged in)
 	if user != nil {
 		predRows, err := db.Query("SELECT question_id, selected_option_id, text_input FROM predictions WHERE user_id = ?", user.ID)
 		if err == nil {
@@ -395,7 +385,6 @@ func handleUserProfile(w http.ResponseWriter, r *http.Request) {
 	}{currentUser, targetUser, finalQuestions, gameStatus, AllowedRooms})
 }
 
-// --- UPDATED: Handle Profile/Room Updates with Strict Validation ---
 func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method Not Allowed", 405)
@@ -408,7 +397,6 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 1. Update Username
 	newUsername := strings.TrimSpace(r.FormValue("username"))
 	if newUsername != "" {
 		_, err := db.Exec("UPDATE users SET username = ? WHERE id = ?", newUsername, user.ID)
@@ -417,7 +405,6 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// 2. Update Room Codes
 	if r.Form.Has("room_codes") {
 		rawRooms := r.FormValue("room_codes")
 		var validatedRooms []string
@@ -543,7 +530,6 @@ func handlePredict(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 }
 
-// --- UPDATED: Secure Cookies for HTTPS/Proxy Support ---
 func handleLogin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/", 302)
@@ -683,7 +669,6 @@ func handleGameState(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin?key=touchdown", 302)
 }
 
-// --- Admin Refresh Logic ---
 func handleAdminRefresh(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method Not Allowed", 405)
