@@ -5,57 +5,83 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Oracle Admin</title>
     <link rel="stylesheet" href="/static/style.css">
-    <!-- Favicons -->
     <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
 
     <style>
-        .admin-container { max-width: 900px; margin: 0 auto; background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px var(--shadow-color); }
+        .admin-container { max-width: 1000px; margin: 0 auto; background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px var(--shadow-color); }
         .controls { background: var(--hover-bg); padding: 20px; border-radius: 8px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-color); }
+        
+        /* Status Tags */
         .state-tag { padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
         .tag-OPEN { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .tag-LOCKED { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        
+        /* Table Styles */
         table { width: 100%; border-collapse: separate; border-spacing: 0; }
         th { text-align: left; padding: 15px; border-bottom: 2px solid var(--border-color); color: var(--subtext-color); }
         td { padding: 15px; border-bottom: 1px solid var(--border-color); vertical-align: middle; color: var(--text-color); }
         tr:last-child td { border-bottom: none; }
         
-        /* Dark Mode adjustments for resolved rows */
-        .row-RESOLVED { background-color: var(--hover-bg); }
-        .row-RESOLVED .question-title { text-decoration: line-through; color: var(--subtext-color); }
-        .row-RESOLVED select, .row-RESOLVED input { opacity: 0.5; pointer-events: none; }
+        /* Resolved Row State */
+        .row-RESOLVED { background-color: rgba(0,0,0,0.02); }
+        .row-RESOLVED .question-title { color: var(--subtext-color); }
         
-        select, input[type="text"] { padding: 8px; border-radius: 4px; border: 1px solid var(--input-border); width: 100%; max-width: 200px; background: var(--input-bg); color: var(--text-color); }
+        /* Input Styles */
+        input[type="text"] { padding: 8px; border-radius: 4px; border: 1px solid var(--input-border); width: 100%; max-width: 150px; background: var(--input-bg); color: var(--text-color); }
         
+        /* Button Base Styles */
         button { cursor: pointer; padding: 8px 16px; border-radius: 4px; border: none; font-weight: 600; transition: all 0.2s; }
-        .btn-resolve { background: #002244; color: white; }
-        .btn-resolve:hover { background: #004488; transform: translateY(-1px); }
         
-        .btn-unresolve { background: #dc3545; color: white; }
-        .btn-unresolve:hover { background: #c82333; }
+        /* Quick Resolve Option Buttons */
+        .options-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn-option {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .btn-option:hover {
+            background: var(--hover-bg);
+            border-color: var(--subtext-color);
+            transform: translateY(-1px);
+        }
+        
+        /* Winner/Loser States */
+        .btn-option.winner {
+            background-color: #28a745;
+            color: white;
+            border-color: #28a745;
+            box-shadow: 0 0 8px rgba(40, 167, 69, 0.4);
+        }
+        .btn-option.loser {
+            opacity: 0.4;
+            background: transparent;
+            border-color: transparent;
+            pointer-events: none; /* Prevent clicking losers */
+        }
+        
+        /* Action Buttons */
+        .btn-resolve { background: #002244; color: white; }
+        .btn-resolve:hover { background: #004488; }
+        
+        .btn-unresolve { background: #dc3545; color: white; opacity: 0.8; font-size: 0.8rem; padding: 6px 12px;}
+        .btn-unresolve:hover { opacity: 1; }
         
         .btn-lock { background: #dc3545; color: white; padding: 10px 20px; }
-        .btn-lock:hover { background: #c82333; }
         .btn-unlock { background: #28a745; color: white; padding: 10px 20px; }
-        .btn-unlock:hover { background: #218838; }
         
         .category-pill { font-size: 0.75rem; background: var(--hover-bg); padding: 3px 8px; border-radius: 12px; color: var(--subtext-color); display: inline-block; margin-top: 4px; border: 1px solid var(--border-color); }
-        
         .btn-sm { padding: 4px 8px; font-size: 0.8rem; }
-        
-        #toast { visibility: hidden; min-width: 250px; background-color: #333; color: #fff; text-align: center; border-radius: 4px; padding: 16px; position: fixed; z-index: 1; left: 50%; bottom: 30px; transform: translateX(-50%); opacity: 0; transition: opacity 0.3s, bottom 0.3s; }
-        #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
     </style>
 </head>
 <body>
     <script>
-        // Apply theme
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme) { document.documentElement.setAttribute('data-theme', savedTheme); }
-        else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            document.documentElement.setAttribute('data-theme', 'dark');
-        }
     </script>
 
     <div class="admin-container">
@@ -72,11 +98,9 @@
             
             <form action="/admin/state" method="POST" style="margin:0;">
                 {{if eq .GameStatus "OPEN"}}
-                    <button type="submit" name="status" value="LOCKED" class="btn-lock">🔒 LOCK GAME (KICKOFF)</button>
-                    <div style="font-size: 0.8rem; color: var(--subtext-color); margin-top: 5px; text-align: right;">Disables all user predictions</div>
+                    <button type="submit" name="status" value="LOCKED" class="btn-lock">🔒 LOCK GAME</button>
                 {{else}}
                     <button type="submit" name="status" value="OPEN" class="btn-unlock">🔓 UNLOCK GAME</button>
-                    <div style="font-size: 0.8rem; color: var(--subtext-color); margin-top: 5px; text-align: right;">Allows users to edit picks</div>
                 {{end}}
             </form>
         </div>
@@ -86,8 +110,8 @@
                 <tr>
                     <th style="width: 50px;">ID</th>
                     <th>Question</th>
-                    <th style="width: 250px;">Winner/Result</th>
-                    <th style="width: 100px;">Action</th>
+                    <th>Select Winner / Result</th>
+                    <th style="width: 100px; text-align: center;">Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -97,30 +121,37 @@
                     <td>
                         <div class="question-title" style="font-weight:bold;">{{.Text}}</div>
                         <span class="category-pill">{{.Category}}</span>
-                        {{if ne .Type "select"}}
-                            <span class="category-pill" style="background:var(--hover-bg);">{{.Type}}</span>
-                        {{end}}
                     </td>
                     <td>
+                        {{$q := .}}
                         {{if eq .Type "select"}}
-                            <select id="select-{{.ID}}">
-                                <option value="" disabled selected>Select Winner...</option>
+                            <div class="options-grid">
                                 {{range .Options}}
-                                    <option value="{{.ID}}">{{.Text}}</option>
+                                    {{$isWinner := and (eq $q.Status "RESOLVED") (eq (printf "%d" .ID) (printf "%d" $q.CorrectOptionID))}}
+                                    
+                                    <button 
+                                        onclick="resolveImmediate({{$q.ID}}, {{.ID}})"
+                                        class="btn-option {{if $isWinner}}winner{{else if eq $q.Status "RESOLVED"}}loser{{end}}">
+                                        {{.Text}}
+                                    </button>
                                 {{end}}
-                            </select>
+                            </div>
                         {{else}}
-                            <input type="text" 
-                                   id="input-{{.ID}}" 
-                                   placeholder="Enter Result (e.g. 24)" 
-                                   value="{{.CorrectTextInput}}">
+                            <div style="display: flex; gap: 5px;">
+                                <input type="text" 
+                                       id="input-{{.ID}}" 
+                                       placeholder="Value..." 
+                                       value="{{.CorrectTextInput}}"
+                                       {{if eq .Status "RESOLVED"}}disabled{{end}}>
+                                {{if ne .Status "RESOLVED"}}
+                                    <button onclick="resolveText({{.ID}})" class="btn-resolve">Save</button>
+                                {{end}}
+                            </div>
                         {{end}}
                     </td>
-                    <td id="action-cell-{{.ID}}">
+                    <td style="text-align: center;">
                         {{if eq .Status "RESOLVED"}}
                             <button onclick="unresolveQuestion({{.ID}})" class="btn-unresolve">UNRESOLVE</button>
-                        {{else}}
-                            <button onclick="resolveQuestion({{.ID}}, '{{.Type}}')" class="btn-resolve">Resolve</button>
                         {{end}}
                     </td>
                 </tr>
@@ -134,7 +165,6 @@
         <table>
             <thead>
                 <tr>
-                    <th>ID</th>
                     <th>Username</th>
                     <th>Room</th>
                     <th>Score</th>
@@ -144,10 +174,8 @@
             <tbody>
                 {{range .Users}}
                 <tr>
-                    <td>{{.ID}}</td>
                     <td>
-                        <!-- Editable Username Form -->
-                        <form action="/admin/users?key=touchdown" method="POST" style="display:flex; gap:5px;">
+                         <form action="/admin/users?key=touchdown" method="POST" style="display:flex; gap:5px;">
                             <input type="hidden" name="user_id" value="{{.ID}}">
                             <input type="hidden" name="action" value="update_username">
                             <input type="text" name="new_username" value="{{.Username}}" style="width:120px; padding:4px;" required>
@@ -155,7 +183,6 @@
                         </form>
                     </td>
                     <td>
-                        <!-- Editable Room Form -->
                         <form action="/admin/users?key=touchdown" method="POST" style="display:flex; gap:5px;">
                             <input type="hidden" name="user_id" value="{{.ID}}">
                             <input type="hidden" name="action" value="update_room">
@@ -164,8 +191,8 @@
                         </form>
                     </td>
                     <td>{{.TotalScore}}</td>
-                    <td style="display:flex; gap:10px;">
-                        <form action="/admin/users?key=touchdown" method="POST" onsubmit="return confirm('Reset PIN for {{.Username}}?');">
+                    <td>
+                        <form action="/admin/users?key=touchdown" method="POST" onsubmit="return confirm('Reset PIN?');">
                             <input type="hidden" name="user_id" value="{{.ID}}">
                             <button type="submit" name="action" value="reset_pin" style="background:#ffc107; color:black;" class="btn-sm">Reset PIN</button>
                         </form>
@@ -180,48 +207,53 @@
         </table>
     </div>
 
-    <div id="toast">Update Successful!</div>
-
     <script>
-        function resolveQuestion(qID, type) {
-            let payload = { question_id: String(qID) };
-            
-            if (type === 'select') {
-                const select = document.getElementById('select-' + qID);
-                if (!select.value) { alert("Select a winner!"); return; }
-                payload.option_id = String(select.value);
-            } else {
-                const input = document.getElementById('input-' + qID);
-                payload.text_input = String(input.value);
-            }
-
+        // One-Click Resolve for Buttons
+        function resolveImmediate(qID, optID) {
             fetch('/admin/resolve', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ 
+                    question_id: String(qID), 
+                    option_id: String(optID) 
+                })
             })
             .then(res => res.json())
-            .then(data => {
-                location.reload(); // Reload to update button state/colors
+            .then(data => location.reload()) // Refresh to show new state
+            .catch(err => alert("Error resolving question"));
+        }
+
+        // Manual Resolve for Text Inputs
+        function resolveText(qID) {
+            const val = document.getElementById('input-' + qID).value;
+            if(!val) return;
+            
+            fetch('/admin/resolve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    question_id: String(qID), 
+                    text_input: String(val) 
+                })
             })
-            .catch(err => alert("Error"));
+            .then(res => res.json())
+            .then(data => location.reload())
+            .catch(err => alert("Error resolving question"));
         }
 
         function unresolveQuestion(qID) {
-            if(!confirm("Are you sure you want to unresolve this question? This will remove points from users.")) return;
+            if(!confirm("Unresolve this question?")) return;
 
             fetch('/admin/resolve', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     question_id: String(qID),
-                    status: "OPEN" // Signal to backend to unresolve
+                    status: "OPEN"
                 })
             })
             .then(res => res.json())
-            .then(data => {
-                location.reload(); // Reload to update button state/colors
-            })
+            .then(data => location.reload())
             .catch(err => alert("Error"));
         }
     </script>

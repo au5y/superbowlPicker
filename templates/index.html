@@ -275,6 +275,7 @@
 
     {{if ne .GameStatus "LOCKED"}}
     <div class="validate-bar">
+        <div id="validation-feedback" style="margin-bottom: 8px; font-weight: bold; min-height: 1.2em; font-size: 0.95rem;"></div>
         <button class="btn-validate" onclick="validatePicks()">LOCK IN / VALIDATE</button>
     </div>
     {{end}}
@@ -379,31 +380,59 @@
         }
 
         function validatePicks() {
-            let missing = 0;
+            let missingCount = 0;
+            let firstMissingEl = null;
+            const feedbackEl = document.getElementById('validation-feedback');
             
+            document.querySelectorAll('.missing-pick').forEach(el => {
+                el.classList.remove('missing-pick');
+            });
+
             document.querySelectorAll('.question-card').forEach(card => {
                 const type = card.getAttribute('data-type');
+                let isAnswered = false;
+
                 if (type === 'select') {
-                    // Check for selected radio
-                    if (!card.querySelector('input[type="radio"]:checked')) missing++;
+                    if (card.querySelector('input[type="radio"]:checked')) isAnswered = true;
                 } else {
-                    // Check for number input value
                     const input = card.querySelector('input.number-input');
-                    if (input && input.value.trim() === '') missing++;
+                    if (input && input.value.trim() !== '') isAnswered = true;
+                }
+
+                if (!isAnswered) {
+                    missingCount++;
+                    card.classList.add('missing-pick');
+                    if (!firstMissingEl) firstMissingEl = card;
                 }
             });
 
             document.querySelectorAll('.scoreboard-container').forEach(container => {
                 const input = container.querySelector('.sb-input');
-                if (input && input.value.trim() === '') missing++;
+                if (input && input.value.trim() === '') {
+                    missingCount++;
+                    container.classList.add('missing-pick');
+                    if (!firstMissingEl) firstMissingEl = container;
+                }
             });
 
-            if (missing > 0) {
-                alert(`You have ${missing} unfinished predictions! Please scroll up and complete them.`);
+            if (missingCount > 0) {
+                feedbackEl.style.color = "#dc3545"; // Red
+                feedbackEl.textContent = `⚠️ You have ${missingCount} unfinished prediction${missingCount === 1 ? '' : 's'}!`;
+                
+                if (firstMissingEl) {
+                    firstMissingEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
             } else {
-                alert("All picks entered! You are ready for the game.");
+                feedbackEl.style.color = "#28a745"; // Green
+                feedbackEl.textContent = "✅ All picks entered! You are ready for the game.";
             }
         }
+        document.addEventListener('input', function(e) {
+            const container = e.target.closest('.question-card, .scoreboard-container');
+            if (container && container.classList.contains('missing-pick')) {
+                container.classList.remove('missing-pick');
+            }
+        });
     </script>
     {{end}}
 </body>
