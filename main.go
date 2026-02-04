@@ -283,6 +283,7 @@ func handleUserProfile(w http.ResponseWriter, r *http.Request) {
 	}{currentUser, targetUser, questions, gameStatus, AllowedRooms})
 }
 
+// --- UPDATED: Handle Profile/Room Updates with Strict Validation ---
 func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost { http.Error(w, "Method Not Allowed", 405); return }
 
@@ -310,8 +311,20 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		
+		if len(validatedRooms) == 0 && strings.TrimSpace(rawRooms) != "" {
+			ref := r.Header.Get("Referer")
+			if ref == "" { ref = "/" }
+			if strings.Contains(ref, "?") {
+				ref += "&error=invalid_code"
+			} else {
+				ref += "?error=invalid_code"
+			}
+			http.Redirect(w, r, ref, 302)
+			return
+		}
+
 		finalRoomCode := strings.Join(validatedRooms, ",")
-		// If empty or explicitly GLOBAL, we set it (allows clearing rooms)
+		// If input was explicitly empty (clearing profile) or matches nothing but was empty string
 		if finalRoomCode == "" { finalRoomCode = "GLOBAL" }
 
 		_, err := db.Exec("UPDATE users SET room_code = ? WHERE id = ?", finalRoomCode, user.ID)
@@ -320,6 +333,13 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 
 	ref := r.Header.Get("Referer")
 	if ref == "" { ref = "/" }
+	// Strip error param on success so modal doesn't re-open with error
+	if strings.Contains(ref, "error=invalid_code") {
+		ref = strings.ReplaceAll(ref, "error=invalid_code", "")
+		ref = strings.ReplaceAll(ref, "?&", "?")
+		ref = strings.TrimSuffix(ref, "?")
+		ref = strings.TrimSuffix(ref, "&")
+	}
 	http.Redirect(w, r, ref, 302)
 }
 
@@ -385,8 +405,6 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	pin := r.FormValue("pin")
 	
-	// --- UPDATED: No Room Code handling here ---
-	
 	var userID int
 	var pinHash string
 	
@@ -398,7 +416,6 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		if pinHash == "" {
 			db.Exec("UPDATE users SET pin_hash = ? WHERE id = ?", pin, userID)
 		}
-		// NOTE: Existing users are NOT prompted to change rooms on login. They stay in their current room.
 	} else {
 		// New User: Room code defaults to empty string "" to trigger the gate
 		res, _ := db.Exec("INSERT INTO users (username, pin_hash, room_code) VALUES (?, ?, ?)", username, pin, "")

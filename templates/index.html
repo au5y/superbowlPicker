@@ -123,7 +123,7 @@
             <form action="/login" method="POST">
                 <input type="text" name="username" placeholder="Your Name" required autocomplete="off">
                 <p>Enter a 4 digit pin if you don't want someone to be able to change your answers (optional). If you forget it let Austin know and he'll reset it, if you don't set it and someone else tries to login with a new PIN it will be set to the new pin.</p>
-                <input type="password" name="pin" placeholder="PIN (Optional)" maxlength="4">               
+                <input type="password" name="pin" placeholder="PIN (Optional)" maxlength="4">                
                 <br>
                 <button type="submit" class="login-btn">Submit</button>
             </form>
@@ -148,23 +148,34 @@
     {{if eq .User.RoomCode ""}}
     <div class="modal-gate">
         <div class="modal-content">
+            <div id="modal-error" style="color: #721c24; background: #f8d7da; padding: 10px; border-radius: 4px; margin-bottom: 15px; display: none; border: 1px solid #f5c6cb;">
+                Invalid Group Code. Please check spelling and try again.
+            </div>
+
             <h2>👋 Welcome, {{.User.Username}}!</h2>
             <p style="color: var(--text-color); line-height: 1.5;">
                 To compete directly against your friends, enter your <strong>Group Code</strong> below.
             </p>
             <p style="font-size: 0.9rem; color: var(--subtext-color); margin-bottom: 20px;">
                 Enter the code for the group you are directly pooling against.<br>
-                Ask Austin for your code! It's just for fun.
+                Ask Austin for the code!
             </p>
             
             <form action="/user/update" method="POST">
-                <input type="text" name="room_codes" placeholder="GROUP CODE (e.g. FAMILY)" 
+                <input type="text" name="room_codes" placeholder="GROUP CODE" 
                        style="text-transform:uppercase; font-size: 1.2rem; text-align: center; letter-spacing: 2px;" required>
                 
                 <button type="submit" class="modal-btn-primary">Join Group</button>
             </form>
         </div>
     </div>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('error') === 'invalid_code') {
+            const modalErr = document.getElementById('modal-error');
+            if(modalErr) modalErr.style.display = 'block';
+        }
+    </script>
     {{end}}
 
     <div class="drawer-overlay" id="overlay" onclick="toggleDrawer()"></div>
