@@ -97,32 +97,23 @@ func createTables() {
 }
 
 func runMigrations() {
-	// 1. Legacy Room Code
 	if !columnExists("users", "room_code") {
 		db.Exec("ALTER TABLE users ADD COLUMN room_code TEXT DEFAULT 'MAIN'")
 	}
-	// 2. Admin
 	if !columnExists("users", "is_admin") {
 		db.Exec("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0")
 	}
-	// 3. Icon
 	if !columnExists("users", "icon") {
 		db.Exec(fmt.Sprintf("ALTER TABLE users ADD COLUMN icon TEXT DEFAULT '%s'", HelmetIconURL))
 	}
-	// 4. Color
 	if !columnExists("users", "color_hex") {
 		db.Exec("ALTER TABLE users ADD COLUMN color_hex TEXT DEFAULT '#002244'")
 	}
 
-	// 5. Fix old default '🏈' to Helmet URL if preferred
+	// Fix old defaults
 	db.Exec("UPDATE users SET icon = ? WHERE icon = '🏈'", HelmetIconURL)
-
-	// 6. Fix old remote URL to local asset (Migration for v2.5_dev update)
-	oldRemoteURL := "https://www.svgrepo.com/show/8996/american-football-helmet.svg"
-	db.Exec("UPDATE users SET icon = ? WHERE icon = ?", HelmetIconURL, oldRemoteURL)
-
-	// 7. Fix existing remote team URLs to local assets
-	// This replaces the ESPN CDN prefix with the local static path for all users
+	db.Exec("UPDATE users SET icon = ? WHERE icon = 'https://www.svgrepo.com/show/8996/american-football-helmet.svg'", HelmetIconURL)
+	// Migrate any existing remote URLs to local assets
 	db.Exec("UPDATE users SET icon = REPLACE(icon, 'https://a.espncdn.com/i/teamlogos/nfl/500/', '/static/assets/') WHERE icon LIKE 'https://a.espncdn.com/i/teamlogos/nfl/500/%'")
 }
 

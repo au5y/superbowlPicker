@@ -7,15 +7,6 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
     <link rel="stylesheet" href="/static/style.css">
     <style>
-        .drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 900; display: none; }
-        .drawer-overlay.open { display: block; }
-        .drawer { position: fixed; top: 0; left: 0; width: 280px; height: 100%; background: var(--drawer-bg); z-index: 1000; transition: transform 0.3s ease; box-shadow: 2px 0 10px var(--shadow-color); padding-top: 20px; transform: translateX(-100%); }
-        .drawer.open { transform: translateX(0); }
-        .drawer-header { padding: 20px; border-bottom: 1px solid var(--border-color); font-size: 1.2rem; font-weight: bold; color: var(--heading-color); display: flex; justify-content: space-between; align-items: center; }
-        .drawer-nav a, .drawer-nav button.theme-toggle { display: block; padding: 15px 20px; width: 100%; text-align: left; box-sizing: border-box; color: var(--text-color); text-decoration: none; border-bottom: 1px solid var(--hover-bg); background: none; border: none; font-size: 1rem; cursor: pointer; }
-        .drawer-nav a:hover, .drawer-nav button:hover { background: var(--hover-bg); }
-        .fixed-menu-btn { position: fixed; top: 15px; left: 15px; z-index: 1100; background: rgba(255,255,255,0.8); backdrop-filter: blur(4px); border: 1px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; box-shadow: 0 2px 5px var(--shadow-color); color: var(--text-color); }
-
         .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 20px; }
         table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 8px; overflow: hidden; }
         th { background: var(--hover-bg); padding: 15px; text-align: left; color: var(--heading-color); }
@@ -42,24 +33,7 @@
         if (savedTheme) { document.documentElement.setAttribute('data-theme', savedTheme); }
     </script>
 
-    <div class="drawer-overlay" id="overlay" onclick="toggleDrawer()"></div>
-    <button class="fixed-menu-btn" onclick="toggleDrawer()">☰</button>
-
-    <div class="drawer" id="drawer">
-        <div class="drawer-header">
-            <span>Menu</span>
-            <button onclick="toggleDrawer()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color: var(--text-color);">&times;</button>
-        </div>
-        <div class="drawer-nav">
-            <a href="/">My Picks</a>
-            <a href="/leaderboard">Leaderboard</a>
-            <a href="/user/{{.User.ID}}">My Profile</a>
-            {{if .User.IsAdmin}}<a href="/admin" style="color: var(--accent-color); font-weight: bold;">Admin Panel</a>{{end}}
-            <button class="theme-toggle" onclick="toggleTheme()">Toggle Dark Mode</button>
-            <hr style="border:0; border-top:1px solid var(--border-color);">
-            <a href="/logout" style="color: #C60C30;">Log Out</a>
-        </div>
-    </div>
+    {{template "drawer" .}}
 
     <div style="max-width: 800px; margin: 0 auto; padding-top: 60px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap: wrap; gap: 10px;">
@@ -73,7 +47,7 @@
                     <tr>
                         <th style="width: 40px;">#</th>
                         <th>Player</th>
-                        <th>Tie Breaker</th>
+                        <th>Total Score Guess</th>
                         <th style="text-align: right;">Score</th>
                     </tr>
                 </thead>
@@ -90,12 +64,6 @@
         const roomAliases = {{.RoomAliases}};
         let currentRoom = userRooms.length > 0 ? userRooms[0] : "MAIN";
         let isGlobal = false;
-
-        function toggleDrawer() { document.getElementById('drawer').classList.toggle('open'); document.getElementById('overlay').classList.toggle('open'); }
-        function toggleTheme() {
-            const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', next); localStorage.setItem('theme', next);
-        }
 
         function initControls() {
             const container = document.getElementById('room-controls');

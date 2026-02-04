@@ -15,14 +15,13 @@ import (
 	"time"
 )
 
-// --- Structs ---
-
 type PageData struct {
 	User        *User
 	Categories  []CategoryGroup
 	GameStatus  string
 	TargetUser  *User
 	RoomAliases map[string]string
+	ActivePage  string
 }
 
 type CategoryGroup struct {
@@ -74,8 +73,6 @@ type PredictionRequest struct {
 	TextInput  string `json:"text_input"`
 }
 
-// --- Globals ---
-
 var AllowedRooms = map[string]string{
 	"FAM":     "Miller/Young Family Pool",
 	"BRAD":    "12 Bradbury Watchparty",
@@ -111,20 +108,16 @@ var funcMap = template.FuncMap{
 var templates = template.Must(template.New("T").Funcs(funcMap).ParseGlob("templates/*.html"))
 var usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
-// --- Logging Setup ---
-
 func setupLogging() {
 	if _, err := os.Stat("logs"); os.IsNotExist(err) {
 		os.Mkdir("logs", 0755)
 	}
-
 	logName := fmt.Sprintf("logs/server_%s.log", time.Now().Format("2006-01-02"))
 	file, err := os.OpenFile(logName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		log.Println("Failed to open log file, using stderr only")
 		return
 	}
-
 	mw := io.MultiWriter(os.Stdout, file)
 	log.SetOutput(mw)
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
@@ -133,16 +126,13 @@ func setupLogging() {
 func withLogging(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-
 		ww := &statusWriter{ResponseWriter: w, status: http.StatusOK}
 		next(ww, r)
-
 		duration := time.Since(start)
 		clientIP := r.Header.Get("X-Forwarded-For")
 		if clientIP == "" {
 			clientIP = r.RemoteAddr
 		}
-
 		log.Printf("| %3d | %10v | %s | %s %s", ww.status, duration, clientIP, r.Method, r.URL.Path)
 	}
 }
@@ -157,11 +147,8 @@ func (w *statusWriter) WriteHeader(status int) {
 	w.ResponseWriter.WriteHeader(status)
 }
 
-// --- Main & CLI ---
-
 func main() {
 	setupLogging()
-
 	dbName := os.Getenv("DB_NAME")
 	if dbName == "" {
 		dbName = "./game.db"
@@ -178,7 +165,6 @@ func main() {
 			}
 			username := os.Args[2]
 			isAdmin := (cmd == "admin")
-
 			if err := SetAdminStatus(username, isAdmin); err != nil {
 				fmt.Printf("Error: %v\n", err)
 				os.Exit(1)
@@ -192,7 +178,6 @@ func main() {
 	if port == "" {
 		port = "4884"
 	}
-
 	fmt.Printf("Starting App on Port %s using DB %s\n", port, dbName)
 
 	http.HandleFunc("/", withLogging(handleIndex))
@@ -203,14 +188,12 @@ func main() {
 	http.HandleFunc("/logout", withLogging(handleLogout))
 	http.HandleFunc("/predict", withLogging(handlePredict))
 	http.HandleFunc("/api/leaderboard", withLogging(handleLeaderboardAPI))
-
 	http.HandleFunc("/admin", withLogging(requireAdmin(handleAdmin)))
 	http.HandleFunc("/admin/resolve", withLogging(requireAdmin(handleResolve)))
 	http.HandleFunc("/admin/state", withLogging(requireAdmin(handleGameState)))
 	http.HandleFunc("/admin/refresh", withLogging(requireAdmin(handleAdminRefresh)))
 	http.HandleFunc("/admin/users", withLogging(requireAdmin(handleAdminUsers)))
 	http.HandleFunc("/admin/backup", withLogging(requireAdmin(handleAdminBackup)))
-
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	err := http.ListenAndServe(":"+port, nil)
@@ -238,10 +221,7 @@ func getUser(r *http.Request) *User {
 	userID, _ := strconv.Atoi(cookie.Value)
 	user := &User{ID: userID}
 	var isAdminInt int
-
-	err = db.QueryRow("SELECT username, total_score, room_code, is_admin, icon, color_hex FROM users WHERE id = ?", userID).
-		Scan(&user.Username, &user.TotalScore, &user.RoomCode, &isAdminInt, &user.Icon, &user.ColorHex)
-
+	err = db.QueryRow("SELECT username, total_score, room_code, is_admin, icon, color_hex FROM users WHERE id = ?", userID).Scan(&user.Username, &user.TotalScore, &user.RoomCode, &isAdminInt, &user.Icon, &user.ColorHex)
 	if err != nil {
 		return nil
 	}
@@ -249,20 +229,16 @@ func getUser(r *http.Request) *User {
 	return user
 }
 
-// --- Handlers ---
-
 func handleIndex(w http.ResponseWriter, r *http.Request) {
 	user := getUser(r)
 	questionsMap := make(map[int]*QuestionData)
 	var questionOrder []*QuestionData
-
 	rows, err := db.Query("SELECT id, text, category, status, type, image_url, correct_option_id FROM questions ORDER BY id ASC")
 	if err != nil {
 		http.Error(w, "DB Error", 500)
 		return
 	}
 	defer rows.Close()
-
 	for rows.Next() {
 		q := &QuestionData{}
 		var correctOptID sql.NullInt64
@@ -274,11 +250,9 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 		if imgURL.Valid {
 			q.ImageURL = imgURL.String
 		}
-
 		questionsMap[q.ID] = q
 		questionOrder = append(questionOrder, q)
 	}
-
 	optRows, err := db.Query("SELECT id, question_id, text, color_hex FROM options")
 	if err == nil {
 		defer optRows.Close()
@@ -291,7 +265,6 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-
 	if user != nil {
 		predRows, err := db.Query("SELECT question_id, selected_option_id, text_input FROM predictions WHERE user_id = ?", user.ID)
 		if err == nil {
@@ -301,7 +274,6 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 				var selID sql.NullInt64
 				var txtInput sql.NullString
 				predRows.Scan(&qID, &selID, &txtInput)
-
 				if q, ok := questionsMap[qID]; ok {
 					pred := &PredictionData{}
 					if selID.Valid {
@@ -311,7 +283,6 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 						pred.TextInput = txtInput.String
 					}
 					q.UserPrediction = pred
-
 					if q.Type == "select" && selID.Valid {
 						for i := range q.Options {
 							if int64(q.Options[i].ID) == selID.Int64 {
@@ -323,10 +294,8 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-
 	var grouped []CategoryGroup
 	groupMap := make(map[string]int)
-
 	for _, q := range questionOrder {
 		idx, exists := groupMap[q.Category]
 		if !exists {
@@ -338,13 +307,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 			grouped[idx].Questions = append(grouped[idx].Questions, *q)
 		}
 	}
-
-	render(w, "index.html", PageData{
-		User:        user,
-		Categories:  grouped,
-		GameStatus:  getGameStatus(),
-		RoomAliases: AllowedRooms,
-	})
+	render(w, "index.html", PageData{User: user, Categories: grouped, GameStatus: getGameStatus(), RoomAliases: AllowedRooms, ActivePage: "home"})
 }
 
 func handleLeaderboardView(w http.ResponseWriter, r *http.Request) {
@@ -353,11 +316,7 @@ func handleLeaderboardView(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	render(w, "leaderboard.html", PageData{
-		User:        user,
-		GameStatus:  getGameStatus(),
-		RoomAliases: AllowedRooms,
-	})
+	render(w, "leaderboard.html", PageData{User: user, GameStatus: getGameStatus(), RoomAliases: AllowedRooms, ActivePage: "leaderboard"})
 }
 
 func handleUserProfile(w http.ResponseWriter, r *http.Request) {
@@ -372,23 +331,19 @@ func handleUserProfile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid ID", 400)
 		return
 	}
-
 	gameStatus := getGameStatus()
 	if gameStatus == "OPEN" && currentUser.ID != targetID && !currentUser.IsAdmin {
-		render(w, "profile.html", PageData{User: currentUser, GameStatus: gameStatus, TargetUser: nil})
+		render(w, "profile.html", PageData{User: currentUser, GameStatus: gameStatus, TargetUser: nil, ActivePage: "profile"})
 		return
 	}
-
 	targetUser := &User{ID: targetID}
 	var isAdminInt int
-	err = db.QueryRow("SELECT username, total_score, room_code, is_admin, icon, color_hex FROM users WHERE id = ?", targetID).
-		Scan(&targetUser.Username, &targetUser.TotalScore, &targetUser.RoomCode, &isAdminInt, &targetUser.Icon, &targetUser.ColorHex)
+	err = db.QueryRow("SELECT username, total_score, room_code, is_admin, icon, color_hex FROM users WHERE id = ?", targetID).Scan(&targetUser.Username, &targetUser.TotalScore, &targetUser.RoomCode, &isAdminInt, &targetUser.Icon, &targetUser.ColorHex)
 	if err != nil {
 		http.Error(w, "User not found", 404)
 		return
 	}
 	targetUser.IsAdmin = (isAdminInt == 1)
-
 	questionsMap := make(map[int]*QuestionData)
 	var questionOrder []*QuestionData
 	rows, _ := db.Query("SELECT id, text, category, status, type, image_url, correct_option_id, correct_text_input FROM questions ORDER BY id ASC")
@@ -411,7 +366,6 @@ func handleUserProfile(w http.ResponseWriter, r *http.Request) {
 		questionsMap[q.ID] = q
 		questionOrder = append(questionOrder, q)
 	}
-
 	oRows, _ := db.Query("SELECT id, question_id, text FROM options")
 	defer oRows.Close()
 	for oRows.Next() {
@@ -422,7 +376,6 @@ func handleUserProfile(w http.ResponseWriter, r *http.Request) {
 			q.Options = append(q.Options, o)
 		}
 	}
-
 	pRows, _ := db.Query("SELECT question_id, selected_option_id, text_input FROM predictions WHERE user_id=?", targetID)
 	defer pRows.Close()
 	for pRows.Next() {
@@ -444,19 +397,18 @@ func handleUserProfile(w http.ResponseWriter, r *http.Request) {
 			q.UserPrediction = pred
 		}
 	}
-
 	var finalQuestions []QuestionData
 	for _, q := range questionOrder {
 		finalQuestions = append(finalQuestions, *q)
 	}
-
 	render(w, "profile.html", struct {
 		User        *User
 		TargetUser  *User
 		Questions   []QuestionData
 		GameStatus  string
 		RoomAliases map[string]string
-	}{currentUser, targetUser, finalQuestions, gameStatus, AllowedRooms})
+		ActivePage  string
+	}{currentUser, targetUser, finalQuestions, gameStatus, AllowedRooms, "profile"})
 }
 
 func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
@@ -464,23 +416,17 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method Not Allowed", 405)
 		return
 	}
-
 	user := getUser(r)
 	if user == nil {
 		http.Redirect(w, r, "/", 302)
 		return
 	}
-
 	if r.FormValue("username") != "" {
 		newUsername := strings.TrimSpace(r.FormValue("username"))
 		if usernameRegex.MatchString(newUsername) {
-			_, err := db.Exec("UPDATE users SET username = ? WHERE id = ?", newUsername, user.ID)
-			if err != nil {
-				log.Println("Error updating username:", err)
-			}
+			db.Exec("UPDATE users SET username = ? WHERE id = ?", newUsername, user.ID)
 		}
 	}
-
 	if r.FormValue("icon") != "" {
 		newIcon := r.FormValue("icon")
 		newColor := r.FormValue("color")
@@ -489,11 +435,9 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 			db.Exec("UPDATE users SET icon = ?, color_hex = ? WHERE id = ?", newIcon, newColor, user.ID)
 		}
 	}
-
 	if r.Form.Has("room_codes") {
 		rawRooms := r.FormValue("room_codes")
 		var validatedRooms []string
-
 		parts := strings.Split(rawRooms, ",")
 		for _, p := range parts {
 			clean := strings.ToUpper(strings.TrimSpace(p))
@@ -501,32 +445,24 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 				validatedRooms = append(validatedRooms, clean)
 			}
 		}
-
 		if len(validatedRooms) == 0 && strings.TrimSpace(rawRooms) != "" {
 			ref := r.Header.Get("Referer")
 			if ref == "" {
 				ref = "/"
 			}
+			sep := "?"
 			if strings.Contains(ref, "?") {
-				ref += "&error=invalid_code"
-			} else {
-				ref += "?error=invalid_code"
+				sep = "&"
 			}
-			http.Redirect(w, r, ref, 302)
+			http.Redirect(w, r, ref+sep+"error=invalid_code", 302)
 			return
 		}
-
 		finalRoomCode := strings.Join(validatedRooms, ",")
 		if finalRoomCode == "" {
 			finalRoomCode = "GLOBAL"
 		}
-
-		_, err := db.Exec("UPDATE users SET room_code = ? WHERE id = ?", finalRoomCode, user.ID)
-		if err != nil {
-			log.Println("Error updating rooms:", err)
-		}
+		db.Exec("UPDATE users SET room_code = ? WHERE id = ?", finalRoomCode, user.ID)
 	}
-
 	ref := r.Header.Get("Referer")
 	if ref == "" {
 		ref = "/"
@@ -540,27 +476,16 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 func handleLeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 	room := r.URL.Query().Get("room")
 	scope := r.URL.Query().Get("scope")
-
-	tieBreakerSQL := `COALESCE((
-		SELECT SUM(CAST(p.text_input AS INTEGER)) 
-		FROM predictions p 
-		JOIN questions q ON p.question_id = q.id 
-		WHERE p.user_id = u.id AND (q.type = 'scoreboard-left' OR q.type = 'scoreboard-right')
-	), 0)`
-
+	tieBreakerSQL := `COALESCE((SELECT SUM(CAST(p.text_input AS INTEGER)) FROM predictions p JOIN questions q ON p.question_id = q.id WHERE p.user_id = u.id AND (q.type = 'scoreboard-left' OR q.type = 'scoreboard-right')), 0)`
 	query := fmt.Sprintf(`SELECT u.id, u.username, u.total_score, %s as tie_breaker, u.room_code, u.icon, u.color_hex FROM users u`, tieBreakerSQL)
-
 	var args []interface{}
 	if scope != "global" && room != "" {
 		query += " WHERE u.room_code LIKE ?"
 		args = append(args, "%"+room+"%")
 	}
-
 	query += " ORDER BY u.total_score DESC, u.username ASC"
-
 	rows, err := db.Query(query, args...)
 	if err != nil {
-		log.Println(err)
 		http.Error(w, "DB Error", 500)
 		return
 	}
@@ -589,10 +514,8 @@ func handlePredict(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Auth", 401)
 		return
 	}
-
 	var req PredictionRequest
 	json.NewDecoder(r.Body).Decode(&req)
-
 	var optID interface{} = nil
 	if req.OptionID != "" {
 		optID = req.OptionID
@@ -601,13 +524,7 @@ func handlePredict(w http.ResponseWriter, r *http.Request) {
 	if req.TextInput != "" {
 		txtInput = req.TextInput
 	}
-
-	_, err := db.Exec(`INSERT INTO predictions (user_id, question_id, selected_option_id, text_input) VALUES (?, ?, ?, ?) ON CONFLICT(user_id, question_id) DO UPDATE SET selected_option_id=excluded.selected_option_id, text_input=excluded.text_input`, user.ID, req.QuestionID, optID, txtInput)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, "DB", 500)
-		return
-	}
+	db.Exec(`INSERT INTO predictions (user_id, question_id, selected_option_id, text_input) VALUES (?, ?, ?, ?) ON CONFLICT(user_id, question_id) DO UPDATE SET selected_option_id=excluded.selected_option_id, text_input=excluded.text_input`, user.ID, req.QuestionID, optID, txtInput)
 	w.WriteHeader(200)
 }
 
@@ -617,17 +534,13 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	username := strings.TrimSpace(r.FormValue("username"))
-
 	if !usernameRegex.MatchString(username) || len(username) > 20 {
 		http.Redirect(w, r, "/?error=invalid_username", 302)
 		return
 	}
-
 	pin := r.FormValue("pin")
-
 	var userID int
 	var pinHash string
-
 	if err := db.QueryRow("SELECT id, pin_hash FROM users WHERE username = ? COLLATE NOCASE", username).Scan(&userID, &pinHash); err == nil {
 		if pinHash != "" && pinHash != pin {
 			http.Redirect(w, r, "/?error=invalid_pin", 302)
@@ -641,33 +554,18 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		id, _ := res.LastInsertId()
 		userID = int(id)
 	}
-
 	isSecure := r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
-
-	http.SetCookie(w, &http.Cookie{
-		Name:     "user_id",
-		Value:    strconv.Itoa(userID),
-		Expires:  time.Now().Add(24 * time.Hour * 30),
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   isSecure,
-	})
+	http.SetCookie(w, &http.Cookie{Name: "user_id", Value: strconv.Itoa(userID), Expires: time.Now().Add(24 * 72 * time.Hour), Path: "/", HttpOnly: true, Secure: isSecure})
 	http.Redirect(w, r, "/", 302)
 }
 
 func handleLogout(w http.ResponseWriter, r *http.Request) {
-	http.SetCookie(w, &http.Cookie{
-		Name:   "user_id",
-		MaxAge: -1,
-		Path:   "/",
-	})
+	http.SetCookie(w, &http.Cookie{Name: "user_id", MaxAge: -1, Path: "/"})
 	http.Redirect(w, r, "/", 302)
 }
 
 func handleAdmin(w http.ResponseWriter, r *http.Request) {
-	// 1. Get Current User for Menu Logic
-	currentUser := getUser(r)
-
+	currentUser := getUser(r) // Should be checked by middleware but good for safety
 	var questions []QuestionData
 	rows, _ := db.Query("SELECT id, text, category, status, type, image_url, correct_option_id, correct_text_input FROM questions ORDER BY id ASC")
 	defer rows.Close()
@@ -677,7 +575,6 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		var imgURL sql.NullString
 		var correctText sql.NullString
 		rows.Scan(&q.ID, &q.Text, &q.Category, &q.Status, &q.Type, &imgURL, &c, &correctText)
-
 		if c.Valid {
 			q.CorrectOptionID = c.Int64
 		}
@@ -687,7 +584,6 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		if correctText.Valid {
 			q.CorrectTextInput = correctText.String
 		}
-
 		oRows, _ := db.Query("SELECT id, text FROM options WHERE question_id=?", q.ID)
 		for oRows.Next() {
 			o := OptionData{}
@@ -696,28 +592,24 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		}
 		questions = append(questions, q)
 	}
-
 	var users []User
-	uRows, err := db.Query("SELECT id, username, room_code, total_score, is_admin FROM users ORDER BY username ASC")
-	if err == nil {
-		defer uRows.Close()
-		for uRows.Next() {
-			u := User{}
-			var isAdminInt int
-			uRows.Scan(&u.ID, &u.Username, &u.RoomCode, &u.TotalScore, &isAdminInt)
-			u.IsAdmin = (isAdminInt == 1)
-			users = append(users, u)
-		}
+	uRows, _ := db.Query("SELECT id, username, room_code, total_score, is_admin FROM users ORDER BY username ASC")
+	defer uRows.Close()
+	for uRows.Next() {
+		u := User{}
+		var isAdminInt int
+		uRows.Scan(&u.ID, &u.Username, &u.RoomCode, &u.TotalScore, &isAdminInt)
+		u.IsAdmin = (isAdminInt == 1)
+		users = append(users, u)
 	}
-
-	// 2. Pass CurrentUser to Template
 	render(w, "admin.html", struct {
-		CurrentUser *User
+		User        *User
 		Questions   []QuestionData
 		GameStatus  string
 		Users       []User
 		RoomAliases map[string]string
-	}{currentUser, questions, getGameStatus(), users, AllowedRooms})
+		ActivePage  string
+	}{currentUser, questions, getGameStatus(), users, AllowedRooms, "admin"})
 }
 
 func handleResolve(w http.ResponseWriter, r *http.Request) {
@@ -728,7 +620,6 @@ func handleResolve(w http.ResponseWriter, r *http.Request) {
 		Status     string `json:"status"`
 	}
 	json.NewDecoder(r.Body).Decode(&req)
-
 	if req.Status == "OPEN" {
 		db.Exec("UPDATE questions SET status='OPEN', correct_option_id=NULL, correct_text_input=NULL WHERE id=?", req.QuestionID)
 	} else {
@@ -742,9 +633,7 @@ func handleResolve(w http.ResponseWriter, r *http.Request) {
 		}
 		db.Exec("UPDATE questions SET status='RESOLVED', correct_option_id=?, correct_text_input=? WHERE id=?", optID, txtVal, req.QuestionID)
 	}
-
 	db.Exec(`UPDATE users SET total_score = (SELECT COUNT(*) FROM predictions p JOIN questions q ON p.question_id = q.id WHERE p.user_id = users.id AND q.status = 'RESOLVED' AND p.selected_option_id = q.correct_option_id)`)
-
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
 }
@@ -762,21 +651,16 @@ func handleAdminRefresh(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method Not Allowed", 405)
 		return
 	}
-
 	file, err := os.ReadFile("questions.json")
 	if err != nil {
-		log.Println("Error reading questions.json:", err)
 		http.Redirect(w, r, "/admin?error=read_failed", 302)
 		return
 	}
-
 	var fileQuestions []SeedQuestion
 	if err := json.Unmarshal(file, &fileQuestions); err != nil {
-		log.Println("Error parsing questions.json:", err)
 		http.Redirect(w, r, "/admin?error=parse_failed", 302)
 		return
 	}
-
 	dbQuestions := make(map[string]int)
 	rows, _ := db.Query("SELECT id, text FROM questions")
 	defer rows.Close()
@@ -786,18 +670,24 @@ func handleAdminRefresh(w http.ResponseWriter, r *http.Request) {
 		rows.Scan(&id, &text)
 		dbQuestions[text] = id
 	}
-
 	seenTexts := make(map[string]bool)
-
 	for _, q := range fileQuestions {
 		seenTexts[q.Text] = true
 		qType := q.Type
 		if qType == "" {
 			qType = "select"
 		}
-
 		if id, exists := dbQuestions[q.Text]; exists {
 			db.Exec("UPDATE questions SET category=?, type=?, image_url=? WHERE id=?", q.Category, qType, q.ImageURL, id)
+			for _, o := range q.Options {
+				var optID int
+				err := db.QueryRow("SELECT id FROM options WHERE question_id = ? AND text = ?", id, o.Text).Scan(&optID)
+				if err == nil {
+					db.Exec("UPDATE options SET color_hex = ? WHERE id = ?", o.Color, optID)
+				} else {
+					db.Exec("INSERT INTO options (question_id, text, color_hex) VALUES (?, ?, ?)", id, o.Text, o.Color)
+				}
+			}
 		} else {
 			res, _ := db.Exec("INSERT INTO questions (text, category, type, image_url) VALUES (?, ?, ?, ?)", q.Text, q.Category, qType, q.ImageURL)
 			newID, _ := res.LastInsertId()
@@ -806,7 +696,6 @@ func handleAdminRefresh(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-
 	for text, id := range dbQuestions {
 		if !seenTexts[text] {
 			db.Exec("DELETE FROM predictions WHERE question_id = ?", id)
@@ -814,7 +703,6 @@ func handleAdminRefresh(w http.ResponseWriter, r *http.Request) {
 			db.Exec("DELETE FROM questions WHERE id = ?", id)
 		}
 	}
-
 	http.Redirect(w, r, "/admin?status=refreshed", 302)
 }
 
@@ -823,16 +711,13 @@ func handleAdminUsers(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method Not Allowed", 405)
 		return
 	}
-
 	action := r.FormValue("action")
 	userIDStr := r.FormValue("user_id")
-
 	userID, err := strconv.Atoi(userIDStr)
 	if err != nil {
 		http.Error(w, "Invalid User ID", 400)
 		return
 	}
-
 	switch action {
 	case "reset_pin":
 		db.Exec("UPDATE users SET pin_hash = '' WHERE id = ?", userID)
@@ -840,10 +725,7 @@ func handleAdminUsers(w http.ResponseWriter, r *http.Request) {
 		db.Exec("DELETE FROM predictions WHERE user_id = ?", userID)
 		db.Exec("DELETE FROM users WHERE id = ?", userID)
 	case "update_room":
-		if err := r.ParseForm(); err != nil {
-			http.Error(w, "Form Error", 400)
-			return
-		}
+		r.ParseForm()
 		rawRooms := r.Form["room_code"]
 		var validatedRooms []string
 		for _, p := range rawRooms {
@@ -863,7 +745,6 @@ func handleAdminUsers(w http.ResponseWriter, r *http.Request) {
 			db.Exec("UPDATE users SET username = ? WHERE id = ?", newUsername, userID)
 		}
 	}
-
 	http.Redirect(w, r, "/admin", 302)
 }
 
@@ -871,25 +752,19 @@ func handleAdminBackup(w http.ResponseWriter, r *http.Request) {
 	if _, err := os.Stat("backups"); os.IsNotExist(err) {
 		os.Mkdir("backups", 0755)
 	}
-
 	dbPath := os.Getenv("DB_NAME")
 	if dbPath == "" {
 		dbPath = "./game.db"
 	}
-
 	sourceFile, err := os.Open(dbPath)
 	if err != nil {
 		http.Error(w, "Failed to open DB", 500)
 		return
 	}
 	defer sourceFile.Close()
-
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=game_backup_%s.db", time.Now().Format("20060102_150405")))
 	w.Header().Set("Content-Type", "application/x-sqlite3")
-
-	if _, err := io.Copy(w, sourceFile); err != nil {
-		log.Println("Error serving backup:", err)
-	}
+	io.Copy(w, sourceFile)
 }
 
 func render(w http.ResponseWriter, tmpl string, data interface{}) {

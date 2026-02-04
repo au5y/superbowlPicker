@@ -1,0 +1,56 @@
+{{define "drawer"}}
+<div class="drawer-overlay" id="overlay" onclick="toggleDrawer()"></div>
+<button class="fixed-menu-btn" onclick="toggleDrawer()">☰</button>
+
+<div class="drawer" id="drawer">
+    <div class="drawer-header">
+        <span>Menu</span>
+        <button onclick="toggleDrawer()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color: var(--text-color);">&times;</button>
+    </div>
+    <div class="drawer-nav">
+        <!-- Active Page Logic via CSS classes -->
+        <a href="/" class="{{if eq .ActivePage "home"}}active{{end}}">My Picks</a>
+        <a href="/leaderboard" class="{{if eq .ActivePage "leaderboard"}}active{{end}}">Leaderboard</a>
+        <a href="/user/{{.User.ID}}" class="{{if eq .ActivePage "profile"}}active{{end}}">My Profile</a>
+        
+        {{if .User.IsAdmin}}
+            <a href="/admin" class="{{if eq .ActivePage "admin"}}active{{end}}" style="color: var(--accent-color); font-weight: bold;">Admin Panel</a>
+        {{end}}
+        
+        <button class="theme-toggle" onclick="toggleTheme()">Toggle Dark Mode</button>
+        <hr style="border:0; border-top:1px solid var(--border-color);">
+        
+        {{if eq .ActivePage "home"}}
+            <div style="padding: 10px 20px; font-weight:bold; color: var(--subtext-color); font-size:0.8rem;">JUMP TO SECTION</div>
+            {{range .Categories}}
+                <a href="#{{.Anchor}}" class="section-link" onclick="toggleDrawer()">{{.Name}}</a>
+            {{end}}
+            <hr style="border:0; border-top:1px solid var(--border-color);">
+        {{end}}
+
+        <a href="/logout" style="color: #C60C30;">Log Out</a>
+        <div style="text-align:center; padding: 10px; font-size: 0.8rem; color: var(--subtext-color);">v2.5.0</div>
+    </div>
+</div>
+
+<script>
+    function toggleDrawer() {
+        const drawer = document.getElementById('drawer');
+        const overlay = document.getElementById('overlay');
+        if (drawer.classList.contains('open')) {
+            drawer.classList.remove('open');
+            overlay.classList.remove('open');
+        } else {
+            drawer.classList.add('open');
+            overlay.classList.add('open');
+        }
+    }
+
+    function toggleTheme() {
+        const current = document.documentElement.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+    }
+</script>
+{{end}}
