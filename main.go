@@ -20,7 +20,7 @@ type PageData struct {
 	Categories  []CategoryGroup
 	GameStatus  string
 	TargetUser  *User
-	RoomAliases map[string]string // NEW: Pass aliases to templates
+	RoomAliases map[string]string
 }
 
 type CategoryGroup struct {
@@ -75,9 +75,9 @@ var AllowedRooms = map[string]string{
 	"FRIENDS":  "Friends",
 	"CFSV":     "Crossfit Somerville",
 	"DRAPER":	"Draper",
-	"GLOBAL":   "Just for Fun (Global)",
 }
 
+// --- Template Helpers ---
 var funcMap = template.FuncMap{
 	"split": func(s string, sep string) []string {
 		if s == "" { return []string{} }
@@ -100,7 +100,6 @@ var funcMap = template.FuncMap{
 	},
 }
 
-// Register funcs before parsing
 var templates = template.Must(template.New("T").Funcs(funcMap).ParseGlob("templates/*.html"))
 
 func main() {
@@ -207,7 +206,6 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Pass RoomAliases to template
 	render(w, "index.html", PageData{
 		User: user, 
 		Categories: grouped, 
@@ -280,7 +278,6 @@ func handleUserProfile(w http.ResponseWriter, r *http.Request) {
 		questions = append(questions, q)
 	}
 
-	// Use anonymous struct but include RoomAliases
 	render(w, "profile.html", struct {
 		User *User; TargetUser *User; Questions []QuestionData; GameStatus string; RoomAliases map[string]string
 	}{currentUser, targetUser, questions, gameStatus, AllowedRooms})
@@ -307,13 +304,14 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 		parts := strings.Split(rawRooms, ",")
 		for _, p := range parts {
 			clean := strings.ToUpper(strings.TrimSpace(p))
-			// Validates against the map keys
+			// Only allow codes that exist in our global map
 			if _, ok := AllowedRooms[clean]; ok {
 				validatedRooms = append(validatedRooms, clean)
 			}
 		}
 		
 		finalRoomCode := strings.Join(validatedRooms, ",")
+		// If empty or explicitly GLOBAL, we set it (allows clearing rooms)
 		if finalRoomCode == "" { finalRoomCode = "GLOBAL" }
 
 		_, err := db.Exec("UPDATE users SET room_code = ? WHERE id = ?", finalRoomCode, user.ID)
@@ -387,6 +385,8 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	pin := r.FormValue("pin")
 	
+	// --- UPDATED: No Room Code handling here ---
+	
 	var userID int
 	var pinHash string
 	
@@ -398,8 +398,9 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		if pinHash == "" {
 			db.Exec("UPDATE users SET pin_hash = ? WHERE id = ?", pin, userID)
 		}
+		// NOTE: Existing users are NOT prompted to change rooms on login. They stay in their current room.
 	} else {
-		// New user defaults to empty string room to trigger the gate
+		// New User: Room code defaults to empty string "" to trigger the gate
 		res, _ := db.Exec("INSERT INTO users (username, pin_hash, room_code) VALUES (?, ?, ?)", username, pin, "")
 		id, _ := res.LastInsertId()
 		userID = int(id)
@@ -569,13 +570,12 @@ func handleAdminUsers(w http.ResponseWriter, r *http.Request) {
 		db.Exec("DELETE FROM predictions WHERE user_id = ?", userID)
 		db.Exec("DELETE FROM users WHERE id = ?", userID)
 	} else if action == "update_room" {
-		// r.FormValue only gets the first value, we need r.Form["room_code"]
+		// Update Room Logic (Strict Check against Aliases Map)
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "Form Error", 400)
 			return
 		}
-		
-		rawRooms := r.Form["room_code"] // Returns []string
+		rawRooms := r.Form["room_code"]
 		var validatedRooms []string
 		
 		for _, p := range rawRooms {
@@ -586,10 +586,9 @@ func handleAdminUsers(w http.ResponseWriter, r *http.Request) {
 		}
 		
 		finalRoom := strings.Join(validatedRooms, ",")
-		if finalRoom == "" { finalRoom = "GLOBAL" } // Default to GLOBAL if they uncheck everything
+		if finalRoom == "" { finalRoom = "GLOBAL" }
 
 		db.Exec("UPDATE users SET room_code = ? WHERE id = ?", finalRoom, userID)
-
 	} else if action == "update_username" {
 		newUsername := strings.TrimSpace(r.FormValue("new_username"))
 		if newUsername != "" {

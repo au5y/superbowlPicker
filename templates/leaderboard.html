@@ -86,7 +86,9 @@
         // Go template injection
         const rawRoomStr = "{{.User.RoomCode}}";
         const userRooms = rawRoomStr.split(',').filter(r => r.trim() !== "");
-        
+        // Inject Aliases Map
+        const roomAliases = {{.RoomAliases}};
+
         let currentRoom = userRooms.length > 0 ? userRooms[0] : "MAIN";
         let isGlobal = false;
 
@@ -113,17 +115,19 @@
             const container = document.getElementById('room-controls');
             container.innerHTML = '';
 
-            // Room Buttons
+            // create buttons for each room the user is in
             userRooms.forEach(room => {
                 const btn = document.createElement('button');
                 btn.className = (room === currentRoom && !isGlobal) ? 'scope-btn active' : 'scope-btn inactive';
+                
+                // USE ALIAS IF AVAILABLE
                 btn.textContent = roomAliases[room] || room;
                 
                 btn.onclick = () => setScope(room, false);
                 container.appendChild(btn);
             });
 
-            // Global Button
+            // create global button
             const globalBtn = document.createElement('button');
             globalBtn.className = isGlobal ? 'scope-btn active' : 'scope-btn inactive';
             globalBtn.textContent = 'Global';
@@ -135,6 +139,7 @@
             isGlobal = global;
             if (room) currentRoom = room;
             
+            // Update Title if needed (Optional polish)
             const titleEl = document.querySelector('h2');
             if(global) titleEl.textContent = "🏆 Global Standings";
             else titleEl.textContent = "🏆 " + (roomAliases[currentRoom] || currentRoom);

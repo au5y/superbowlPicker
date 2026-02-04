@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Superbowl LX Prop Pool</title>
     <link rel="stylesheet" href="/static/style.css">
+    <!-- Favicons -->
     <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
@@ -77,19 +78,27 @@
             display: none;
         }
 
-        /* Validation Button */
-        .validate-bar {
-            position: fixed; bottom: 0; left: 0; width: 100%; 
-            background: var(--card-bg); border-top: 1px solid var(--border-color);
-            padding: 15px; text-align: center; box-shadow: 0 -2px 10px var(--shadow-color);
-            z-index: 800;
+        /* Modal for Room Gate */
+        .modal-gate {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 2000;
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px; box-sizing: border-box;
         }
-        .btn-validate {
-            background: #002244; color: white; border: none; padding: 12px 30px;
-            font-size: 1rem; font-weight: bold; border-radius: 30px; cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: transform 0.2s;
+        .modal-content {
+            background: var(--card-bg); padding: 30px; border-radius: 12px;
+            text-align: center; max-width: 500px; width: 100%;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
-        .btn-validate:active { transform: scale(0.95); }
+        .modal-btn-primary {
+            background: var(--accent-color); color: white; padding: 12px 20px;
+            border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1rem;
+        }
+        .modal-btn-secondary {
+            background: transparent; color: var(--subtext-color); padding: 10px;
+            border: 1px solid var(--border-color); border-radius: 6px; 
+            font-weight: normal; cursor: pointer; width: 100%; margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -113,12 +122,10 @@
             <p>Enter your name to join the pool.</p>
             <form action="/login" method="POST">
                 <input type="text" name="username" placeholder="Your Name" required autocomplete="off">
-                <p>Enter a 4 digit pin if you don't want someone to be able to change your answers (please don't make this your bank pin or something important this is stored in plain text as a hobby project).</p>
-                <input type="password" name="pin" placeholder="PIN (Optional)" maxlength="4">
-                <p>Enter the group to join, ask Austin if you're not sure which group(s) to join. (Can join multiple as a comma separated list)</p>
-                <input type="text" name="room_code" placeholder="Group(s)" style="text-transform:uppercase" required>
+                <p>Enter a 4 digit pin if you don't want someone to be able to change your answers (optional). If you forget it let Austin know and he'll reset it, if you don't set it and someone else tries to login with a new PIN it will be set to the new pin.</p>
+                <input type="password" name="pin" placeholder="PIN (Optional)" maxlength="4">               
                 <br>
-                <button type="submit" class="login-btn">Enter Arena</button>
+                <button type="submit" class="login-btn">Submit</button>
             </form>
         </div>
     </div>
@@ -127,7 +134,7 @@
         const error = params.get('error');
         const errDiv = document.getElementById('error-msg');
         if (error === 'invalid_room') {
-            errDiv.textContent = "Invalid Room Code. Ask Austin for the correct code.";
+            errDiv.textContent = "Invalid Room Code.";
             errDiv.style.display = 'block';
         } else if (error === 'invalid_pin') {
             errDiv.textContent = "Incorrect PIN. Please try again.";
@@ -137,6 +144,29 @@
     {{end}}
 
     {{if .User}}
+    
+    {{if eq .User.RoomCode ""}}
+    <div class="modal-gate">
+        <div class="modal-content">
+            <h2>👋 Welcome, {{.User.Username}}!</h2>
+            <p style="color: var(--text-color); line-height: 1.5;">
+                To compete directly against your friends, enter your <strong>Group Code</strong> below.
+            </p>
+            <p style="font-size: 0.9rem; color: var(--subtext-color); margin-bottom: 20px;">
+                Enter the code for the group you are directly pooling against.<br>
+                Ask Austin for your code! It's just for fun.
+            </p>
+            
+            <form action="/user/update" method="POST">
+                <input type="text" name="room_codes" placeholder="GROUP CODE (e.g. FAMILY)" 
+                       style="text-transform:uppercase; font-size: 1.2rem; text-align: center; letter-spacing: 2px;" required>
+                
+                <button type="submit" class="modal-btn-primary">Join Group</button>
+            </form>
+        </div>
+    </div>
+    {{end}}
+
     <div class="drawer-overlay" id="overlay" onclick="toggleDrawer()"></div>
     
     <button class="fixed-menu-btn" onclick="toggleDrawer()">☰</button>
@@ -150,7 +180,7 @@
             <a href="/">🏈 My Picks</a>
             <a href="/leaderboard">🏆 Leaderboard</a>
             <a href="/user/{{.User.ID}}">👤 My Profile</a>
-            <button class="theme-toggle" onclick="toggleTheme()">🌓 Toggle Dark Mode</button>
+            <button class="theme-toggle" onclick="toggleTheme()">🌗 Toggle Dark Mode</button>
             <hr style="border:0; border-top:1px solid var(--border-color);">
             <div style="padding: 10px 20px; font-weight:bold; color: var(--subtext-color); font-size:0.8rem;">JUMP TO SECTION</div>
             {{range .Categories}}
@@ -163,20 +193,26 @@
 
     <div class="app-header">
         <div class="user-badge">{{.User.Username}}</div>
+        <!-- UPDATED: Display Room Aliases instead of raw codes -->
         {{$aliases := .RoomAliases}}
         <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: wrap;">
             {{range split .User.RoomCode ","}}
                 <div class="room-badge">{{roomName . $aliases}}</div>
             {{end}}
         </div>
-        
         <div style="margin-top:5px; font-size:0.9rem; font-weight:bold; color:var(--accent-color);">{{.User.TotalScore}} pts</div>
         {{if eq .GameStatus "LOCKED"}}
             <div style="background:#C60C30; color:white; padding:2px 8px; border-radius:4px; font-size:0.8rem; margin-top:5px;">LOCKED</div>
         {{end}}
     </div>
 
-    <div style="padding-bottom: 100px;">
+    <!-- UPDATED: Moved to Top-Center to avoid being hidden -->
+    <div id="save-status" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #28a745; color: white; padding: 8px 16px; border-radius: 20px; opacity: 0; transition: opacity 0.5s; font-weight: bold; z-index: 2000; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+        Saved ✓
+    </div>
+
+    <!-- Main Content Wrapper -->
+    <div>
         {{range .Categories}}
         <div id="{{.Anchor}}">
             <h2 class="section-header">
@@ -276,17 +312,14 @@
             </div>
         </div>
         {{end}}
+
         {{if ne .GameStatus "LOCKED"}}
         <div class="validate-bar">
-            <div id="validation-feedback" style="margin-bottom: 10px; font-weight: bold; min-height: 1.2em; font-size: 0.95rem;"></div>
-            
+            <!-- Helper Text Area -->
+            <div id="validation-feedback" style="margin-bottom: 8px; font-weight: bold; min-height: 1.2em; font-size: 0.95rem;"></div>
             <button class="btn-validate" onclick="validatePicks()">LOCK IN / VALIDATE</button>
         </div>
         {{end}}
-    </div>
-
-    <div id="save-status" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #28a745; color: white; padding: 8px 16px; border-radius: 20px; opacity: 0; transition: opacity 0.5s; font-weight: bold; z-index: 2000; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
-        Saved Pick!
     </div>
 
     <script>
@@ -391,17 +424,21 @@
             let firstMissingEl = null;
             const feedbackEl = document.getElementById('validation-feedback');
             
+            // 1. Reset previous error states
             document.querySelectorAll('.missing-pick').forEach(el => {
                 el.classList.remove('missing-pick');
             });
 
+            // 2. Check Standard Questions
             document.querySelectorAll('.question-card').forEach(card => {
                 const type = card.getAttribute('data-type');
                 let isAnswered = false;
 
                 if (type === 'select') {
+                    // Check if any radio in this card is checked
                     if (card.querySelector('input[type="radio"]:checked')) isAnswered = true;
                 } else {
+                    // Check if text/number input has content
                     const input = card.querySelector('input.number-input');
                     if (input && input.value.trim() !== '') isAnswered = true;
                 }
@@ -413,6 +450,7 @@
                 }
             });
 
+            // 3. Check Scoreboard Inputs
             document.querySelectorAll('.scoreboard-container').forEach(container => {
                 const input = container.querySelector('.sb-input');
                 if (input && input.value.trim() === '') {
@@ -422,10 +460,12 @@
                 }
             });
 
+            // 4. Update UI / Helper Text
             if (missingCount > 0) {
                 feedbackEl.style.color = "#dc3545"; // Red
                 feedbackEl.textContent = `⚠️ You have ${missingCount} unfinished prediction${missingCount === 1 ? '' : 's'}!`;
                 
+                // Smooth scroll to the first missing item
                 if (firstMissingEl) {
                     firstMissingEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
@@ -434,6 +474,8 @@
                 feedbackEl.textContent = "✅ All picks entered! You are ready for the game.";
             }
         }
+
+        /* --- NEW: Clear Error Highlights Immediately --- */
         document.addEventListener('input', function(e) {
             const container = e.target.closest('.question-card, .scoreboard-container');
             if (container && container.classList.contains('missing-pick')) {
