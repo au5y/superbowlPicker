@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rules - Superbowl LX</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+    <style>
+        .rules-container { max-width: 800px; margin: 0 auto; margin-top: 40px; padding: 20px; }
+        .rule-card { 
+            background: var(--card-bg); padding: 25px; border-radius: 12px; 
+            margin-bottom: 25px; box-shadow: 0 2px 8px var(--shadow-color); 
+            border-left: 5px solid var(--accent-color); transition: transform 0.2s;
+        }
+        .rule-title { font-size: 1.4rem; font-weight: 700; margin-bottom: 15px; color: var(--heading-color); display: flex; align-items: center; gap: 10px; }
+        .rule-text { line-height: 1.7; color: var(--text-color); font-size: 1.05rem; }
+        .inline-link { color: var(--accent-color); font-weight: bold; text-decoration: none; border-bottom: 2px solid transparent; transition: border-color 0.2s; }
+        .inline-link:hover { border-bottom-color: var(--accent-color); }
+        .example-box { 
+            background: var(--hover-bg); padding: 15px; border-radius: 8px; 
+            margin-top: 15px; font-family: 'Segoe UI Mono', monospace; 
+            font-size: 0.9rem; color: var(--subtext-color); border: 1px solid var(--border-color);
+        }
+        .tie-step { margin-bottom: 15px; padding-left: 15px; border-left: 3px solid var(--border-color); }
+        .tie-header { font-weight: bold; color: var(--heading-color); display: block; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <script>
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) { document.documentElement.setAttribute('data-theme', savedTheme); }
+    </script>
+
+    {{template "drawer" .}}
+
+    <div class="rules-container">
+        <h1 style="text-align: center; margin-bottom: 40px; font-weight: 800;">📋 How to Play</h1>
+
+        <div class="rule-card">
+            <div class="rule-title">
+                <span style="background:var(--accent-color); color:white; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1rem;">1</span>
+                Making Predictions
+            </div>
+            <div class="rule-text">
+                Answer as many prop bets as you can before kickoff! 
+                <br><br>
+                Use the <a href="/" class="inline-link">My Picks</a> page to select your answers. Questions range from the Coin Toss result to Golden Gate Bridge sightings, and maybe even some football.
+                <br><br>
+                <div style="background: rgba(220, 53, 69, 0.1); color: #dc3545; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; text-align: center;">
+                    🔒 Once the game starts, the pool will LOCK and no further edits can be made.
+                </div>
+            </div>
+        </div>
+
+        <div class="rule-card" style="border-left-color: #28a745;">
+            <div class="rule-title">
+                <span style="background:#28a745; color:white; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1rem;">2</span>
+                Scoring
+            </div>
+            <div class="rule-text">
+                Every correct prediction earns you <strong>1 Point</strong>.
+                <br><br>
+                The leaderboard updates live as the Administrator resolves questions during the Super Bowl. Check the <a href="/leaderboard" class="inline-link">Leaderboard</a> to track your standing against your group and the global pool.
+            </div>
+        </div>
+
+        <div class="rule-card" style="border-left-color: #C60C30;">
+            <div class="rule-title">
+                <span style="background:#C60C30; color:white; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1rem;">3</span>
+                The Tie Breaker
+            </div>
+            <div class="rule-text">
+                In the event of a tie in Total Points at the end of the game, the winner is decided by the <strong>Scoreboard Prediction</strong>.
+                <br><br>
+                
+                <div class="tie-step">
+                    <span class="tie-header">Step 1: Closest to Total</span>
+                    The winner is the player whose predicted total score (Home + Away) is mathematically closest to the actual final score.
+                    <div class="example-box">Example: If Final Score is 50. Guess of 48 (Diff 2) beats Guess of 53 (Diff 3).</div>
+                </div>
+
+                <div class="tie-step">
+                    <span class="tie-header">Step 2: Closest to Exact Score</span>
+                    If still tied, the winner is the player with the lowest absolute difference between their predicted team scores and the actual team scores.
+                    <div class="example-box">
+                        Final: SEA 25 - NE 24 (Total 49)
+                        <br>Player A picks 26-24 (Total 50). Diff: |26-25| + |24-24| = <strong>1</strong>
+                        <br>Player B picks 40-10 (Total 50). Diff: |40-25| + |10-24| = <strong>29</strong>
+                        <br><strong>Player A wins.</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="rule-card" style="border-left-color: #FFB612;">
+            <div class="rule-title">
+                <span style="background:#FFB612; color:white; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1rem;">4</span>
+                Groups
+            </div>
+            <div class="rule-text">
+                You can switch the leaderboard to see any group you are in.
+                <br><br>
+                Check your <a href="/user/{{.User.ID}}" class="inline-link">Profile</a> to join specific groups using a Room Code.
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 40px; margin-bottom: 60px;">
+            <a href="/" class="btn-validate" style="text-decoration: none; padding: 15px 40px; display: inline-block;">MAKE MY PICKS</a>
+        </div>
+    </div>
+</body>
+</html>

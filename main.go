@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -39,6 +40,17 @@ type User struct {
 	IsAdmin    bool   `json:"is_admin"`
 	Icon       string `json:"icon"`
 	ColorHex   string `json:"color_hex"`
+}
+
+type LeaderboardEntry struct {
+	ID             int            `json:"id"`
+	Username       string         `json:"username"`
+	TotalScore     int            `json:"total_score"`
+	TieBreaker     string         `json:"tie_breaker"`
+	RoomCode       string         `json:"room_code"`
+	Icon           string         `json:"icon"`
+	ColorHex       string         `json:"color_hex"`
+	CategoryScores map[string]int `json:"category_scores"`
 }
 
 type QuestionData struct {
@@ -181,6 +193,7 @@ func main() {
 	fmt.Printf("Starting App on Port %s using DB %s\n", port, dbName)
 
 	http.HandleFunc("/", withLogging(handleIndex))
+	http.HandleFunc("/rules", withLogging(handleRules))
 	http.HandleFunc("/leaderboard", withLogging(handleLeaderboardView))
 	http.HandleFunc("/user/", withLogging(handleUserProfile))
 	http.HandleFunc("/user/update", withLogging(handleUserUpdate))
@@ -201,6 +214,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func handleRules(w http.ResponseWriter, r *http.Request) {
+	user := getUser(r)
+	render(w, "rules.html", PageData{User: user, ActivePage: "rules"})
 }
 
 func requireAdmin(next http.HandlerFunc) http.HandlerFunc {
@@ -489,28 +507,171 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 func handleLeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 	room := r.URL.Query().Get("room")
 	scope := r.URL.Query().Get("scope")
-	tieBreakerSQL := `COALESCE((SELECT SUM(CAST(p.text_input AS INTEGER)) FROM predictions p JOIN questions q ON p.question_id = q.id WHERE p.user_id = u.id AND (q.type = 'scoreboard-left' OR q.type = 'scoreboard-right')), 0)`
-	query := fmt.Sprintf(`SELECT u.id, u.username, u.total_score, %s as tie_breaker, u.room_code, u.icon, u.color_hex FROM users u`, tieBreakerSQL)
+
+	// 1. Fetch Actual Outcomes (for sorting)
+	// We need the "Correct Answer" for the two scoreboard questions
+	var actualLeft, actualRight int
+	var actualTotal int
+	var gameResolved bool
+
+	// Check if scoreboard questions are resolved
+	rowsScore, err := db.Query("SELECT type, correct_text_input FROM questions WHERE type IN ('scoreboard-left', 'scoreboard-right') AND status = 'RESOLVED'")
+	if err == nil {
+		defer rowsScore.Close()
+		resolvedCount := 0
+		for rowsScore.Next() {
+			var qType, valStr string
+			rowsScore.Scan(&qType, &valStr)
+			val, _ := strconv.Atoi(valStr)
+			if qType == "scoreboard-left" {
+				actualLeft = val
+			} else {
+				actualRight = val
+			}
+			resolvedCount++
+		}
+		if resolvedCount == 2 {
+			actualTotal = actualLeft + actualRight
+			gameResolved = true
+		}
+	}
+
+	// 2. Fetch Users
+	query := `SELECT id, username, total_score, room_code, icon, color_hex FROM users`
 	var args []interface{}
 	if scope != "global" && room != "" {
-		query += " WHERE u.room_code LIKE ?"
+		query += " WHERE room_code LIKE ?"
 		args = append(args, "%"+room+"%")
 	}
-	query += " ORDER BY u.total_score DESC, u.username ASC"
+
 	rows, err := db.Query(query, args...)
 	if err != nil {
+		log.Printf("[LeaderboardAPI] DB Error: %v", err)
 		http.Error(w, "DB Error", 500)
 		return
 	}
 	defer rows.Close()
-	var users []User
+
+	var entries []*LeaderboardEntry
+	entryMap := make(map[int]*LeaderboardEntry) // Pointer map for easy access
+
 	for rows.Next() {
-		u := User{}
-		rows.Scan(&u.ID, &u.Username, &u.TotalScore, &u.TieBreaker, &u.RoomCode, &u.Icon, &u.ColorHex)
-		users = append(users, u)
+		e := &LeaderboardEntry{CategoryScores: make(map[string]int)}
+		// Note: tie_breaker is not fetched here anymore, we calculate it below
+		rows.Scan(&e.ID, &e.Username, &e.TotalScore, &e.RoomCode, &e.Icon, &e.ColorHex)
+		entries = append(entries, e)
+		entryMap[e.ID] = e
 	}
+
+	// 3. Fetch User Scoreboard Predictions (Efficient Batch Query)
+	// We need these to calculate the Tie Breaker values
+	predQuery := `
+		SELECT p.user_id, q.type, p.text_input 
+		FROM predictions p 
+		JOIN questions q ON p.question_id = q.id 
+		WHERE q.type IN ('scoreboard-left', 'scoreboard-right')
+	`
+	pRows, err := db.Query(predQuery)
+	if err == nil {
+		defer pRows.Close()
+		// Temp storage for team picks: userID -> [left, right]
+		userPicks := make(map[int]map[string]int)
+
+		for pRows.Next() {
+			var uID int
+			var qType, valStr string
+			pRows.Scan(&uID, &qType, &valStr)
+
+			if _, exists := userPicks[uID]; !exists {
+				userPicks[uID] = make(map[string]int)
+			}
+			val, _ := strconv.Atoi(valStr)
+			userPicks[uID][qType] = val
+		}
+
+		// Assign calculated TieBreaker (Total) to entries
+		for id, picks := range userPicks {
+			if entry, ok := entryMap[id]; ok {
+				left := picks["scoreboard-left"]
+				right := picks["scoreboard-right"]
+				entry.TieBreaker = strconv.Itoa(left + right) // Display value
+
+				// Store integers for sorting (internal use only, not sent to JSON unless we add a field)
+				// We will use the map 'userPicks' inside the sort function
+			}
+		}
+
+		// 4. SORTING LOGIC
+		sort.Slice(entries, func(i, j int) bool {
+			u1 := entries[i]
+			u2 := entries[j]
+
+			// Rule 1: Total Score (Descending)
+			if u1.TotalScore != u2.TotalScore {
+				return u1.TotalScore > u2.TotalScore
+			}
+
+			// Rule 2: Tie Breakers (Only if Game Resolved)
+			if gameResolved {
+				// Parse predictions
+				p1 := userPicks[u1.ID]
+				p2 := userPicks[u2.ID]
+
+				// TB 1: Closest to Total (Ascending Delta)
+				total1 := p1["scoreboard-left"] + p1["scoreboard-right"]
+				total2 := p2["scoreboard-left"] + p2["scoreboard-right"]
+
+				diff1 := abs(total1 - actualTotal)
+				diff2 := abs(total2 - actualTotal)
+
+				if diff1 != diff2 {
+					return diff1 < diff2
+				}
+
+				// TB 2: Closest to Exact Scores (Ascending Absolute Error)
+				// Sum of absolute differences for both teams
+				err1 := abs(p1["scoreboard-left"]-actualLeft) + abs(p1["scoreboard-right"]-actualRight)
+				err2 := abs(p2["scoreboard-left"]-actualLeft) + abs(p2["scoreboard-right"]-actualRight)
+
+				if err1 != err2 {
+					return err1 < err2
+				}
+			}
+
+			// Fallback: Username (Ascending)
+			return u1.Username < u2.Username
+		})
+	}
+
+	// 5. Populate Category Scores (Keep existing logic)
+	catQuery := `
+        SELECT p.user_id, q.category, COUNT(*) 
+        FROM predictions p 
+        JOIN questions q ON p.question_id = q.id 
+        WHERE UPPER(q.status) = 'RESOLVED' 
+          AND (
+            (COALESCE(q.type, 'select') = 'select' AND p.selected_option_id = q.correct_option_id) 
+            OR 
+            (COALESCE(q.type, 'select') != 'select' AND p.text_input = q.correct_text_input)
+          )
+        GROUP BY p.user_id, q.category
+    `
+	cRows, err := db.Query(catQuery)
+	if err == nil {
+		defer cRows.Close()
+		for cRows.Next() {
+			var uID int
+			var cat string
+			var score int
+			cRows.Scan(&uID, &cat, &score)
+			if entry, ok := entryMap[uID]; ok {
+				entry.CategoryScores[cat] = score
+			}
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(users)
+	json.NewEncoder(w).Encode(entries)
 }
 
 func handleGameStatusAPI(w http.ResponseWriter, r *http.Request) {
@@ -800,4 +961,11 @@ func render(w http.ResponseWriter, tmpl string, data interface{}) {
 	if err := templates.ExecuteTemplate(w, tmpl, data); err != nil {
 		log.Println(err)
 	}
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
