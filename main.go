@@ -47,6 +47,8 @@ type LeaderboardEntry struct {
 	Username       string         `json:"username"`
 	TotalScore     int            `json:"total_score"`
 	TieBreaker     string         `json:"tie_breaker"`
+	TBLeft         int            `json:"tb_left"`
+	TBRight        int            `json:"tb_right"`
 	RoomCode       string         `json:"room_code"`
 	Icon           string         `json:"icon"`
 	ColorHex       string         `json:"color_hex"`
@@ -508,13 +510,23 @@ func handleLeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 	room := r.URL.Query().Get("room")
 	scope := r.URL.Query().Get("scope")
 
-	// 1. Fetch Actual Outcomes (for sorting)
-	// We need the "Correct Answer" for the two scoreboard questions
+	var allCats []string
+	catRows, err := db.Query("SELECT DISTINCT category FROM questions WHERE category IS NOT NULL AND category != '' AND category != 'Tie Breaker' ORDER BY category ASC")
+	if err == nil {
+		defer catRows.Close()
+		for catRows.Next() {
+			var c string
+			catRows.Scan(&c)
+			allCats = append(allCats, c)
+		}
+	} else {
+		log.Printf("[LeaderboardAPI] Error fetching categories: %v", err)
+	}
+
 	var actualLeft, actualRight int
 	var actualTotal int
 	var gameResolved bool
 
-	// Check if scoreboard questions are resolved
 	rowsScore, err := db.Query("SELECT type, correct_text_input FROM questions WHERE type IN ('scoreboard-left', 'scoreboard-right') AND status = 'RESOLVED'")
 	if err == nil {
 		defer rowsScore.Close()
@@ -536,7 +548,7 @@ func handleLeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// 2. Fetch Users
+	// 3. Fetch Users (Same as before)
 	query := `SELECT id, username, total_score, room_code, icon, color_hex FROM users`
 	var args []interface{}
 	if scope != "global" && room != "" {
@@ -553,28 +565,28 @@ func handleLeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 
 	var entries []*LeaderboardEntry
-	entryMap := make(map[int]*LeaderboardEntry) // Pointer map for easy access
+	entryMap := make(map[int]*LeaderboardEntry)
 
 	for rows.Next() {
 		e := &LeaderboardEntry{CategoryScores: make(map[string]int)}
-		// Note: tie_breaker is not fetched here anymore, we calculate it below
+		for _, cat := range allCats {
+			e.CategoryScores[cat] = 0
+		}
 		rows.Scan(&e.ID, &e.Username, &e.TotalScore, &e.RoomCode, &e.Icon, &e.ColorHex)
 		entries = append(entries, e)
 		entryMap[e.ID] = e
 	}
 
-	// 3. Fetch User Scoreboard Predictions (Efficient Batch Query)
-	// We need these to calculate the Tie Breaker values
+	// 4. Fetch User Scoreboard Predictions & Assign TBLeft/TBRight
 	predQuery := `
-		SELECT p.user_id, q.type, p.text_input 
-		FROM predictions p 
-		JOIN questions q ON p.question_id = q.id 
-		WHERE q.type IN ('scoreboard-left', 'scoreboard-right')
-	`
+        SELECT p.user_id, q.type, p.text_input 
+        FROM predictions p 
+        JOIN questions q ON p.question_id = q.id 
+        WHERE q.type IN ('scoreboard-left', 'scoreboard-right')
+    `
 	pRows, err := db.Query(predQuery)
 	if err == nil {
 		defer pRows.Close()
-		// Temp storage for team picks: userID -> [left, right]
 		userPicks := make(map[int]map[string]int)
 
 		for pRows.Next() {
@@ -589,61 +601,49 @@ func handleLeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 			userPicks[uID][qType] = val
 		}
 
-		// Assign calculated TieBreaker (Total) to entries
+		// Assign calculated TieBreaker
 		for id, picks := range userPicks {
 			if entry, ok := entryMap[id]; ok {
 				left := picks["scoreboard-left"]
 				right := picks["scoreboard-right"]
-				entry.TieBreaker = strconv.Itoa(left + right) // Display value
 
-				// Store integers for sorting (internal use only, not sent to JSON unless we add a field)
-				// We will use the map 'userPicks' inside the sort function
+				// NEW: Assign specific scores
+				entry.TBLeft = left
+				entry.TBRight = right
+
+				// Keep Display String (optional fallback)
+				entry.TieBreaker = strconv.Itoa(left + right)
 			}
 		}
 
-		// 4. SORTING LOGIC
+		// Sorting Logic (Same as before)
 		sort.Slice(entries, func(i, j int) bool {
 			u1 := entries[i]
 			u2 := entries[j]
-
-			// Rule 1: Total Score (Descending)
 			if u1.TotalScore != u2.TotalScore {
 				return u1.TotalScore > u2.TotalScore
 			}
-
-			// Rule 2: Tie Breakers (Only if Game Resolved)
 			if gameResolved {
-				// Parse predictions
 				p1 := userPicks[u1.ID]
 				p2 := userPicks[u2.ID]
-
-				// TB 1: Closest to Total (Ascending Delta)
 				total1 := p1["scoreboard-left"] + p1["scoreboard-right"]
 				total2 := p2["scoreboard-left"] + p2["scoreboard-right"]
-
 				diff1 := abs(total1 - actualTotal)
 				diff2 := abs(total2 - actualTotal)
-
 				if diff1 != diff2 {
 					return diff1 < diff2
 				}
-
-				// TB 2: Closest to Exact Scores (Ascending Absolute Error)
-				// Sum of absolute differences for both teams
 				err1 := abs(p1["scoreboard-left"]-actualLeft) + abs(p1["scoreboard-right"]-actualRight)
 				err2 := abs(p2["scoreboard-left"]-actualLeft) + abs(p2["scoreboard-right"]-actualRight)
-
 				if err1 != err2 {
 					return err1 < err2
 				}
 			}
-
-			// Fallback: Username (Ascending)
 			return u1.Username < u2.Username
 		})
 	}
 
-	// 5. Populate Category Scores (Keep existing logic)
+	// 5. Populate Actual Category Scores (Same as before)
 	catQuery := `
         SELECT p.user_id, q.category, COUNT(*) 
         FROM predictions p 
@@ -665,7 +665,11 @@ func handleLeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 			var score int
 			cRows.Scan(&uID, &cat, &score)
 			if entry, ok := entryMap[uID]; ok {
-				entry.CategoryScores[cat] = score
+				// "Tie Breaker" cat is already excluded from the map keys in Step 1,
+				// so this just safely skips it if it comes back from DB
+				if _, exists := entry.CategoryScores[cat]; exists {
+					entry.CategoryScores[cat] = score
+				}
 			}
 		}
 	}

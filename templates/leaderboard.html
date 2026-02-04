@@ -26,17 +26,14 @@
         }
         .lb-avatar img { width: 100%; height: 100%; object-fit: cover; }
         
-        /* IMPROVED VISIBILITY */
         .lb-name { 
             font-size: 1.3rem; 
             font-weight: 700; 
             text-shadow: 0 1px 1px rgba(0,0,0,0.2); /* Subtle shadow for contrast */
         }
         
-        /* Score Column */
         .score-cell { font-size: 1.8rem; font-weight: bold; color: var(--text-color); text-align: right; }
 
-        /* Config Panel */
         .config-panel {
             background: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px;
             border: 1px solid var(--border-color); display: flex; flex-wrap: wrap; gap: 15px; align-items: center;
@@ -115,19 +112,22 @@
             fetch(url)
                 .then(r => r.json())
                 .then(data => {
-                    window.lastData = data; // Cache data
-                    
-                    // 1. Discover all categories from data
+                    window.lastData = data;
+
                     data.forEach(user => {
                         if (user.category_scores) {
                             Object.keys(user.category_scores).forEach(c => allCategories.add(c));
                         }
                     });
 
-                    // 2. Render Checkboxes (only once or update if new cats appear)
-                    renderToggles();
+                    // 2. Default to "All Selected" on first load
+                    if (!window.catsInitialized && allCategories.size > 0) {
+                        allCategories.forEach(c => activeCategories.add(c));
+                        window.catsInitialized = true;
+                    }
 
-                    // 3. Render Table
+                    // 3. Render
+                    renderToggles();
                     renderTable(data);
                 });
         }
@@ -161,13 +161,11 @@
             const headerRow = document.getElementById('table-header');
             
             // Clear existing dynamic columns (keep #, Player)
-            // We want structure: [#] [Player] [TB] [Cat1] [Cat2]... [Score]
-            // Reset to base
             headerRow.innerHTML = '<th>#</th><th>Player</th><th style="text-align:center; color:var(--subtext-color); font-size:0.9rem;">TB</th><th style="text-align: right;">Score</th>';
             
-            // Insert Active Category Headers BEFORE the Score column
+            // Insert Active Category Headers
             const sortedCats = Array.from(activeCategories).sort();
-            const scoreHeader = headerRow.lastElementChild; // "Score" column
+            const scoreHeader = headerRow.lastElementChild; 
             
             sortedCats.forEach(cat => {
                 const th = document.createElement('th');
@@ -183,15 +181,9 @@
             let rank = 1;
             for (let i = 0; i < data.length; i++) {
                 const user = data[i];
-                // Only increment rank if Score matches. 
-                // Note: With complex tie-breakers, unique ranks are common. 
-                // If you want strictly "Score" based rank sharing, keep this. 
-                // If you want the tie-breaker to decide rank, use just "i + 1"
                 if (i > 0 && user.total_score < data[i-1].total_score) {
                     rank = i + 1;
                 }
-                // If using full tie breaker logic for rank:
-                // rank = i + 1; 
 
                 const tr = document.createElement('tr');
                 tr.onclick = () => window.location.href = `/user/${user.id}`;
@@ -200,7 +192,7 @@
                 // Rank
                 const rankTd = document.createElement('td');
                 rankTd.className = `rank-col rank-${rank}`;
-                rankTd.textContent = rank; // or i+1
+                rankTd.textContent = rank;
                 tr.appendChild(rankTd);
 
                 // Player
@@ -215,12 +207,19 @@
                 `;
                 tr.appendChild(playerTd);
 
-                // TB Column (New)
                 const tbTd = document.createElement('td');
                 tbTd.style.textAlign = 'center';
                 tbTd.style.fontWeight = 'bold';
-                tbTd.style.color = 'var(--subtext-color)';
-                tbTd.textContent = user.tie_breaker || '-';
+                
+                if (user.tb_left !== undefined && user.tb_right !== undefined) {
+                    tbTd.innerHTML = `
+                        <span style="color: #69BE28;">${user.tb_left}</span>
+                        <span style="color: var(--subtext-color); margin: 0 2px;">-</span>
+                        <span style="color: #002244; text-shadow: 0 0 1px rgba(255,255,255,0.3);">${user.tb_right}</span>
+                    `;
+                } else {
+                    tbTd.innerHTML = '<span style="color:var(--subtext-color);">-</span>';
+                }
                 tr.appendChild(tbTd);
 
                 // Dynamic Category Scores
@@ -241,7 +240,7 @@
                 tbody.appendChild(tr);
             }
         }
-        // Initialize
+
         loadLeaderboard();
         // Auto-refresh every 10s
         setInterval(loadLeaderboard, 10000);
