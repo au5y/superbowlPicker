@@ -422,10 +422,22 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", 302)
 		return
 	}
+
+	targetID := user.ID
+
+	// If Admin AND target_id is provided, update that ID instead
+	if user.IsAdmin {
+		if tVal := r.FormValue("target_id"); tVal != "" {
+			if tID, err := strconv.Atoi(tVal); err == nil {
+				targetID = tID
+			}
+		}
+	}
+
 	if r.FormValue("username") != "" {
 		newUsername := strings.TrimSpace(r.FormValue("username"))
 		if usernameRegex.MatchString(newUsername) {
-			db.Exec("UPDATE users SET username = ? WHERE id = ?", newUsername, user.ID)
+			db.Exec("UPDATE users SET username = ? WHERE id = ?", newUsername, targetID)
 		}
 	}
 	if r.FormValue("icon") != "" {
@@ -433,7 +445,7 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 		newColor := r.FormValue("color")
 		match, _ := regexp.MatchString(`^#[0-9a-fA-F]{6}$`, newColor)
 		if match {
-			db.Exec("UPDATE users SET icon = ?, color_hex = ? WHERE id = ?", newIcon, newColor, user.ID)
+			db.Exec("UPDATE users SET icon = ?, color_hex = ? WHERE id = ?", newIcon, newColor, targetID)
 		}
 	}
 	if r.Form.Has("room_codes") {
@@ -462,7 +474,7 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 		if finalRoomCode == "" {
 			finalRoomCode = "GLOBAL"
 		}
-		db.Exec("UPDATE users SET room_code = ? WHERE id = ?", finalRoomCode, user.ID)
+		db.Exec("UPDATE users SET room_code = ? WHERE id = ?", finalRoomCode, targetID)
 	}
 	ref := r.Header.Get("Referer")
 	if ref == "" {
@@ -606,14 +618,18 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		questions = append(questions, q)
 	}
 	var users []User
-	uRows, _ := db.Query("SELECT id, username, room_code, total_score, is_admin FROM users ORDER BY username ASC")
-	defer uRows.Close()
-	for uRows.Next() {
-		u := User{}
-		var isAdminInt int
-		uRows.Scan(&u.ID, &u.Username, &u.RoomCode, &u.TotalScore, &isAdminInt)
-		u.IsAdmin = (isAdminInt == 1)
-		users = append(users, u)
+	uRows, err := db.Query("SELECT id, username, room_code, total_score, is_admin, icon, color_hex FROM users ORDER BY username ASC")
+	if err != nil {
+		log.Println("Error fetching users:", err)
+	} else {
+		defer uRows.Close()
+		for uRows.Next() {
+			u := User{}
+			var isAdminInt int
+			uRows.Scan(&u.ID, &u.Username, &u.RoomCode, &u.TotalScore, &isAdminInt, &u.Icon, &u.ColorHex)
+			u.IsAdmin = (isAdminInt == 1)
+			users = append(users, u)
+		}
 	}
 	render(w, "admin.html", struct {
 		User        *User

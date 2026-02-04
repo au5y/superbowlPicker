@@ -79,9 +79,6 @@
     {{template "drawer" .}}
 
     <div class="app-header">
-        <div class="theme-switch" onclick="toggleTheme()" title="Toggle Theme">
-            <span id="theme-icon">☀️</span>
-        </div>
         <a href="/user/{{.User.ID}}" style="text-decoration: none;">
             <div class="user-badge">
                 <div class="user-avatar-header">
@@ -112,23 +109,19 @@
                 {{range .Questions}}
                 {{if eq .Type "scoreboard-left"}}
                 <div class="scoreboard-container" data-qid="{{.ID}}" data-type="scoreboard">
-                    <!-- Left Team -->
                     <div class="scoreboard-half">
                         <img src="{{.ImageURL}}" class="sb-logo">
                         <div class="sb-team-name">{{.Text}}</div>
                         <input type="number" class="sb-input" placeholder="00" value="{{if .UserPrediction}}{{.UserPrediction.TextInput}}{{end}}" onblur="handleSelection(this, {{.ID}}, null, this.value)" {{if eq $.GameStatus "LOCKED"}}disabled{{end}}>
                     </div>
-                    <!-- Divider -->
                     <div class="sb-divider">-</div>
                 {{else if eq .Type "scoreboard-right"}}
-                    <!-- Right Team -->
                     <div class="scoreboard-half">
                         <img src="{{.ImageURL}}" class="sb-logo">
                         <div class="sb-team-name">{{.Text}}</div>
                         <input type="number" class="sb-input" placeholder="00" value="{{if .UserPrediction}}{{.UserPrediction.TextInput}}{{end}}" onblur="handleSelection(this, {{.ID}}, null, this.value)" {{if eq $.GameStatus "LOCKED"}}disabled{{end}}>
                     </div>
-                </div> <!-- Close container only after right -->
-                {{else}}
+                </div> {{else}}
                 <div class="question-card {{if eq $.GameStatus "LOCKED"}}locked-bg{{end}}" data-qid="{{.ID}}" data-type="{{.Type}}">
                     <div class="question-text">{{.Text}}</div>
                     {{if eq .Type "select"}}
@@ -208,11 +201,10 @@
             if (missingCount > 0) { feedbackEl.style.color = "#dc3545"; feedbackEl.textContent = `⚠️ ${missingCount} unfinished predictions!`; if (firstMissingEl) firstMissingEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); } 
             else { feedbackEl.style.color = "#28a745"; feedbackEl.textContent = "✅ All picks entered!"; }
         }
+        
+        // Revised DOMContentLoaded: Only handles game logic, not theme logic.
         document.addEventListener("DOMContentLoaded", function() {
             document.querySelectorAll('input[type="radio"]:checked').forEach(radio => { if(!radio.disabled) updateVisualState(radio); });
-            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-            const icon = document.getElementById('theme-icon');
-            if(icon) icon.textContent = isDark ? '🌙' : '☀️';
         });
 
         // Polling Logic

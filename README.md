@@ -2,12 +2,6 @@
 
 A simple prop pool application for Superbowl LX.
 
-## New Features
-
-- **Auto-Refresh**: The app automatically polls for status changes (Open/Locked) and live scoring updates, refreshing the page when necessary.
-- **Theme Toggle**: Switch between Light and Dark mode using the Sun/Moon icon in the header.
-- **High Contrast**: Enhanced visibility for usernames and locked selections in dark mode.
-
 ## Running the Application
 
 Prerequisites:

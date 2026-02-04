@@ -29,6 +29,7 @@
             display: flex; align-items: center; justify-content: center;
             overflow: hidden; font-size: 3rem;
             box-shadow: 0 4px 10px var(--shadow-color);
+            transition: border-color 0.3s ease;
         }
         .big-avatar img { width: 100%; height: 100%; object-fit: contain; padding: 10%; box-sizing: border-box; }
 
@@ -81,9 +82,9 @@
                 </div>
             </div>
         {{else}}
-            <div class="profile-header" style="border-top-color: {{.TargetUser.ColorHex}};">
+            <div class="profile-header" id="profile-card" style="border-top-color: {{.TargetUser.ColorHex}};">
                 
-                <div class="big-avatar" style="border-color: {{.TargetUser.ColorHex}};">
+                <div class="big-avatar" id="avatar-preview" style="border-color: {{.TargetUser.ColorHex}};">
                     {{if gt (len .TargetUser.Icon) 15}}
                         <img src="{{.TargetUser.Icon}}">
                     {{else}}
@@ -91,7 +92,7 @@
                     {{end}}
                 </div>
                 
-                <h2 style="margin: 5px 0; font-size: 2rem; color: {{.TargetUser.ColorHex}};">{{.TargetUser.Username}}</h2>
+                <h2 id="username-display" style="margin: 5px 0; font-size: 2rem; color: {{.TargetUser.ColorHex}};">{{.TargetUser.Username}}</h2>
                 <div style="font-size: 1.5rem; font-weight: bold; color: var(--subtext-color);">{{.TargetUser.TotalScore}} Pts</div>
                 
                 <div style="margin-top: 10px; color: var(--subtext-color); font-size: 0.9rem;">
@@ -108,8 +109,7 @@
                 </div>
             </div>
 
-            {{if eq .User.ID .TargetUser.ID}}
-            <div style="margin-bottom: 20px; text-align: center;">
+            {{if or (eq .User.ID .TargetUser.ID) .User.IsAdmin}}            <div style="margin-bottom: 20px; text-align: center;">
                 <button onclick="toggleEdit()" style="background: var(--card-bg); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 20px; cursor: pointer; color: var(--text-color); font-weight: bold; box-shadow: 0 1px 3px var(--shadow-color);">
                     ✎ Edit Profile
                 </button>
@@ -117,12 +117,10 @@
                 <div id="edit-form-container" style="display: none; margin-top: 15px; background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); text-align: left;">
                     <form action="/user/update" method="POST" style="display: grid; gap: 20px;">
                         
-                        <!-- 1. Avatar -->
                         <div>
                             <label style="display:block; font-size:0.85rem; font-weight:bold; color:var(--subtext-color); margin-bottom:8px; text-transform:uppercase;">Select Avatar</label>
                             
                             <div class="icon-grid">
-                                <!-- Requested Priority Teams -->
                                 {{range $team := split "ne,sea" ","}}
                                 <label class="icon-option">
                                     <input type="radio" name="icon" value="/static/assets/{{$team}}.png" {{if eq $.User.Icon (printf "/static/assets/%s.png" $team)}}checked{{end}}>
@@ -132,7 +130,6 @@
                                 </label>
                                 {{end}}
 
-                                <!-- Emojis -->
                                 {{range $i, $emoji := split "🏈,🍺,🍕,🤡,👑,🚀,💎,🏆,🇺🇸" ","}}
                                 <label class="icon-option">
                                     <input type="radio" name="icon" value="{{$emoji}}" {{if eq $.User.Icon $emoji}}checked{{end}}>
@@ -154,23 +151,24 @@
                             </div>
                         </div>
 
-                        <!-- 2. Color -->
                         <div>
                             <label style="display:block; font-size:0.85rem; font-weight:bold; color:var(--subtext-color); margin-bottom:8px; text-transform:uppercase;">Profile Color</label>
                             <div class="color-grid">
-                                <!-- Pre-defined Swatches -->
-                                {{range $c := split "#002244,#C60C30,#69BE28,#000000,#008E97,#FFB612,#4F2683,#D50A0A,#0B162A,#101820" ","}}
+                                {{range $c := split "#D32F2F,#C2185B,#7B1FA2,#512DA8,#303F9F,#1976D2,#00796B,#388E3C,#F57C00,#E64A19,#5D4037,#455A64" ","}}
                                 <div class="color-swatch" style="background-color: {{$c}};" onclick="selectColor('{{$c}}', this)"></div>
                                 {{end}}
-                                <!-- Custom Input (Hidden but functional) -->
-                                <label class="color-swatch" style="background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red); display:flex; align-items:center; justify-content:center;">
-                                    <input type="color" id="native-color-picker" name="color" value="{{.User.ColorHex}}" style="opacity:0; width:100%; height:100%; cursor:pointer;" onchange="selectColor(this.value, this.parentElement)">
+                                <label class="color-swatch" style="background: var(--input-bg); border: 1px solid var(--border-color); display:flex; align-items:center; justify-content:center; color: var(--text-color);">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M2 22h20"></path>
+                                        <path d="M21 2.05c-1.6 0-3.1.6-4.25 1.75l-9.9 9.9c-.2.2-.3.5-.3.8v3.5h3.5c.3 0 .6-.1.8-.3l9.9-9.9c2.35-2.35 2.35-6.15 0-8.5-1.15-1.15-2.65-1.75-4.25-1.75z"></path>
+                                        <path d="M15 6l3 3"></path>
+                                    </svg>
+                                    <input type="color" id="native-color-picker" name="color" value="{{.TargetUser.ColorHex}}" style="opacity:0; width:0; height:0; position:absolute;" onchange="selectColor(this.value, this.parentElement)">
                                 </label>
                             </div>
                             <input type="hidden" id="final-color-input" name="final_color" value="{{.User.ColorHex}}">
                         </div>
 
-                        <!-- 3. Details -->
                         <div>
                             <label style="display:block; font-size:0.85rem; font-weight:bold; color:var(--subtext-color); margin-bottom:8px; text-transform:uppercase;">Username</label>
                             <input type="text" name="username" value="{{.User.Username}}" maxlength="20" style="width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color); border-radius: 4px;">
@@ -178,7 +176,7 @@
 
                         <div>
                             <label style="display:block; font-size:0.85rem; font-weight:bold; color:var(--subtext-color); margin-bottom:8px; text-transform:uppercase;">Group Codes</label>
-                            <input type="text" name="room_codes" value="{{.User.RoomCode}}" placeholder="MAIN, FAMILY" style="text-transform: uppercase; width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color); border-radius: 4px;">
+                            <input type="text" name="room_codes" value="{{.User.RoomCode}}" placeholder="GROUP CODE" style="text-transform: uppercase; width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color); border-radius: 4px;">
                         </div>
 
                         <button type="submit" style="background: var(--accent-color); color: white; padding: 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;">Save Changes</button>
@@ -235,6 +233,10 @@
             form.style.display = (form.style.display === 'none') ? 'block' : 'none';
         }
 
+        const avatarPreview = document.getElementById('avatar-preview');
+        const headerUsername = document.getElementById('username-display');
+        const headerCard = document.getElementById('profile-card');
+
         function selectColor(hex, el) {
             document.getElementById('final-color-input').value = hex;
             document.getElementById('native-color-picker').value = hex;
@@ -242,8 +244,29 @@
             if(el.classList.contains('color-swatch')) {
                 el.classList.add('active');
             }
+
+            if(headerCard) headerCard.style.borderTopColor = hex;
+            if(headerUsername) headerUsername.style.color = hex;
+            if(avatarPreview) avatarPreview.style.borderColor = hex;
         }
         
+        const iconInputs = document.querySelectorAll('input[name="icon"]');
+        iconInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                const val = this.value;
+                if(avatarPreview) {
+                    if (val.indexOf('/') !== -1 || val.indexOf('.') !== -1) {
+                        // It's an image path
+                        avatarPreview.innerHTML = `<img src="${val}">`;
+                    } else {
+                        // It's an emoji/text
+                        avatarPreview.innerHTML = val;
+                    }
+                }
+            });
+        });
+
+        // Initialize active swatch state
         const initColor = "{{.User.ColorHex}}";
         document.querySelectorAll('.color-swatch').forEach(s => {
             if(s.style.backgroundColor && rgbToHex(s.style.backgroundColor) === initColor.toLowerCase()) {
