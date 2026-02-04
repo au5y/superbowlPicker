@@ -122,10 +122,27 @@ func main() {
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	port := ":4884"
-	fmt.Printf("🏈 Austin's Superbowl LX Prop Pool running on port %s\n", port)
-	err := http.ListenAndServe(port, nil)
-	if err != nil {
-		log.Fatal(err)
+	certFile := "server.crt"
+	keyFile := "server.key"
+
+	// Check if SSL files exist
+	_, certErr := os.Stat(certFile)
+	_, keyErr := os.Stat(keyFile)
+
+	if certErr == nil && keyErr == nil {
+		fmt.Printf("🔒 Superbowl LX Prop Pool running SECURELY at https://localhost%s\n", port)
+		// Redirects aren't automatic here, but the server will now accept HTTPS connections
+		err := http.ListenAndServeTLS(port, certFile, keyFile, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		fmt.Printf("🏈 Superbowl LX Prop Pool running at http://localhost%s\n", port)
+		fmt.Println("⚠️  To enable HTTPS, place 'server.crt' and 'server.key' in the application directory.")
+		err := http.ListenAndServe(port, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 
@@ -423,12 +440,25 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		userID = int(id)
 	}
 	
-	http.SetCookie(w, &http.Cookie{Name: "user_id", Value: strconv.Itoa(userID), Expires: time.Now().Add(24*time.Hour)})
+	isSecure := r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "user_id",
+		Value:    strconv.Itoa(userID),
+		Expires:  time.Now().Add(24 * time.Hour),
+		Path:     "/",
+		HttpOnly: true,     // Prevents XSS stealing
+		Secure:   isSecure, // REQUIRED if site is accessed via HTTPS
+	})
 	http.Redirect(w, r, "/", 302)
 }
 
 func handleLogout(w http.ResponseWriter, r *http.Request) {
-	http.SetCookie(w, &http.Cookie{Name: "user_id", MaxAge: -1})
+	http.SetCookie(w, &http.Cookie{
+		Name:   "user_id",
+		MaxAge: -1,
+		Path:   "/",
+	})
 	http.Redirect(w, r, "/", 302)
 }
 
