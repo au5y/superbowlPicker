@@ -640,7 +640,6 @@ func handleLeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// 3. Fetch Users
 	query := `SELECT id, username, total_score, room_code, icon, color_hex FROM users`
 	var args []interface{}
 	if scope != "global" && room != "" {
@@ -669,7 +668,6 @@ func handleLeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 		entryMap[e.ID] = e
 	}
 
-	// 4. Fetch User Scoreboard Predictions & Assign TBLeft/TBRight
 	predQuery := `
         SELECT p.user_id, q.type, p.text_input 
         FROM predictions p 
@@ -693,22 +691,18 @@ func handleLeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 			userPicks[uID][qType] = val
 		}
 
-		// Assign calculated TieBreaker
 		for id, picks := range userPicks {
 			if entry, ok := entryMap[id]; ok {
 				left := picks["scoreboard-left"]
 				right := picks["scoreboard-right"]
 
-				// Assign specific scores
 				entry.TBLeft = left
 				entry.TBRight = right
 
-				// Keep Display String (optional fallback)
 				entry.TieBreaker = strconv.Itoa(left + right)
 			}
 		}
 
-		// Sorting Logic
 		sort.Slice(entries, func(i, j int) bool {
 			u1 := entries[i]
 			u2 := entries[j]

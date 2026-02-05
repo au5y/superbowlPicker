@@ -225,7 +225,7 @@
             <div id="edit-form-container"
                 style="display: none; margin-top: 15px; background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); text-align: left;">
                 <form action="/user/update" method="POST" style="display: grid; gap: 20px;">
-
+                    <input type="hidden" name="target_id" value="{{.TargetUser.ID}}"> 
                     <div>
                         <label
                             style="display:block; font-size:0.85rem; font-weight:bold; color:var(--subtext-color); margin-bottom:8px; text-transform:uppercase;">Select
@@ -234,8 +234,7 @@
                         <div class="icon-grid">
                             {{range $i, $emoji := split "🏈,🍺,🍕,🤡,👑,🚀,💎,🇺🇸,🍆,🍑,💦,🥳,💩,🧠,🌉" ","}}
                             <label class="icon-option">
-                                <input type="radio" name="icon" value="{{$emoji}}" {{if eq $.User.Icon
-                                    $emoji}}checked{{end}}>
+                                <input type="radio" name="icon" value="{{$emoji}}" {{if eq $.TargetUser.Icon $emoji}}checked{{end}}>
                                 <div class="icon-display">{{$emoji}}</div>
                             </label>
                             {{end}}
@@ -245,10 +244,10 @@
                             ALL NFL TEAMS</div>
                         <div class="icon-grid">
                             {{range $team := split
-                            "ne, sea, ari,atl,bal,buf,car,chi,cin,cle,dal,den,det,gb,hou,ind,jax,kc,lv,lac,lar,mia,min,no,nyg,nyj,phi,pit,sf,tb,ten,was"
+                            "ne,sea,ari,atl,bal,buf,car,chi,cin,cle,dal,den,det,gb,hou,ind,jax,kc,lv,lac,lar,mia,min,no,nyg,nyj,phi,pit,sf,tb,ten,was"
                             ","}}
                             <label class="icon-option">
-                                <input type="radio" name="icon" value="/static/assets/{{$team}}.png" {{if eq $.User.Icon
+                                <input type="radio" name="icon" value="/static/assets/{{$team}}.png" {{if eq $.TargetUser.Icon
                                     (printf "/static/assets/%s.png" $team)}}checked{{end}}>
                                 <div class="icon-display">
                                     <img src="/static/assets/{{$team}}.png" alt="{{$team}}">
@@ -286,13 +285,13 @@
                                     onchange="selectColor(this.value, this.parentElement)">
                             </label>
                         </div>
-                        <input type="hidden" id="final-color-input" name="final_color" value="{{.User.ColorHex}}">
+                        <input type="hidden" id="final-color-input" name="final_color" value="{{.TargetUser.ColorHex}}">
                     </div>
 
                     <div>
                         <label
                             style="display:block; font-size:0.85rem; font-weight:bold; color:var(--subtext-color); margin-bottom:8px; text-transform:uppercase;">Username</label>
-                        <input type="text" name="username" value="{{.User.Username}}" maxlength="20"
+                        <input type="text" name="username" value="{{.TargetUser.Username}}" maxlength="20"
                             style="width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color); border-radius: 4px;">
                     </div>
 
@@ -300,7 +299,7 @@
                         <label
                             style="display:block; font-size:0.85rem; font-weight:bold; color:var(--subtext-color); margin-bottom:8px; text-transform:uppercase;">Group
                             Codes</label>
-                        <input type="text" name="room_codes" value="{{.User.RoomCode}}" placeholder="GROUP CODE"
+                        <input type="text" name="room_codes" value="{{.TargetUser.RoomCode}}" placeholder="GROUP CODE"
                             style="text-transform: uppercase; width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color); border-radius: 4px;">
                     </div>
 
@@ -391,7 +390,7 @@
         });
 
         // Set active color
-        const initColor = "{{.User.ColorHex}}";
+        const initColor = "{{.TargetUser.ColorHex}}";
         document.querySelectorAll('.color-swatch').forEach(s => {
             if (s.style.backgroundColor && rgbToHex(s.style.backgroundColor) === initColor.toLowerCase()) {
                 s.classList.add('active');
