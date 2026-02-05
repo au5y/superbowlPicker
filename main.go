@@ -95,6 +95,8 @@ var AllowedRooms = map[string]string{
 	"FRIENDS": "Friends",
 	"CFSV":    "Crossfit Somerville",
 	"DRAPER":  "Draper",
+	"VOLO":    "Wombatz!",
+	"MONEY":   "$$$",
 }
 
 var (
