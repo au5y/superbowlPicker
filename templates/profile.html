@@ -231,6 +231,30 @@
                             style="display:block; font-size:0.85rem; font-weight:bold; color:var(--subtext-color); margin-bottom:8px; text-transform:uppercase;">Select
                             Avatar</label>
 
+                        <div style="margin-bottom: 20px;">
+                        <label style="display:block; font-size:0.85rem; font-weight:bold; color:var(--subtext-color); margin-bottom:8px; text-transform:uppercase;">
+                            Custom Emoji
+                        </label>
+                        <div class="icon-grid">
+                            <label class="icon-option" id="custom-emoji-label">
+                                <input type="radio" name="icon" value="CUSTOM" id="custom-emoji-radio">
+                                <div class="icon-display" style="position: relative; overflow: hidden;">
+                                    <span id="custom-emoji-display" style="font-size: 1.5rem; line-height: 45px;">🎲</span>
+                                    <input type="text" id="custom-emoji-input" name="custom_icon" maxlength="5" 
+                                        onclick="event.stopPropagation()"
+                                        style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; 
+                                                text-align:center; background:var(--input-bg); border:none; 
+                                                font-size:1.5rem; padding:0; margin:0; color:var(--text-color); outline:none;"
+                                        placeholder="?">
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="display:block; font-size:0.85rem; font-weight:bold; color:var(--subtext-color); margin-bottom:8px; text-transform:uppercase;">
+                            Preset Avatars
+                        </label>
                         <div class="icon-grid">
                             {{range $i, $emoji := split "🏈,🍺,🍕,🤡,👑,🚀,💎,🇺🇸,🍆,🍑,💦,🥳,💩,🧠,🌉" ","}}
                             <label class="icon-option">
@@ -239,6 +263,7 @@
                             </label>
                             {{end}}
                         </div>
+                    </div>
 
                         <div style="margin-top: 10px; font-size:0.75rem; color:var(--subtext-color); font-weight:bold;">
                             ALL NFL TEAMS</div>
@@ -402,6 +427,55 @@
             var rgb = col.match(/\d+/g);
             return '#' + ((1 << 24) + (parseInt(rgb[0]) << 16) + (parseInt(rgb[1]) << 8) + parseInt(rgb[2])).toString(16).slice(1);
         }
+
+        const customRadio = document.getElementById('custom-emoji-radio');
+        const customDisplay = document.getElementById('custom-emoji-display');
+        const customInput = document.getElementById('custom-emoji-input');
+        const customLabel = document.getElementById('custom-emoji-label');
+        
+        const randomEmojis = ["🎲", "🎯", "🎨", "🎭", "🎪", "🎫", "🎮", "👾", "🎰", "🧩", "🤠", "👽"];
+        let emojiInterval;
+
+        function startCycling() {
+            if(emojiInterval) clearInterval(emojiInterval);
+            emojiInterval = setInterval(() => {
+                customDisplay.textContent = randomEmojis[Math.floor(Math.random() * randomEmojis.length)];
+            }, 600);
+        }
+
+        function stopCycling() {
+            if(emojiInterval) clearInterval(emojiInterval);
+        }
+
+        startCycling();
+
+        customLabel.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            customRadio.checked = true;
+
+            stopCycling();
+
+            customDisplay.style.display = 'none';
+            customInput.style.display = 'block';
+            customInput.focus();
+        });
+
+        customInput.addEventListener('input', function() {
+            const val = this.value.trim();
+            if(val) {
+                if(avatarPreview) avatarPreview.innerHTML = val;
+            }
+        });
+
+        customInput.addEventListener('blur', function() {
+            const val = this.value.trim();
+            if(!val) {
+                customInput.style.display = 'none';
+                customDisplay.style.display = 'block';
+                startCycling();
+            }
+        });
     </script>
 </body>
 

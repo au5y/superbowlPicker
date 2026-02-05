@@ -113,7 +113,7 @@ var (
 		"/static/assets/ten.png", "/static/assets/was.png",
 	}
 	availEmojis = []string{
-		"🏈", "🍺", "🍕", "🤡", "👑", "🚀", "💎", "🇺🇸", "🍆", "🍑", "💦", "🥳", "💩", "🧠", "🌉",
+		"🏈", "🍺", "🍕", "🤡", "👑", "🚀", "💎", "🇺🇸", "🥳", "🧠", "🌉",
 	}
 	availColors = []string{
 		"#D32F2F", "#C2185B", "#7B1FA2", "#512DA8", "#303F9F", "#1976D2", "#00796B", "#388E3C", "#F57C00", "#E64A19", "#5D4037", "#455A64",
@@ -537,7 +537,6 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 
 	targetID := user.ID
 
-	// If Admin AND target_id is provided, update that ID instead
 	if user.IsAdmin {
 		if tVal := r.FormValue("target_id"); tVal != "" {
 			if tID, err := strconv.Atoi(tVal); err == nil {
@@ -552,14 +551,55 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 			db.Exec("UPDATE users SET username = ? WHERE id = ?", newUsername, targetID)
 		}
 	}
+
 	if r.FormValue("icon") != "" {
 		newIcon := r.FormValue("icon")
-		newColor := r.FormValue("color")
+
+		if newIcon == "CUSTOM" {
+			customVal := strings.TrimSpace(r.FormValue("custom_icon"))
+
+			isEmoji := true
+			if customVal == "" {
+				isEmoji = false
+			}
+
+			for _, r := range customVal {
+				match := false
+
+				if (r >= 0x1F300 && r <= 0x1FAFF) || // Main Block (Smileys, Animals, Food, etc.)
+					(r >= 0x2600 && r <= 0x27BF) || // Misc Symbols (Sun, Snowman, Checkmarks)
+					(r >= 0x2300 && r <= 0x23FF) || // Misc Technical (Watches ⌚, Hourglass ⌛, Alarm ⏰)
+					(r >= 0x2B00 && r <= 0x2BFF) || // Arrows & Shapes (Stars, Squares)
+					(r >= 0x1F1E6 && r <= 0x1F1FF) || // Flags (Regional Indicators)
+					(r == 0x200D || r == 0xFE0F) { // Zero Width Joiner & Variation Selector
+					match = true
+				}
+
+				if !match {
+					isEmoji = false
+					break
+				}
+			}
+
+			if isEmoji && len(customVal) < 25 {
+				newIcon = customVal
+			} else {
+				newIcon = ""
+			}
+		}
+
+		newColor := r.FormValue("final_color")
+		if newColor == "" {
+			newColor = r.FormValue("color")
+		}
+
 		match, _ := regexp.MatchString(`^#[0-9a-fA-F]{6}$`, newColor)
-		if match {
+
+		if newIcon != "" && match {
 			db.Exec("UPDATE users SET icon = ?, color_hex = ? WHERE id = ?", newIcon, newColor, targetID)
 		}
 	}
+
 	if r.Form.Has("room_codes") {
 		rawRooms := r.FormValue("room_codes")
 		var validatedRooms []string
@@ -571,15 +611,7 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if len(validatedRooms) == 0 && strings.TrimSpace(rawRooms) != "" {
-			ref := r.Header.Get("Referer")
-			if ref == "" {
-				ref = "/"
-			}
-			sep := "?"
-			if strings.Contains(ref, "?") {
-				sep = "&"
-			}
-			http.Redirect(w, r, ref+sep+"error=invalid_code", 302)
+			http.Redirect(w, r, "/?error=invalid_code", 302)
 			return
 		}
 		finalRoomCode := strings.Join(validatedRooms, ",")
@@ -588,6 +620,7 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 		}
 		db.Exec("UPDATE users SET room_code = ? WHERE id = ?", finalRoomCode, targetID)
 	}
+
 	ref := r.Header.Get("Referer")
 	if ref == "" {
 		ref = "/"
