@@ -10,8 +10,11 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
 
     <style>
+        /* Admin Specific Overrides */
+        body { padding-bottom: 50px; }
+        
         .admin-container { 
-            max-width: 1000px; margin: 0 auto; margin-top: 60px;
+            max-width: 1000px; margin: 0 auto; margin-top: 80px;
             background: var(--card-bg); padding: 20px; border-radius: 8px; 
             box-shadow: 0 2px 10px var(--shadow-color); color: var(--text-color);
         }
@@ -27,7 +30,7 @@
         .admin-avatar:hover { transform: scale(1.1); border-color: var(--accent-color); }
         .admin-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
-        h1, h2 { font-weight: 600; color: var(--heading-color); }
+        h1, h2, h3 { font-weight: 600; color: var(--heading-color); }
 
         .controls { 
             background: var(--hover-bg); padding: 15px; border-radius: 8px; 
@@ -39,7 +42,7 @@
         .tag-OPEN { background: rgba(40, 167, 69, 0.15); color: #28a745; border: 1px solid rgba(40, 167, 69, 0.3); }
         .tag-LOCKED { background: rgba(220, 53, 69, 0.15); color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.3); }
         
-        table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 20px; }
         th { text-align: left; padding: 12px; border-bottom: 1px solid var(--border-color); color: var(--subtext-color); font-weight: 600; font-size: 0.9rem; text-transform: uppercase; }
         td { padding: 12px; border-bottom: 1px solid var(--border-color); vertical-align: middle; color: var(--text-color); }
         tr:last-child td { border-bottom: none; }
@@ -74,8 +77,12 @@
         .category-pill { font-size: 0.7rem; background: var(--hover-bg); padding: 2px 6px; border-radius: 4px; color: var(--subtext-color); display: inline-block; margin-top: 4px; border: 1px solid var(--border-color); }
         .btn-sm { padding: 4px 8px; font-size: 0.8rem; }
 
+        /* Modal Styles */
+        .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; align-items:center; justify-content:center; }
+        .modal-content { background:var(--card-bg); width:90%; max-width:500px; padding:25px; border-radius:8px; border: 1px solid var(--border-color); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+
         @media (max-width: 768px) {
-            .admin-container { padding: 10px; margin-top: 50px; }
+            .admin-container { padding: 10px; margin-top: 60px; }
             table, thead, tbody, th, td, tr { display: block; }
             thead tr { position: absolute; top: -9999px; left: -9999px; }
             tr { border: 1px solid var(--border-color); margin-bottom: 15px; border-radius: 8px; background: var(--card-bg); padding: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
@@ -85,29 +92,18 @@
     </style>
 </head>
 <body>
-    <script>
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme) { document.documentElement.setAttribute('data-theme', savedTheme); }
-    </script>
-
     {{template "drawer" .}}
-
-    <div class="theme-switch" onclick="toggleTheme()" title="Toggle Theme">
-        <span id="theme-icon">☀️</span>
-    </div>
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-            const icon = document.getElementById('theme-icon');
-            if(icon) icon.textContent = isDark ? '🌙' : '☀️';
-        });
-    </script>
 
     <div class="admin-container">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
             <h1>Game Control</h1>
             <div>
-                 <a href="/admin/backup" style="text-decoration:none; margin-right: 15px; padding: 6px 10px; border-radius: 4px; color: var(--subtext-color); border: 1px solid var(--border-color); font-size: 0.8rem;">💾 Backup</a>
+                 <a href="#users-section" style="text-decoration:none; margin-right: 15px; padding: 6px 10px; border-radius: 4px; color: var(--text-color); background: var(--hover-bg); border: 1px solid var(--border-color); font-size: 0.8rem;">
+                    👥 Jump to Users
+                 </a>
+                 <a href="/admin/backup" style="text-decoration:none; padding: 6px 10px; border-radius: 4px; color: var(--subtext-color); border: 1px solid var(--border-color); font-size: 0.8rem;">
+                    💾 Backup
+                 </a>
             </div>
         </div>
 
@@ -130,6 +126,13 @@
             </form>
         </div>
 
+        <div style="margin-bottom: 20px; text-align: right;">
+            <button onclick="document.getElementById('new-q-modal').style.display='flex'" 
+                    style="background: var(--accent-color); color: white; padding: 10px 20px; font-weight: bold; border-radius: 4px;">
+                + Add New Question
+            </button>
+        </div>
+
         <table>
             <thead>
                 <tr>
@@ -141,14 +144,59 @@
             </thead>
             <tbody>
                 {{range .Questions}}
-                <tr id="row-{{.ID}}" class="row-{{.Status}}">
+                {{$q := .}} <tr id="row-{{.ID}}" class="row-{{.Status}}">
                     <td>#{{.ID}}</td>
                     <td>
-                        <div class="question-title" style="font-weight:600;">{{.Text}}</div>
-                        <span class="category-pill">{{.Category}}</span>
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                            <div>
+                                <div class="question-title" style="font-weight:600;">{{.Text}}</div>
+                                <span class="category-pill">{{.Category}}</span>
+                            </div>
+                            <button onclick="toggleEdit('edit-{{.ID}}')" class="btn-sm" style="background:var(--input-bg); border:1px solid var(--border-color);">✏️</button>
+                        </div>
+
+                        <div id="edit-{{.ID}}" style="display:none; margin-top:15px; padding:15px; background:var(--input-bg); border-radius:8px; border:1px solid var(--border-color);">
+                            
+                            <form action="/admin/question/edit" method="POST" style="margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:15px;">
+                                <input type="hidden" name="id" value="{{.ID}}">
+                                <div style="display:grid; gap:10px; margin-bottom:10px;">
+                                    <label style="font-size:0.75rem; font-weight:bold; color:var(--subtext-color);">TEXT</label>
+                                    <input type="text" name="text" value="{{.Text}}" style="width:100%; box-sizing:border-box; max-width:none;">
+                                    
+                                    <label style="font-size:0.75rem; font-weight:bold; color:var(--subtext-color);">CATEGORY</label>
+                                    <input type="text" name="category" value="{{.Category}}" style="width:100%; box-sizing:border-box; max-width:none;">
+                                </div>
+                                <div style="display:flex; justify-content:space-between;">
+                                    <button type="submit" class="btn-sm" style="background:var(--accent-color); color:white;">Save Details</button>
+                                    
+                                    <button type="submit" formaction="/admin/question/delete" onclick="return confirm('Delete this question entirely?')" 
+                                            class="btn-sm" style="background:#dc3545; color:white;">Delete Question</button>
+                                </div>
+                            </form>
+
+                            <div style="font-size:0.8rem; font-weight:bold; margin-bottom:10px; color:var(--subtext-color);">OPTIONS</div>
+                            {{range .Options}}
+                            <form action="/admin/option/edit" method="POST" style="display:flex; gap:5px; margin-bottom:8px;">
+                                <input type="hidden" name="question_id" value="{{$q.ID}}">
+                                <input type="hidden" name="id" value="{{.ID}}">
+                                <input type="text" name="text" value="{{.Text}}" style="flex:1;">
+                                <input type="color" name="color" value="{{.ColorHex}}" style="width:30px; padding:0; height:30px; border:none; background:none; cursor:pointer;">
+                                <button type="submit" title="Save" style="background:#28a745; color:white; padding:0 10px;">💾</button>
+                                
+                                <button type="button" onclick="deleteOption(this, {{.ID}})" title="Delete" style="background:#dc3545; color:white; padding:0 10px; border:none; border-radius:4px; cursor:pointer;">X</button>
+                            </form>
+                            {{end}}
+
+                            <form action="/admin/option/edit" method="POST" style="margin-top:10px; display:flex; gap:5px;">
+                                <input type="hidden" name="question_id" value="{{$q.ID}}">
+                                <input type="hidden" name="id" value="new">
+                                <input type="text" name="text" placeholder="New Option Text" required style="flex:1;">
+                                <input type="color" name="color" value="#000000" style="width:30px; padding:0; height:30px; border:none; background:none; cursor:pointer;">
+                                <button type="submit" style="background:var(--subtext-color); color:white; padding:0 15px;">+ Add</button>
+                            </form>
+                        </div>
                     </td>
                     <td>
-                        {{$q := .}}
                         {{if eq .Type "select"}}
                             <div class="options-grid">
                                 {{range .Options}}
@@ -180,7 +228,7 @@
             </tbody>
         </table>
 
-        <div style="margin-top: 40px; margin-bottom: 20px;">
+        <div id="users-section" style="margin-top: 40px; margin-bottom: 20px;">
             <h2>Player Management</h2>
         </div>
         <table>
@@ -197,7 +245,6 @@
                 <tr>
                     <td>
                         <div style="display:flex; align-items:center; gap:10px;">
-                            
                             <a href="/user/{{.ID}}" title="View Profile" class="admin-avatar" style="border-color: {{.ColorHex}};">
                                 {{if gt (len .Icon) 15}}
                                     <img src="{{.Icon}}">
@@ -205,7 +252,6 @@
                                     {{.Icon}}
                                 {{end}}
                             </a>
-
                             <form action="/admin/users" method="POST" style="display:flex; gap:5px; margin:0;" onsubmit="handleAdminUpdate(event)">
                                 <input type="hidden" name="user_id" value="{{.ID}}">
                                 <input type="hidden" name="action" value="update_username">
@@ -248,6 +294,27 @@
         </table>
     </div>
 
+    <div id="new-q-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">Add New Question</h3>
+            <form action="/admin/question/edit" method="POST">
+                <input type="hidden" name="id" value="new">
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; color:var(--subtext-color); margin-bottom:5px;">Question Text</label>
+                    <input type="text" name="text" required style="width:100%; box-sizing:border-box; max-width:none; padding:10px;">
+                </div>
+                <div style="margin-bottom:20px;">
+                    <label style="display:block; color:var(--subtext-color); margin-bottom:5px;">Category</label>
+                    <input type="text" name="category" required style="width:100%; box-sizing:border-box; max-width:none; padding:10px;">
+                </div>
+                <div style="text-align:right; display:flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" onclick="document.getElementById('new-q-modal').style.display='none'" style="background:transparent; color:var(--text-color); border:1px solid var(--border-color); padding:8px 16px;">Cancel</button>
+                    <button type="submit" style="background:var(--accent-color); color:white; padding:8px 16px;">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         function resolveImmediate(qID, optID) {
             fetch('/admin/resolve', { method: 'POST', body: JSON.stringify({ question_id: String(qID), option_id: String(optID) }) })
@@ -261,9 +328,39 @@
             fetch('/admin/resolve', { method: 'POST', body: JSON.stringify({ question_id: String(qID), status: "OPEN" }) })
             .then(res => res.json()).then(data => location.reload());
         }
+        
+        function toggleEdit(id) {
+            const el = document.getElementById(id);
+            el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
+        }
+
+        function deleteOption(btn, id) {
+            if(!confirm("Are you sure you want to delete this option?")) return;
+            
+            const formData = new URLSearchParams();
+            formData.append('id', id);
+            
+            fetch('/admin/option/delete', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Successfully deleted on server, remove the row (form) from UI
+                    const row = btn.closest('form');
+                    row.remove();
+                } else {
+                    alert("Failed to delete option.");
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Error deleting option.");
+            });
+        }
+
         function handleAdminUpdate(e) {
             e.preventDefault();
-            
             const form = e.target;
             const btn = form.querySelector('button[type="submit"]');
             const originalText = btn.textContent;
@@ -273,7 +370,6 @@
             btn.disabled = true;
 
             const formData = new FormData(form);
-
             if (btn.name && btn.value) {
                 formData.append(btn.name, btn.value);
             }
@@ -284,12 +380,9 @@
             })
             .then(response => {
                 if (response.ok) {
-                    // Success Feedback
                     btn.textContent = "Saved";
-                    btn.style.background = "#28a745"; // Green
-                    
+                    btn.style.background = "#28a745";
                     setTimeout(() => {
-                        // Revert button
                         btn.textContent = originalText;
                         btn.style.background = originalBg;
                         btn.disabled = false;
@@ -306,7 +399,6 @@
                 btn.disabled = false;
                 btn.textContent = originalText;
             });
-            
             return false;
         }
     </script>

@@ -14,8 +14,9 @@
     </div>
     <div class="drawer-nav">
         <a href="/" class="{{if eq .ActivePage "home"}}active{{end}}">My Picks</a>
-        <a href="/leaderboard" class="{{if eq .ActivePage "leaderboard"}}active{{end}}">Leaderboard</a>
         <a href="/rules" class="{{if eq .ActivePage "rules"}}active{{end}}">How To Play</a>
+        <a href="/leaderboard" class="{{if eq .ActivePage "leaderboard"}}active{{end}}">Leaderboard</a>
+        <a href="/results" class="{{if eq .ActivePage "results"}}active{{end}}">Results</a>
         <a href="/user/{{.User.ID}}" class="{{if eq .ActivePage "profile"}}active{{end}}">My Profile</a>
         
         {{if .User.IsAdmin}}

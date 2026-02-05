@@ -23,6 +23,7 @@ type PageData struct {
 	TargetUser  *User
 	RoomAliases map[string]string
 	ActivePage  string
+	Questions   []QuestionData
 }
 
 type CategoryGroup struct {
@@ -210,6 +211,11 @@ func main() {
 	http.HandleFunc("/admin/refresh", withLogging(requireAdmin(handleAdminRefresh)))
 	http.HandleFunc("/admin/users", withLogging(requireAdmin(handleAdminUsers)))
 	http.HandleFunc("/admin/backup", withLogging(requireAdmin(handleAdminBackup)))
+	http.HandleFunc("/results", withLogging(handleResults))
+	http.HandleFunc("/admin/question/edit", withLogging(requireAdmin(handleAdminEditQuestion)))
+	http.HandleFunc("/admin/question/delete", withLogging(requireAdmin(handleAdminDeleteQuestion)))
+	http.HandleFunc("/admin/option/edit", withLogging(requireAdmin(handleAdminEditOption)))
+	http.HandleFunc("/admin/option/delete", withLogging(requireAdmin(handleAdminDeleteOption)))
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	err := http.ListenAndServe(":"+port, nil)
@@ -969,6 +975,113 @@ func handleAdminBackup(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=game_backup_%s.db", time.Now().Format("20060102_150405")))
 	w.Header().Set("Content-Type", "application/x-sqlite3")
 	io.Copy(w, sourceFile)
+}
+
+func handleResults(w http.ResponseWriter, r *http.Request) {
+	user := getUser(r)
+
+
+	
+	// Fetch all questions and their correct answers
+	questionsMap := make(map[int]*QuestionData)
+	var questionOrder []*QuestionData
+	
+	// Only fetch necessary fields
+	rows, err := db.Query("SELECT id, text, category, status, type, correct_option_id, correct_text_input FROM questions ORDER BY id ASC")
+	if err != nil {
+		http.Error(w, "DB Error", 500)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		q := &QuestionData{}
+		var correctOptID sql.NullInt64
+		var correctText sql.NullString
+		rows.Scan(&q.ID, &q.Text, &q.Category, &q.Status, &q.Type, &correctOptID, &correctText)
+		
+		if correctOptID.Valid { q.CorrectOptionID = correctOptID.Int64 }
+		if correctText.Valid { q.CorrectTextInput = correctText.String }
+		
+		questionsMap[q.ID] = q
+		questionOrder = append(questionOrder, q)
+	}
+
+	// Fetch options to display the text of the winning option
+	optRows, err := db.Query("SELECT id, question_id, text, color_hex FROM options")
+	if err == nil {
+		defer optRows.Close()
+		for optRows.Next() {
+			var qID int
+			o := OptionData{}
+			optRows.Scan(&o.ID, &qID, &o.Text, &o.ColorHex)
+			if q, ok := questionsMap[qID]; ok {
+				q.Options = append(q.Options, o)
+			}
+		}
+	}
+
+	render(w, "results.html", PageData{User: user, Categories: nil, GameStatus: getGameStatus(), ActivePage: "results", Questions: extractQuestions(questionOrder)})
+}
+
+func extractQuestions(qs []*QuestionData) []QuestionData {
+	var res []QuestionData
+	for _, q := range qs {
+		res = append(res, *q)
+	}
+	return res
+}
+
+func handleAdminEditQuestion(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost { http.Error(w, "405", 405); return }
+	
+	idStr := r.FormValue("id")
+	text := r.FormValue("text")
+	category := r.FormValue("category")
+	
+	if idStr == "new" {
+		// Create New
+		db.Exec("INSERT INTO questions (text, category, status, type) VALUES (?, ?, 'OPEN', 'select')", text, category)
+	} else {
+		// Update Existing
+		db.Exec("UPDATE questions SET text = ?, category = ? WHERE id = ?", text, category, idStr)
+	}
+	http.Redirect(w, r, "/admin", 302)
+}
+
+func handleAdminDeleteQuestion(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost { http.Error(w, "405", 405); return }
+	id := r.FormValue("id")
+	
+	// Cleanup dependencies
+	db.Exec("DELETE FROM predictions WHERE question_id = ?", id)
+	db.Exec("DELETE FROM options WHERE question_id = ?", id)
+	db.Exec("DELETE FROM questions WHERE id = ?", id)
+	
+	http.Redirect(w, r, "/admin", 302)
+}
+
+func handleAdminEditOption(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost { http.Error(w, "405", 405); return }
+	
+	qID := r.FormValue("question_id")
+	optID := r.FormValue("id")
+	text := r.FormValue("text")
+	color := r.FormValue("color")
+	
+	if optID == "new" {
+		db.Exec("INSERT INTO options (question_id, text, color_hex) VALUES (?, ?, ?)", qID, text, color)
+	} else {
+		db.Exec("UPDATE options SET text = ?, color_hex = ? WHERE id = ?", text, color, optID)
+	}
+	http.Redirect(w, r, "/admin", 302)
+}
+
+func handleAdminDeleteOption(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost { http.Error(w, "405", 405); return }
+	id := r.FormValue("id")
+	db.Exec("DELETE FROM options WHERE id = ?", id)
+	http.Redirect(w, r, "/admin", 302)
 }
 
 func render(w http.ResponseWriter, tmpl string, data interface{}) {

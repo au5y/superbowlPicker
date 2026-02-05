@@ -237,17 +237,7 @@
                             Avatar</label>
 
                         <div class="icon-grid">
-                            {{range $team := split "ne,sea" ","}}
-                            <label class="icon-option">
-                                <input type="radio" name="icon" value="/static/assets/{{$team}}.png" {{if eq $.User.Icon
-                                    (printf "/static/assets/%s.png" $team)}}checked{{end}}>
-                                <div class="icon-display">
-                                    <img src="/static/assets/{{$team}}.png" alt="{{$team}}">
-                                </div>
-                            </label>
-                            {{end}}
-
-                            {{range $i, $emoji := split "🏈,🍺,🍕,🤡,👑,🚀,💎,🏆,🇺🇸" ","}}
+                            {{range $i, $emoji := split "🏈,🍺,🍕,🤡,👑,🚀,💎,🇺🇸,🍆,🍑,💦,🥳,💩,🧠,🌉" ","}}
                             <label class="icon-option">
                                 <input type="radio" name="icon" value="{{$emoji}}" {{if eq $.User.Icon
                                     $emoji}}checked{{end}}>
@@ -260,7 +250,7 @@
                             ALL NFL TEAMS</div>
                         <div class="icon-grid">
                             {{range $team := split
-                            "ari,atl,bal,buf,car,chi,cin,cle,dal,den,det,gb,hou,ind,jax,kc,lv,lac,lar,mia,min,no,nyg,nyj,phi,pit,sf,tb,ten,was"
+                            "ne, sea, ari,atl,bal,buf,car,chi,cin,cle,dal,den,det,gb,hou,ind,jax,kc,lv,lac,lar,mia,min,no,nyg,nyj,phi,pit,sf,tb,ten,was"
                             ","}}
                             <label class="icon-option">
                                 <input type="radio" name="icon" value="/static/assets/{{$team}}.png" {{if eq $.User.Icon

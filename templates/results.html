@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Official Results</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+</head>
+<body>
+    {{template "drawer" .}}
+
+    <div style="max-width: 800px; margin: 0 auto; padding-top: 60px;">
+        <div class="card" style="margin-bottom: 20px; text-align: center; border-left: 5px solid var(--accent-color);">
+            <h2>🏆 Official Results</h2>
+            <p style="color: var(--subtext-color);">The final results for all props.</p>
+        </div>
+
+        {{range .Questions}}
+        <div class="card" style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; padding: 15px; {{if eq .Status "RESOLVED"}}border-left: 5px solid #28a745;{{else}}border-left: 5px solid var(--subtext-color);{{end}}">
+            <div style="flex: 1;">
+                <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--subtext-color); margin-bottom: 4px;">
+                    {{.Category}}
+                </div>
+                <div style="font-weight: 600;">{{.Text}}</div>
+            </div>
+            
+            <div style="text-align: right; font-weight: bold;">
+                {{if eq .Status "RESOLVED"}}
+                    {{if eq .Type "select"}}
+                        {{$cID := .CorrectOptionID}}
+                        {{range .Options}}
+                            {{if eq (printf "%d" .ID) (printf "%d" $cID)}}
+                                <span style="color: #28a745; background: rgba(40,167,69,0.1); padding: 5px 10px; border-radius: 4px;">
+                                    {{.Text}}
+                                </span>
+                            {{end}}
+                        {{end}}
+                    {{else}}
+                         <span style="color: #28a745;">{{.CorrectTextInput}}</span>
+                    {{end}}
+                {{else}}
+                    <span style="color: var(--subtext-color); font-size: 0.9rem; font-style: italic;">Pending...</span>
+                {{end}}
+            </div>
+        </div>
+        {{end}}
+    </div>
+</body>
+</html>
