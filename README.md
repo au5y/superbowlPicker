@@ -20,14 +20,20 @@ Access the application at: http://localhost:4884
 
 ## Admin Interface
 
-To manage the game state and resolve questions, navigate to:
+Users must be an admin first. Admin a user after they are created by restarting the server with
+```bash
+go run . admin <User>
+```
 
-http://localhost:4884/admin?key=touchdown
+Then to manage the game state and resolve questions, navigate to:
+
+http://localhost:4884/admin
 
 From here you can:
 - Lock/Unlock the game (Open/Locked status).
 - Resolve questions (mark correct answers).
 - Refresh questions from `questions.json`.
+- Edit Questions
 - Manage users (reset PINs, delete users, update rooms).
 
 ## Configuration
