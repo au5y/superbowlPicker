@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,9 +8,23 @@
     <link rel="stylesheet" href="/static/style.css">
     <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
     <style>
-        .leaderboard-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; margin-top: 10px; }
-        .leaderboard-table th { text-align: left; padding: 10px 15px; border-bottom: 2px solid var(--border-color); color: var(--subtext-color); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
-        
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+            margin-top: 10px;
+        }
+
+        .leaderboard-table th {
+            text-align: left;
+            padding: 10px 15px;
+            border-bottom: 2px solid var(--border-color);
+            color: var(--subtext-color);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
         /* Row Styling */
         .leaderboard-table tbody tr {
             background: var(--card-bg);
@@ -18,74 +33,259 @@
             will-change: transform;
             position: relative;
         }
-        
-        .leaderboard-table td { padding: 12px 15px; vertical-align: middle; border: none; }
-        .leaderboard-table td:first-child { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
-        .leaderboard-table td:last-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+
+        .leaderboard-table td {
+            padding: 12px 15px;
+            vertical-align: middle;
+            border: none;
+        }
+
+        .leaderboard-table td:first-child {
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+        }
+
+        .leaderboard-table td:last-child {
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
 
         /* Rank Column */
-        .rank-col { font-weight: bold; font-size: 1.5rem; color: var(--subtext-color); width: 50px; text-align: center; }
-        .rank-1 { color: #FFD700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); font-size: 2.2rem; }
-        .rank-2 { color: #C0C0C0; font-size: 2rem; }
-        .rank-3 { color: #CD7F32; font-size: 1.8rem; }
+        .rank-col {
+            font-weight: bold;
+            font-size: 1.5rem;
+            color: var(--subtext-color);
+            width: 50px;
+            text-align: center;
+        }
+
+        .rank-1 {
+            color: #FFD700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            font-size: 2.2rem;
+        }
+
+        .rank-2 {
+            color: #C0C0C0;
+            font-size: 2rem;
+        }
+
+        .rank-3 {
+            color: #CD7F32;
+            font-size: 1.8rem;
+        }
 
         /* User Column */
-        .user-cell { display: flex; align-items: center; gap: 15px; }
-        .lb-avatar { 
-            width: 48px; height: 48px; border-radius: 50%; border: 3px solid var(--border-color); 
-            display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 1.5rem; 
-            background: var(--input-bg); flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        .user-cell {
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
-        .lb-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        
-        /* INDUSTRY STANDARD: Clean Text + Colored Avatar */
-        .lb-name { 
-            font-size: 1.2rem; 
-            font-weight: 700; 
-            color: var(--text-color); /* Matches theme (White/Black) */
+
+        .lb-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 3px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            font-size: 1.5rem;
+            background: var(--input-bg);
+            flex-shrink: 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .lb-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* User Identity */
+        .lb-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-color);
+            /* Matches theme (White/Black) */
             letter-spacing: 0.5px;
         }
-        
+
         /* Team Badge Style (The "Chip") */
         .team-badge {
             display: inline-block;
             padding: 4px 10px;
             border-radius: 12px;
-            color: white; /* Always White Text */
+            color: white;
+            /* Always White Text */
             font-weight: bold;
             font-size: 1rem;
             min-width: 30px;
             text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         /* Score Columns */
-        .score-cell { font-size: 1.6rem; font-weight: bold; color: var(--text-color); text-align: right; font-variant-numeric: tabular-nums; }
-        .cat-col-cell { text-align: center; font-weight: bold; color: var(--subtext-color); font-size: 1.1rem; }
-        .cat-col-header { text-align: center !important; font-size: 0.7rem !important; }
-
-        /* Config & Animations (Kept the same) */
-        .config-panel {
-            background: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px;
-            border: 1px solid var(--border-color); display: flex; flex-wrap: wrap; gap: 15px; align-items: center;
+        .score-cell {
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: var(--text-color);
+            text-align: right;
+            font-variant-numeric: tabular-nums;
         }
-        .config-toggle { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer; user-select: none; }
-        .filter-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--card-bg); cursor: pointer; color: var(--text-color); font-weight: 600; transition: all 0.2s; }
-        .filter-btn.active { background: var(--accent-color); color: white; border-color: var(--accent-color); transform: scale(1.05); }
+
+        .cat-col-cell {
+            text-align: center;
+            font-weight: bold;
+            color: var(--subtext-color);
+            font-size: 1.1rem;
+        }
+
+        .cat-col-header {
+            text-align: center !important;
+            font-size: 0.7rem !important;
+        }
+
+        /* Config & Animations */
+        .config-panel {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .config-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            cursor: pointer;
+            color: var(--text-color);
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+            transform: scale(1.05);
+        }
 
         @keyframes flashGreen {
-            0% { background-color: rgba(40, 167, 69, 0.8); color: white; transform: scale(1.1); box-shadow: 0 0 15px rgba(40, 167, 69, 0.6); }
-            100% { background-color: transparent; color: inherit; transform: scale(1); box-shadow: none; }
+            0% {
+                background-color: rgba(40, 167, 69, 0.8);
+                color: white;
+                transform: scale(1.1);
+                box-shadow: 0 0 15px rgba(40, 167, 69, 0.6);
+            }
+
+            100% {
+                background-color: transparent;
+                color: inherit;
+                transform: scale(1);
+                box-shadow: none;
+            }
         }
+
         @keyframes flashRed {
-            0% { background-color: rgba(220, 53, 69, 0.8); color: white; transform: scale(0.95); box-shadow: 0 0 15px rgba(220, 53, 69, 0.6); }
-            100% { background-color: transparent; color: inherit; transform: scale(1); box-shadow: none; }
+            0% {
+                background-color: rgba(220, 53, 69, 0.8);
+                color: white;
+                transform: scale(0.95);
+                box-shadow: 0 0 15px rgba(220, 53, 69, 0.6);
+            }
+
+            100% {
+                background-color: transparent;
+                color: inherit;
+                transform: scale(1);
+                box-shadow: none;
+            }
         }
-        
-        .flash-increase { animation: flashGreen 3s ease-out; border-radius: 6px; }
-        .flash-decrease { animation: flashRed 3s ease-out; border-radius: 6px; }
+
+        .flash-increase {
+            animation: flashGreen 3s ease-out;
+            border-radius: 6px;
+        }
+
+        .flash-decrease {
+            animation: flashRed 3s ease-out;
+            border-radius: 6px;
+        }
+        @media (max-width: 768px) {
+            
+            .cat-col-header, 
+            .cat-col-cell {
+                display: none !important;
+            }
+
+            .leaderboard-table th,
+            .leaderboard-table td {
+                padding: 10px 4px;
+            }
+            
+            .user-cell {
+                gap: 8px;
+            }
+
+            .lb-avatar {
+                width: 32px;
+                height: 32px;
+                font-size: 1rem;
+                border-width: 2px;
+            }
+
+            .lb-name {
+                font-size: 0.9rem;
+                max-width: 110px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                display: block;
+            }
+
+            .rank-col {
+                width: 30px;
+                font-size: 1rem;
+            }
+            .rank-1 { font-size: 1.4rem; }
+            .rank-2 { font-size: 1.3rem; }
+            .rank-3 { font-size: 1.2rem; }
+
+            .score-cell {
+                font-size: 1.1rem;
+            }
+            .team-badge {
+                padding: 2px 6px;
+                font-size: 0.8rem;
+                min-width: 24px;
+                border-radius: 8px;
+            }
+        }
+        @media (max-width: 768px) and (orientation: portrait) {
+            #config-details {
+                display: none !important;
+            }
+        }
     </style>
 </head>
+
 <body>
     <script>
         const savedTheme = localStorage.getItem('theme');
@@ -100,15 +300,17 @@
         <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
             <button class="filter-btn active" id="btn-global" onclick="setScope('global')">Global</button>
             {{if ne .User.RoomCode ""}}
-                {{$aliases := .RoomAliases}}
-                {{range split .User.RoomCode ","}}
-                    <button class="filter-btn" onclick="setScope('{{.}}')">{{roomName . $aliases}}</button>
-                {{end}}
+            {{$aliases := .RoomAliases}}
+            {{range split .User.RoomCode ","}}
+            <button class="filter-btn" onclick="setScope('{{.}}')">{{roomName . $aliases}}</button>
+            {{end}}
             {{end}}
         </div>
 
-        <details>
-            <summary style="cursor: pointer; color: var(--subtext-color); margin-bottom: 10px; font-weight: bold; text-align: center;">⚙️ Configure Columns</summary>
+        <details id="config-details">
+            <summary
+                style="cursor: pointer; color: var(--subtext-color); margin-bottom: 10px; font-weight: bold; text-align: center;">
+                ⚙️ Configure Categories</summary>
             <div class="config-panel" id="column-toggles"></div>
         </details>
 
@@ -131,32 +333,32 @@
         let currentScope = "global";
         let allCategories = new Set();
         let activeCategories = new Set();
-        let previousDataMap = {}; 
+        let previousDataMap = {};
         let previousRowPositions = {};
 
         function setScope(scope) {
             currentScope = scope;
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             event.target.classList.add('active');
-            previousRowPositions = {}; 
+            previousRowPositions = {};
             previousDataMap = {};
             loadLeaderboard();
         }
 
         function toggleCategory(cat) {
-            if (activeCategories.has(cat)) { activeCategories.delete(cat); } 
+            if (activeCategories.has(cat)) { activeCategories.delete(cat); }
             else { activeCategories.add(cat); }
-            renderTable(window.lastData, false); 
+            renderTable(window.lastData, false);
         }
 
         function loadLeaderboard() {
             const url = currentScope === 'global' ? '/api/leaderboard?scope=global' : '/api/leaderboard?room=' + currentScope;
-            
+
             fetch(url)
                 .then(r => r.json())
                 .then(data => {
                     window.lastData = data;
-                    
+
                     data.forEach(user => {
                         if (user.category_scores) {
                             Object.keys(user.category_scores).forEach(c => allCategories.add(c));
@@ -214,7 +416,7 @@
                         row.style.transition = 'none';
 
                         requestAnimationFrame(() => {
-                            void row.offsetHeight; 
+                            void row.offsetHeight;
                             row.style.transition = 'transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)';
                             row.style.transform = '';
                         });
@@ -229,11 +431,11 @@
 
             if (checkAnimations) {
                 data.forEach(user => {
-                    if(!previousDataMap[user.id]) return;
+                    if (!previousDataMap[user.id]) return;
                     const old = previousDataMap[user.id];
-                    
+
                     if (user.total_score > old.total) totalActive = true;
-                    
+
                     activeCategories.forEach(cat => {
                         const s = user.category_scores ? (user.category_scores[cat] || 0) : 0;
                         const oldS = old.cats[cat] || 0;
@@ -259,7 +461,7 @@
             let rank = 1;
             for (let i = 0; i < data.length; i++) {
                 const user = data[i];
-                if (i > 0 && user.total_score < data[i-1].total_score) rank = i + 1;
+                if (i > 0 && user.total_score < data[i - 1].total_score) rank = i + 1;
 
                 const tr = document.createElement('tr');
                 tr.setAttribute('data-uid', user.id);
@@ -287,7 +489,7 @@
                 // TB Column (Badges)
                 const tbTd = document.createElement('td');
                 tbTd.style.textAlign = 'center';
-                
+
                 if (user.tb_left !== undefined && user.tb_right !== undefined) {
                     tbTd.innerHTML = `
                         <span class="team-badge" style="background-color: #69BE28;">${user.tb_left}</span>
@@ -305,13 +507,13 @@
                     catTd.className = 'cat-col-cell';
                     const s = user.category_scores ? (user.category_scores[cat] || 0) : 0;
                     catTd.textContent = s > 0 ? s : '-';
-                    
+
                     if (checkAnimations && previousDataMap[user.id]) {
                         const oldS = previousDataMap[user.id].cats[cat] || 0;
                         if (s > oldS) {
-                            catTd.classList.add('flash-increase'); 
+                            catTd.classList.add('flash-increase');
                         } else if (s < oldS) {
-                            catTd.classList.add('flash-decrease'); 
+                            catTd.classList.add('flash-decrease');
                         } else if (activeCols.has(cat)) {
                             catTd.classList.add('flash-decrease');
                         }
@@ -323,7 +525,7 @@
                 const scoreTd = document.createElement('td');
                 scoreTd.className = 'score-cell';
                 scoreTd.textContent = user.total_score;
-                
+
                 if (checkAnimations && previousDataMap[user.id]) {
                     const oldTotal = previousDataMap[user.id].total;
                     if (user.total_score > oldTotal) {
@@ -334,7 +536,7 @@
                         scoreTd.classList.add('flash-decrease');
                     }
                 }
-                
+
                 tr.appendChild(scoreTd);
                 tbody.appendChild(tr);
 
@@ -348,4 +550,5 @@
         setInterval(loadLeaderboard, 5000);
     </script>
 </body>
+
 </html>

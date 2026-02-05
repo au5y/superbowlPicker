@@ -278,7 +278,7 @@
                 formData.append(btn.name, btn.value);
             }
 
-            fetch(form.action, {
+            fetch(form.getAttribute('action'), {
                 method: 'POST',
                 body: formData
             })

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,43 +10,133 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
     <style>
-        .profile-header { background: var(--card-bg); padding: 30px 20px; border-radius: 8px; margin-bottom: 20px; text-align: center; box-shadow: 0 2px 4px var(--shadow-color); border-top: 5px solid var(--accent-color); position: relative; overflow: hidden; }
-        .locked-overlay { padding: 50px; text-align: center; background: var(--locked-bg); border-radius: 8px; color: var(--subtext-color); }
-        .pick-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--card-bg); margin-bottom: 10px; border-radius: 6px; flex-wrap: wrap; gap: 10px; box-shadow: 0 1px 3px var(--shadow-color); border: 1px solid var(--border-color); }
-        
-        .pick-correct { border-left: 5px solid #28a745; background: rgba(40, 167, 69, 0.1); }
-        .pick-wrong { border-left: 5px solid #dc3545; background: rgba(220, 53, 69, 0.1); }
-        .pick-pending { border-left: 5px solid var(--border-color); }
-        
-        .pick-result { font-weight: bold; color: var(--text-color); }
-        .badge-correct { color: #28a745; }
-        .badge-wrong { color: #dc3545; }
+        .profile-header {
+            background: var(--card-bg);
+            padding: 30px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px var(--shadow-color);
+            border-top: 5px solid var(--accent-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .locked-overlay {
+            padding: 50px;
+            text-align: center;
+            background: var(--locked-bg);
+            border-radius: 8px;
+            color: var(--subtext-color);
+        }
+
+        .pick-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: var(--card-bg);
+            margin-bottom: 10px;
+            border-radius: 6px;
+            flex-wrap: wrap;
+            gap: 10px;
+            box-shadow: 0 1px 3px var(--shadow-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .pick-correct {
+            border-left: 5px solid #28a745;
+            background: rgba(40, 167, 69, 0.1);
+        }
+
+        .pick-wrong {
+            border-left: 5px solid #dc3545;
+            background: rgba(220, 53, 69, 0.1);
+        }
+
+        .pick-pending {
+            border-left: 5px solid var(--border-color);
+        }
+
+        .pick-result {
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .badge-correct {
+            color: #28a745;
+        }
+
+        .badge-wrong {
+            color: #dc3545;
+        }
 
         /* Avatar Styling */
         .big-avatar {
-            width: 100px; height: 100px; margin: 0 auto 15px auto;
-            border-radius: 50%; border: 4px solid var(--border-color);
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 15px auto;
+            border-radius: 50%;
+            border: 4px solid var(--border-color);
             background: var(--input-bg);
-            display: flex; align-items: center; justify-content: center;
-            overflow: hidden; font-size: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            font-size: 3rem;
             box-shadow: 0 4px 10px var(--shadow-color);
             transition: border-color 0.3s ease;
         }
-        .big-avatar img { width: 100%; height: 100%; object-fit: contain; padding: 10%; box-sizing: border-box; }
+
+        .big-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 10%;
+            box-sizing: border-box;
+        }
 
         /* Icon Grid */
-        .icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(45px, 1fr)); gap: 12px; margin-top: 5px; }
-        .icon-option { cursor: pointer; position: relative; }
-        .icon-option input { position: absolute; opacity: 0; width: 0; height: 0; }
-        .icon-display { 
-            display: flex; align-items: center; justify-content: center;
-            width: 45px; height: 45px; border: 2px solid var(--border-color); 
-            border-radius: 50%; background: var(--input-bg); transition: all 0.2s;
-            font-size: 1.5rem; overflow: hidden;
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
+            gap: 12px;
+            margin-top: 5px;
         }
-        .icon-display img { width: 100%; height: 100%; object-fit: cover; }
-        
-        .icon-option input:checked + .icon-display {
+
+        .icon-option {
+            cursor: pointer;
+            position: relative;
+        }
+
+        .icon-option input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .icon-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 45px;
+            height: 45px;
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            background: var(--input-bg);
+            transition: all 0.2s;
+            font-size: 1.5rem;
+            overflow: hidden;
+        }
+
+        .icon-display img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .icon-option input:checked+.icon-display {
             border-color: var(--accent-color);
             transform: scale(1.15);
             box-shadow: 0 0 8px var(--shadow-color);
@@ -53,16 +144,35 @@
         }
 
         /* Color Swatches */
-        .color-grid { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px; }
+        .color-grid {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 5px;
+        }
+
         .color-swatch {
-            width: 35px; height: 35px; border-radius: 50%; cursor: pointer;
-            border: 2px solid transparent; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
             transition: transform 0.2s;
         }
-        .color-swatch:hover { transform: scale(1.1); }
-        .color-swatch.active { border-color: var(--text-color); transform: scale(1.1); box-shadow: 0 0 5px var(--shadow-color); }
+
+        .color-swatch:hover {
+            transform: scale(1.1);
+        }
+
+        .color-swatch.active {
+            border-color: var(--text-color);
+            transform: scale(1.1);
+            box-shadow: 0 0 5px var(--shadow-color);
+        }
     </style>
 </head>
+
 <body>
     <script>
         const savedTheme = localStorage.getItem('theme');
@@ -72,158 +182,187 @@
     {{template "drawer" .}}
 
     <div style="max-width: 800px; margin: 0 auto; padding-top: 60px;">
-        
+
         {{if not .TargetUser}}
-            <div class="locked-overlay">
-                <h2>🙈 Picks Hidden</h2>
-                <p>You cannot see other players' picks until the game is LOCKED.</p>
-                <div style="margin-top: 20px;">
-                    <a href="/leaderboard" style="color: var(--accent-color); font-weight: bold;">← Back to Leaderboard</a>
-                </div>
+        <div class="locked-overlay">
+            <h2>🙈 Picks Hidden</h2>
+            <p>You cannot see other players' picks until the game is LOCKED.</p>
+            <div style="margin-top: 20px;">
+                <a href="/leaderboard" style="color: var(--accent-color); font-weight: bold;">← Back to Leaderboard</a>
             </div>
+        </div>
         {{else}}
-            <div class="profile-header" id="profile-card" style="border-top-color: {{.TargetUser.ColorHex}};">
-                
-                <div class="big-avatar" id="avatar-preview" style="border-color: {{.TargetUser.ColorHex}};">
-                    {{if gt (len .TargetUser.Icon) 15}}
-                        <img src="{{.TargetUser.Icon}}">
-                    {{else}}
-                        {{.TargetUser.Icon}}
-                    {{end}}
-                </div>
-                
-                <h2 id="username-display" style="margin: 5px 0; font-size: 2rem; color: {{.TargetUser.ColorHex}};">{{.TargetUser.Username}}</h2>
-                <div style="font-size: 1.5rem; font-weight: bold; color: var(--subtext-color);">{{.TargetUser.TotalScore}} Pts</div>
-                
-                <div style="margin-top: 10px; color: var(--subtext-color); font-size: 0.9rem;">
-                    Playing in: 
-                    <strong>
-                        {{if eq .TargetUser.RoomCode ""}}Global Only{{else}}
-                            {{$aliases := .RoomAliases}}
-                            {{range $i, $code := split .TargetUser.RoomCode ","}}
-                                {{if gt $i 0}}, {{end}}
-                                {{roomName $code $aliases}}
-                            {{end}}
-                        {{end}}
-                    </strong>
-                </div>
+        <div class="profile-header" id="profile-card" style="border-top-color: {{.TargetUser.ColorHex}};">
+
+            <div class="big-avatar" id="avatar-preview" style="border-color: {{.TargetUser.ColorHex}};">
+                {{if gt (len .TargetUser.Icon) 15}}
+                <img src="{{.TargetUser.Icon}}">
+                {{else}}
+                {{.TargetUser.Icon}}
+                {{end}}
             </div>
 
-            {{if or (eq .User.ID .TargetUser.ID) .User.IsAdmin}}            <div style="margin-bottom: 20px; text-align: center;">
-                <button onclick="toggleEdit()" style="background: var(--card-bg); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 20px; cursor: pointer; color: var(--text-color); font-weight: bold; box-shadow: 0 1px 3px var(--shadow-color);">
-                    ✎ Edit Profile
-                </button>
-                
-                <div id="edit-form-container" style="display: none; margin-top: 15px; background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); text-align: left;">
-                    <form action="/user/update" method="POST" style="display: grid; gap: 20px;">
-                        
-                        <div>
-                            <label style="display:block; font-size:0.85rem; font-weight:bold; color:var(--subtext-color); margin-bottom:8px; text-transform:uppercase;">Select Avatar</label>
-                            
-                            <div class="icon-grid">
-                                {{range $team := split "ne,sea" ","}}
-                                <label class="icon-option">
-                                    <input type="radio" name="icon" value="/static/assets/{{$team}}.png" {{if eq $.User.Icon (printf "/static/assets/%s.png" $team)}}checked{{end}}>
-                                    <div class="icon-display">
-                                        <img src="/static/assets/{{$team}}.png" alt="{{$team}}">
-                                    </div>
-                                </label>
-                                {{end}}
+            <h2 id="username-display" style="margin: 5px 0; font-size: 2rem; color: {{.TargetUser.ColorHex}};">
+                {{.TargetUser.Username}}</h2>
+            <div style="font-size: 1.5rem; font-weight: bold; color: var(--subtext-color);">{{.TargetUser.TotalScore}}
+                Pts</div>
 
-                                {{range $i, $emoji := split "🏈,🍺,🍕,🤡,👑,🚀,💎,🏆,🇺🇸" ","}}
-                                <label class="icon-option">
-                                    <input type="radio" name="icon" value="{{$emoji}}" {{if eq $.User.Icon $emoji}}checked{{end}}>
-                                    <div class="icon-display">{{$emoji}}</div>
-                                </label>
-                                {{end}}
-                            </div>
+            <div style="margin-top: 10px; color: var(--subtext-color); font-size: 0.9rem;">
+                Playing in:
+                <strong>
+                    {{if eq .TargetUser.RoomCode ""}}Global Only{{else}}
+                    {{$aliases := .RoomAliases}}
+                    {{range $i, $code := split .TargetUser.RoomCode ","}}
+                    {{if gt $i 0}}, {{end}}
+                    {{roomName $code $aliases}}
+                    {{end}}
+                    {{end}}
+                </strong>
+            </div>
+        </div>
 
-                            <div style="margin-top: 10px; font-size:0.75rem; color:var(--subtext-color); font-weight:bold;">ALL NFL TEAMS</div>
-                            <div class="icon-grid">
-                                {{range $team := split "ari,atl,bal,buf,car,chi,cin,cle,dal,den,det,gb,hou,ind,jax,kc,lv,lac,lar,mia,min,no,nyg,nyj,phi,pit,sf,tb,ten,was" ","}}
-                                <label class="icon-option">
-                                    <input type="radio" name="icon" value="/static/assets/{{$team}}.png" {{if eq $.User.Icon (printf "/static/assets/%s.png" $team)}}checked{{end}}>
-                                    <div class="icon-display">
-                                        <img src="/static/assets/{{$team}}.png" alt="{{$team}}">
-                                    </div>
-                                </label>
-                                {{end}}
-                            </div>
+        {{if or (eq .User.ID .TargetUser.ID) .User.IsAdmin}} <div style="margin-bottom: 20px; text-align: center;">
+            <button onclick="toggleEdit()"
+                style="background: var(--card-bg); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 20px; cursor: pointer; color: var(--text-color); font-weight: bold; box-shadow: 0 1px 3px var(--shadow-color);">
+                ✎ Edit Profile
+            </button>
+
+            <div id="edit-form-container"
+                style="display: none; margin-top: 15px; background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); text-align: left;">
+                <form action="/user/update" method="POST" style="display: grid; gap: 20px;">
+
+                    <div>
+                        <label
+                            style="display:block; font-size:0.85rem; font-weight:bold; color:var(--subtext-color); margin-bottom:8px; text-transform:uppercase;">Select
+                            Avatar</label>
+
+                        <div class="icon-grid">
+                            {{range $team := split "ne,sea" ","}}
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="/static/assets/{{$team}}.png" {{if eq $.User.Icon
+                                    (printf "/static/assets/%s.png" $team)}}checked{{end}}>
+                                <div class="icon-display">
+                                    <img src="/static/assets/{{$team}}.png" alt="{{$team}}">
+                                </div>
+                            </label>
+                            {{end}}
+
+                            {{range $i, $emoji := split "🏈,🍺,🍕,🤡,👑,🚀,💎,🏆,🇺🇸" ","}}
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="{{$emoji}}" {{if eq $.User.Icon
+                                    $emoji}}checked{{end}}>
+                                <div class="icon-display">{{$emoji}}</div>
+                            </label>
+                            {{end}}
                         </div>
 
-                        <div>
-                            <label style="display:block; font-size:0.85rem; font-weight:bold; color:var(--subtext-color); margin-bottom:8px; text-transform:uppercase;">Profile Color</label>
-                            <div class="color-grid">
-                                {{range $c := split "#D32F2F,#C2185B,#7B1FA2,#512DA8,#303F9F,#1976D2,#00796B,#388E3C,#F57C00,#E64A19,#5D4037,#455A64" ","}}
-                                <div class="color-swatch" style="background-color: {{$c}};" onclick="selectColor('{{$c}}', this)"></div>
-                                {{end}}
-                                <label class="color-swatch" style="background: var(--input-bg); border: 1px solid var(--border-color); display:flex; align-items:center; justify-content:center; color: var(--text-color);">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M2 22h20"></path>
-                                        <path d="M21 2.05c-1.6 0-3.1.6-4.25 1.75l-9.9 9.9c-.2.2-.3.5-.3.8v3.5h3.5c.3 0 .6-.1.8-.3l9.9-9.9c2.35-2.35 2.35-6.15 0-8.5-1.15-1.15-2.65-1.75-4.25-1.75z"></path>
-                                        <path d="M15 6l3 3"></path>
-                                    </svg>
-                                    <input type="color" id="native-color-picker" name="color" value="{{.TargetUser.ColorHex}}" style="opacity:0; width:0; height:0; position:absolute;" onchange="selectColor(this.value, this.parentElement)">
-                                </label>
-                            </div>
-                            <input type="hidden" id="final-color-input" name="final_color" value="{{.User.ColorHex}}">
+                        <div style="margin-top: 10px; font-size:0.75rem; color:var(--subtext-color); font-weight:bold;">
+                            ALL NFL TEAMS</div>
+                        <div class="icon-grid">
+                            {{range $team := split
+                            "ari,atl,bal,buf,car,chi,cin,cle,dal,den,det,gb,hou,ind,jax,kc,lv,lac,lar,mia,min,no,nyg,nyj,phi,pit,sf,tb,ten,was"
+                            ","}}
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="/static/assets/{{$team}}.png" {{if eq $.User.Icon
+                                    (printf "/static/assets/%s.png" $team)}}checked{{end}}>
+                                <div class="icon-display">
+                                    <img src="/static/assets/{{$team}}.png" alt="{{$team}}">
+                                </div>
+                            </label>
+                            {{end}}
                         </div>
+                    </div>
 
-                        <div>
-                            <label style="display:block; font-size:0.85rem; font-weight:bold; color:var(--subtext-color); margin-bottom:8px; text-transform:uppercase;">Username</label>
-                            <input type="text" name="username" value="{{.User.Username}}" maxlength="20" style="width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color); border-radius: 4px;">
+                    <div>
+                        <label
+                            style="display:block; font-size:0.85rem; font-weight:bold; color:var(--subtext-color); margin-bottom:8px; text-transform:uppercase;">Profile
+                            Color</label>
+                        <div class="color-grid">
+                            {{range $c := split
+                            "#D32F2F,#C2185B,#7B1FA2,#512DA8,#303F9F,#1976D2,#00796B,#388E3C,#F57C00,#E64A19,#5D4037,#455A64"
+                            ","}}
+                            <div class="color-swatch" style="background-color: {{$c}};"
+                                onclick="selectColor('{{$c}}', this)"></div>
+                            {{end}}
+                            <label class="color-swatch"
+                                style="background: var(--input-bg); border: 1px solid var(--border-color); display:flex; align-items:center; justify-content:center; color: var(--text-color);">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M2 22h20"></path>
+                                    <path
+                                        d="M21 2.05c-1.6 0-3.1.6-4.25 1.75l-9.9 9.9c-.2.2-.3.5-.3.8v3.5h3.5c.3 0 .6-.1.8-.3l9.9-9.9c2.35-2.35 2.35-6.15 0-8.5-1.15-1.15-2.65-1.75-4.25-1.75z">
+                                    </path>
+                                    <path d="M15 6l3 3"></path>
+                                </svg>
+                                <input type="color" id="native-color-picker" name="color"
+                                    value="{{.TargetUser.ColorHex}}"
+                                    style="opacity:0; width:0; height:0; position:absolute;"
+                                    onchange="selectColor(this.value, this.parentElement)">
+                            </label>
                         </div>
+                        <input type="hidden" id="final-color-input" name="final_color" value="{{.User.ColorHex}}">
+                    </div>
 
-                        <div>
-                            <label style="display:block; font-size:0.85rem; font-weight:bold; color:var(--subtext-color); margin-bottom:8px; text-transform:uppercase;">Group Codes</label>
-                            <input type="text" name="room_codes" value="{{.User.RoomCode}}" placeholder="GROUP CODE" style="text-transform: uppercase; width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color); border-radius: 4px;">
-                        </div>
+                    <div>
+                        <label
+                            style="display:block; font-size:0.85rem; font-weight:bold; color:var(--subtext-color); margin-bottom:8px; text-transform:uppercase;">Username</label>
+                        <input type="text" name="username" value="{{.User.Username}}" maxlength="20"
+                            style="width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color); border-radius: 4px;">
+                    </div>
 
-                        <button type="submit" style="background: var(--accent-color); color: white; padding: 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;">Save Changes</button>
-                    </form>
+                    <div>
+                        <label
+                            style="display:block; font-size:0.85rem; font-weight:bold; color:var(--subtext-color); margin-bottom:8px; text-transform:uppercase;">Group
+                            Codes</label>
+                        <input type="text" name="room_codes" value="{{.User.RoomCode}}" placeholder="GROUP CODE"
+                            style="text-transform: uppercase; width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color); border-radius: 4px;">
+                    </div>
+
+                    <button type="submit"
+                        style="background: var(--accent-color); color: white; padding: 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;">Save
+                        Changes</button>
+                </form>
+            </div>
+        </div>
+        {{end}}
+
+        <div>
+            {{range .Questions}}
+            <div class="pick-row 
+                    {{if .UserPrediction}}
+                        {{if eq .Status "RESOLVED"}}{{if .UserPrediction.IsCorrect}}pick-correct{{else}}pick-wrong{{end}}{{else}}pick-pending{{end}}{{end}}">
+
+                <div style="flex: 1;">
+                    <div style="font-size: 0.9rem; color: var(--subtext-color);">{{.Category}}</div>
+                    <strong>{{.Text}}</strong>
+                </div>
+
+                <div class="pick-result">
+                    {{if .UserPrediction}}
+                    {{if eq .Type "select"}}
+                    {{$selID := .UserPrediction.SelectedOptionID}}
+                    {{range .Options}}
+                    {{if eq (printf "%d" .ID) (printf "%d" $selID)}}{{.Text}}{{end}}
+                    {{end}}
+                    {{else}}
+                    {{.UserPrediction.TextInput}}
+                    {{end}}
+
+                    {{if eq .Status "RESOLVED"}}
+                    {{if .UserPrediction.IsCorrect}}
+                    <span class="badge-correct">✔</span>
+                    {{else}}
+                    <span class="badge-wrong">✘</span>
+                    {{end}}
+                    {{end}}
+                    {{else}}
+                    <span style="color: var(--subtext-color);">No Pick</span>
+                    {{end}}
                 </div>
             </div>
             {{end}}
-
-            <div>
-                {{range .Questions}}
-                <div class="pick-row 
-                    {{if .UserPrediction}}
-                        {{if eq .Status "RESOLVED"}}
-                            {{if .UserPrediction.IsCorrect}}pick-correct{{else}}pick-wrong{{end}}
-                        {{else}}pick-pending{{end}}
-                    {{end}}">
-                    
-                    <div style="flex: 1;">
-                        <div style="font-size: 0.9rem; color: var(--subtext-color);">{{.Category}}</div>
-                        <strong>{{.Text}}</strong>
-                    </div>
-                    
-                    <div class="pick-result">
-                        {{if .UserPrediction}}
-                            {{if eq .Type "select"}}
-                                {{$selID := .UserPrediction.SelectedOptionID}}
-                                {{range .Options}}
-                                    {{if eq (printf "%d" .ID) (printf "%d" $selID)}}{{.Text}}{{end}}
-                                {{end}}
-                            {{else}}
-                                {{.UserPrediction.TextInput}}
-                            {{end}}
-
-                            {{if eq .Status "RESOLVED"}}
-                                {{if .UserPrediction.IsCorrect}}
-                                    <span class="badge-correct">✔</span>
-                                {{else}}
-                                    <span class="badge-wrong">✘</span>
-                                {{end}}
-                            {{end}}
-                        {{else}}
-                            <span style="color: var(--subtext-color);">No Pick</span>
-                        {{end}}
-                    </div>
-                </div>
-                {{end}}
-            </div>
+        </div>
         {{end}}
     </div>
 
@@ -241,44 +380,45 @@
             document.getElementById('final-color-input').value = hex;
             document.getElementById('native-color-picker').value = hex;
             document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
-            if(el.classList.contains('color-swatch')) {
+            if (el.classList.contains('color-swatch')) {
                 el.classList.add('active');
             }
 
-            if(headerCard) headerCard.style.borderTopColor = hex;
-            if(headerUsername) headerUsername.style.color = hex;
-            if(avatarPreview) avatarPreview.style.borderColor = hex;
+            if (headerCard) headerCard.style.borderTopColor = hex;
+            if (headerUsername) headerUsername.style.color = hex;
+            if (avatarPreview) avatarPreview.style.borderColor = hex;
         }
-        
+
         const iconInputs = document.querySelectorAll('input[name="icon"]');
         iconInputs.forEach(input => {
-            input.addEventListener('change', function() {
+            input.addEventListener('change', function () {
                 const val = this.value;
-                if(avatarPreview) {
+                if (avatarPreview) {
                     if (val.indexOf('/') !== -1 || val.indexOf('.') !== -1) {
-                        // It's an image path
+                        // Image Path
                         avatarPreview.innerHTML = `<img src="${val}">`;
                     } else {
-                        // It's an emoji/text
+                        // Emoji or Text
                         avatarPreview.innerHTML = val;
                     }
                 }
             });
         });
 
-        // Initialize active swatch state
+        // Set active color
         const initColor = "{{.User.ColorHex}}";
         document.querySelectorAll('.color-swatch').forEach(s => {
-            if(s.style.backgroundColor && rgbToHex(s.style.backgroundColor) === initColor.toLowerCase()) {
+            if (s.style.backgroundColor && rgbToHex(s.style.backgroundColor) === initColor.toLowerCase()) {
                 s.classList.add('active');
             }
         });
-        
+
         function rgbToHex(col) {
-            if(col.charAt(0)=='#') return col;
+            if (col.charAt(0) == '#') return col;
             var rgb = col.match(/\d+/g);
             return '#' + ((1 << 24) + (parseInt(rgb[0]) << 16) + (parseInt(rgb[1]) << 8) + parseInt(rgb[2])).toString(16).slice(1);
         }
     </script>
 </body>
+
 </html>

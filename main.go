@@ -548,7 +548,7 @@ func handleLeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// 3. Fetch Users (Same as before)
+	// 3. Fetch Users
 	query := `SELECT id, username, total_score, room_code, icon, color_hex FROM users`
 	var args []interface{}
 	if scope != "global" && room != "" {
@@ -607,7 +607,7 @@ func handleLeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 				left := picks["scoreboard-left"]
 				right := picks["scoreboard-right"]
 
-				// NEW: Assign specific scores
+				// Assign specific scores
 				entry.TBLeft = left
 				entry.TBRight = right
 
@@ -616,7 +616,7 @@ func handleLeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// Sorting Logic (Same as before)
+		// Sorting Logic
 		sort.Slice(entries, func(i, j int) bool {
 			u1 := entries[i]
 			u2 := entries[j]
@@ -643,7 +643,7 @@ func handleLeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	// 5. Populate Actual Category Scores (Same as before)
+	// 5. Populate Actual Category Scores
 	catQuery := `
         SELECT p.user_id, q.category, COUNT(*) 
         FROM predictions p 
@@ -666,7 +666,7 @@ func handleLeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 			cRows.Scan(&uID, &cat, &score)
 			if entry, ok := entryMap[uID]; ok {
 				// "Tie Breaker" cat is already excluded from the map keys in Step 1,
-				// so this just safely skips it if it comes back from DB
+				// Tie Breaker cat is already excluded from the map keys, so strictly skip safely
 				if _, exists := entry.CategoryScores[cat]; exists {
 					entry.CategoryScores[cat] = score
 				}
@@ -755,7 +755,7 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleAdmin(w http.ResponseWriter, r *http.Request) {
-	currentUser := getUser(r) // Should be checked by middleware but good for safety
+	currentUser := getUser(r)
 	var questions []QuestionData
 	rows, _ := db.Query("SELECT id, text, category, status, type, image_url, correct_option_id, correct_text_input FROM questions ORDER BY id ASC")
 	defer rows.Close()
@@ -827,7 +827,17 @@ func handleResolve(w http.ResponseWriter, r *http.Request) {
 		}
 		db.Exec("UPDATE questions SET status='RESOLVED', correct_option_id=?, correct_text_input=? WHERE id=?", optID, txtVal, req.QuestionID)
 	}
-	db.Exec(`UPDATE users SET total_score = (SELECT COUNT(*) FROM predictions p JOIN questions q ON p.question_id = q.id WHERE p.user_id = users.id AND q.status = 'RESOLVED' AND p.selected_option_id = q.correct_option_id)`)
+	db.Exec(`UPDATE users SET total_score = (
+		SELECT COUNT(*) FROM predictions p 
+		JOIN questions q ON p.question_id = q.id 
+		WHERE p.user_id = users.id 
+		  AND q.status = 'RESOLVED' 
+		  AND (
+			(COALESCE(q.type, 'select') = 'select' AND p.selected_option_id = q.correct_option_id)
+			OR
+			(COALESCE(q.type, 'select') != 'select' AND p.text_input = q.correct_text_input)
+		  )
+	)`)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
 }

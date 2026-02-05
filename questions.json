@@ -178,14 +178,14 @@
     "text": "Seahawks",
     "category": "Tie Breaker",
     "type": "scoreboard-left",
-    "image_url": "https://a.espncdn.com/i/teamlogos/nfl/500/sea.png",
+    "image_url": "/static/assets/sea.png",
     "options": []
   },
   {
     "text": "Patriots",
     "category": "Tie Breaker",
     "type": "scoreboard-right",
-    "image_url": "https://a.espncdn.com/i/teamlogos/nfl/500/ne.png",
+    "image_url": "/static/assets/ne.png",
     "options": []
   }
 ]
