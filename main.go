@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"io"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"regexp"
@@ -14,7 +15,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"math/rand"
 )
 
 type PageData struct {
@@ -98,26 +98,26 @@ var AllowedRooms = map[string]string{
 }
 
 var (
-    availIcons = []string{
-        // NFL Teams
-        "/static/assets/ne.png", "/static/assets/sea.png", "/static/assets/ari.png",
-        "/static/assets/atl.png", "/static/assets/bal.png", "/static/assets/buf.png",
-        "/static/assets/car.png", "/static/assets/chi.png", "/static/assets/cin.png",
-        "/static/assets/cle.png", "/static/assets/dal.png", "/static/assets/den.png",
-        "/static/assets/det.png", "/static/assets/gb.png", "/static/assets/hou.png",
-        "/static/assets/ind.png", "/static/assets/jax.png", "/static/assets/kc.png",
-        "/static/assets/lv.png", "/static/assets/lac.png", "/static/assets/lar.png",
-        "/static/assets/mia.png", "/static/assets/min.png", "/static/assets/no.png",
-        "/static/assets/nyg.png", "/static/assets/nyj.png", "/static/assets/phi.png",
-        "/static/assets/pit.png", "/static/assets/sf.png", "/static/assets/tb.png",
-        "/static/assets/ten.png", "/static/assets/was.png",
-    }
+	availIcons = []string{
+		// NFL Teams
+		"/static/assets/ne.png", "/static/assets/sea.png", "/static/assets/ari.png",
+		"/static/assets/atl.png", "/static/assets/bal.png", "/static/assets/buf.png",
+		"/static/assets/car.png", "/static/assets/chi.png", "/static/assets/cin.png",
+		"/static/assets/cle.png", "/static/assets/dal.png", "/static/assets/den.png",
+		"/static/assets/det.png", "/static/assets/gb.png", "/static/assets/hou.png",
+		"/static/assets/ind.png", "/static/assets/jax.png", "/static/assets/kc.png",
+		"/static/assets/lv.png", "/static/assets/lac.png", "/static/assets/lar.png",
+		"/static/assets/mia.png", "/static/assets/min.png", "/static/assets/no.png",
+		"/static/assets/nyg.png", "/static/assets/nyj.png", "/static/assets/phi.png",
+		"/static/assets/pit.png", "/static/assets/sf.png", "/static/assets/tb.png",
+		"/static/assets/ten.png", "/static/assets/was.png",
+	}
 	availEmojis = []string{
-		"🏈","🍺","🍕","🤡","👑","🚀","💎","🇺🇸","🍆","🍑","💦","🥳","💩","🧠","🌉",
+		"🏈", "🍺", "🍕", "🤡", "👑", "🚀", "💎", "🇺🇸", "🍆", "🍑", "💦", "🥳", "💩", "🧠", "🌉",
 	}
 	availColors = []string{
-        "#D32F2F","#C2185B","#7B1FA2","#512DA8","#303F9F","#1976D2","#00796B","#388E3C","#F57C00","#E64A19","#5D4037","#455A64",
-    }
+		"#D32F2F", "#C2185B", "#7B1FA2", "#512DA8", "#303F9F", "#1976D2", "#00796B", "#388E3C", "#F57C00", "#E64A19", "#5D4037", "#455A64",
+	}
 )
 
 var funcMap = template.FuncMap{
@@ -187,31 +187,31 @@ func (w *statusWriter) WriteHeader(status int) {
 }
 
 func getRandomAssets() (string, string) {
-    icon := availEmojis[rand.Intn(len(availEmojis))]
-    color := availColors[rand.Intn(len(availColors))]
-    return icon, color
+	icon := availEmojis[rand.Intn(len(availEmojis))]
+	color := availColors[rand.Intn(len(availColors))]
+	return icon, color
 }
 
 func backfillDefaults() {
-    rows, err := db.Query("SELECT id FROM users WHERE icon = '/static/assets/helmet.svg' OR color_hex = '#002244'")
-    if err != nil {
-        log.Println("Backfill query error:", err)
-        return
-    }
-    defer rows.Close()
+	rows, err := db.Query("SELECT id FROM users WHERE icon = '/static/assets/helmet.svg' OR color_hex = '#002244'")
+	if err != nil {
+		log.Println("Backfill query error:", err)
+		return
+	}
+	defer rows.Close()
 
-    var ids []int
-    for rows.Next() {
-        var id int
-        rows.Scan(&id)
-        ids = append(ids, id)
-    }
+	var ids []int
+	for rows.Next() {
+		var id int
+		rows.Scan(&id)
+		ids = append(ids, id)
+	}
 
-    for _, id := range ids {
-        i, c := getRandomAssets()
-        db.Exec("UPDATE users SET icon = ?, color_hex = ? WHERE id = ?", i, c, id)
-        log.Printf("Assigned random assets to User ID %d", id)
-    }
+	for _, id := range ids {
+		i, c := getRandomAssets()
+		db.Exec("UPDATE users SET icon = ?, color_hex = ? WHERE id = ?", i, c, id)
+		log.Printf("Assigned random assets to User ID %d", id)
+	}
 }
 
 func main() {
@@ -224,7 +224,7 @@ func main() {
 	defer db.Close()
 
 	rand.Seed(time.Now().UnixNano())
-    backfillDefaults()
+	backfillDefaults()
 
 	if len(os.Args) > 1 {
 		cmd := os.Args[1]
@@ -384,7 +384,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 		idx, exists := groupMap[q.Category]
 		if !exists {
 			slug := strings.ReplaceAll(strings.ToLower(q.Category), " ", "-")
-			
+
 			displayName := q.Category
 			if displayName == "Tie Breaker" {
 				displayName = "Final Score Prediction (Tie Breaker)"
@@ -462,7 +462,7 @@ func handleUserProfile(w http.ResponseWriter, r *http.Request) {
 		var imgURL sql.NullString
 		var correctText sql.NullString
 		rows.Scan(&q.ID, &q.Text, &q.Category, &q.Status, &q.Type, &imgURL, &cID, &correctText)
-		
+
 		if q.Category == "Tie Breaker" {
 			q.Category = "Final Score Prediction (Tie Breaker)"
 		}
@@ -823,7 +823,8 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	pin := r.FormValue("pin")
 	var userID int
 	var pinHash string
-	if err := db.QueryRow("SELECT id, pin_hash FROM users WHERE username = ? COLLATE NOCASE", username).Scan(&userID, &pinHash); err == nil {		if pinHash != "" && pinHash != pin {
+	if err := db.QueryRow("SELECT id, pin_hash FROM users WHERE username = ? COLLATE NOCASE", username).Scan(&userID, &pinHash); err == nil {
+		if pinHash != "" && pinHash != pin {
 			http.Redirect(w, r, "/?error=invalid_pin", 302)
 			return
 		}
@@ -832,11 +833,11 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		icon, color := getRandomAssets()
-        res, _ := db.Exec("INSERT INTO users (username, pin_hash, room_code, icon, color_hex) VALUES (?, ?, ?, ?, ?)", 
-            username, pin, "", icon, color)
-        
-        id, _ := res.LastInsertId()
-        userID = int(id)
+		res, _ := db.Exec("INSERT INTO users (username, pin_hash, room_code, icon, color_hex) VALUES (?, ?, ?, ?, ?)",
+			username, pin, "", icon, color)
+
+		id, _ := res.LastInsertId()
+		userID = int(id)
 	}
 	isSecure := r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
 	http.SetCookie(w, &http.Cookie{Name: "user_id", Value: strconv.Itoa(userID), Expires: time.Now().Add(24 * 72 * time.Hour), Path: "/", HttpOnly: true, Secure: isSecure})
@@ -1068,12 +1069,10 @@ func handleAdminBackup(w http.ResponseWriter, r *http.Request) {
 func handleResults(w http.ResponseWriter, r *http.Request) {
 	user := getUser(r)
 
-
-	
 	// Fetch all questions and their correct answers
 	questionsMap := make(map[int]*QuestionData)
 	var questionOrder []*QuestionData
-	
+
 	// Only fetch necessary fields
 	rows, err := db.Query("SELECT id, text, category, status, type, correct_option_id, correct_text_input FROM questions ORDER BY id ASC")
 	if err != nil {
@@ -1087,10 +1086,14 @@ func handleResults(w http.ResponseWriter, r *http.Request) {
 		var correctOptID sql.NullInt64
 		var correctText sql.NullString
 		rows.Scan(&q.ID, &q.Text, &q.Category, &q.Status, &q.Type, &correctOptID, &correctText)
-		
-		if correctOptID.Valid { q.CorrectOptionID = correctOptID.Int64 }
-		if correctText.Valid { q.CorrectTextInput = correctText.String }
-		
+
+		if correctOptID.Valid {
+			q.CorrectOptionID = correctOptID.Int64
+		}
+		if correctText.Valid {
+			q.CorrectTextInput = correctText.String
+		}
+
 		questionsMap[q.ID] = q
 		questionOrder = append(questionOrder, q)
 	}
@@ -1121,12 +1124,15 @@ func extractQuestions(qs []*QuestionData) []QuestionData {
 }
 
 func handleAdminEditQuestion(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost { http.Error(w, "405", 405); return }
-	
+	if r.Method != http.MethodPost {
+		http.Error(w, "405", 405)
+		return
+	}
+
 	idStr := r.FormValue("id")
 	text := r.FormValue("text")
 	category := r.FormValue("category")
-	
+
 	if idStr == "new" {
 		// Create New
 		db.Exec("INSERT INTO questions (text, category, status, type) VALUES (?, ?, 'OPEN', 'select')", text, category)
@@ -1138,25 +1144,31 @@ func handleAdminEditQuestion(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleAdminDeleteQuestion(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost { http.Error(w, "405", 405); return }
+	if r.Method != http.MethodPost {
+		http.Error(w, "405", 405)
+		return
+	}
 	id := r.FormValue("id")
-	
+
 	// Cleanup dependencies
 	db.Exec("DELETE FROM predictions WHERE question_id = ?", id)
 	db.Exec("DELETE FROM options WHERE question_id = ?", id)
 	db.Exec("DELETE FROM questions WHERE id = ?", id)
-	
+
 	http.Redirect(w, r, "/admin", 302)
 }
 
 func handleAdminEditOption(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost { http.Error(w, "405", 405); return }
-	
+	if r.Method != http.MethodPost {
+		http.Error(w, "405", 405)
+		return
+	}
+
 	qID := r.FormValue("question_id")
 	optID := r.FormValue("id")
 	text := r.FormValue("text")
 	color := r.FormValue("color")
-	
+
 	if optID == "new" {
 		db.Exec("INSERT INTO options (question_id, text, color_hex) VALUES (?, ?, ?)", qID, text, color)
 	} else {
@@ -1166,7 +1178,10 @@ func handleAdminEditOption(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleAdminDeleteOption(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost { http.Error(w, "405", 405); return }
+	if r.Method != http.MethodPost {
+		http.Error(w, "405", 405)
+		return
+	}
 	id := r.FormValue("id")
 	db.Exec("DELETE FROM options WHERE id = ?", id)
 	http.Redirect(w, r, "/admin", 302)
