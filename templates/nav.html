@@ -1,4 +1,16 @@
 {{define "drawer"}}
+<script>
+    (function() {
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'light');
+        }
+    })();
+</script>
+
 <div class="drawer-overlay" id="overlay" onclick="toggleDrawer()"></div>
 
 <button class="fixed-menu-btn" onclick="toggleDrawer()">☰</button>
@@ -42,16 +54,16 @@
     function toggleDrawer() {
         const drawer = document.getElementById('drawer');
         const overlay = document.getElementById('overlay');
-        const menuBtn = document.querySelector('.fixed-menu-btn'); // Select the hamburger button
+        const menuBtn = document.querySelector('.fixed-menu-btn');
 
         if (drawer.classList.contains('open')) {
             drawer.classList.remove('open');
             overlay.classList.remove('open');
-            menuBtn.style.display = 'flex'; // Show button when closed
+            menuBtn.style.display = 'flex';
         } else {
             drawer.classList.add('open');
             overlay.classList.add('open');
-            menuBtn.style.display = 'none'; // Hide button when open
+            menuBtn.style.display = 'none';
         }
     }
 
@@ -60,18 +72,17 @@
         const next = current === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', next);
         localStorage.setItem('theme', next);
-
-        const icon = document.getElementById('theme-icon');
-        if (icon) icon.textContent = next === 'dark' ? '🌙' : '☀️';
+        updateThemeIcon(next);
     }
 
-    // Initialize Icon on Load
-    document.addEventListener("DOMContentLoaded", function() {
-        const savedTheme = localStorage.getItem('theme');
+    function updateThemeIcon(theme) {
         const icon = document.getElementById('theme-icon');
-        if (icon) {
-            icon.textContent = (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) ? '🌙' : '☀️';
-        }
+        if (icon) icon.textContent = theme === 'dark' ? '🌙' : '☀️';
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        updateThemeIcon(currentTheme);
     });
 </script>
 {{end}}

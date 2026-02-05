@@ -69,7 +69,28 @@ input[type=number] { -moz-appearance: textfield; }
 .drawer-nav a:hover, .drawer-nav button:hover { background: var(--hover-bg); }
 .drawer-nav a.active { background: var(--nav-active-bg); color: var(--nav-active-text); font-weight: bold; border-left: 4px solid var(--accent-color); }
 .drawer-nav .section-link { padding-left: 30px; font-size: 0.9rem; color: var(--subtext-color); }
-.fixed-menu-btn { position: fixed; top: 15px; left: 15px; z-index: 1100; background: var(--menu-btn-bg); backdrop-filter: blur(4px); border: 1px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; line-height: 1; padding-bottom: 3px; cursor: pointer; box-shadow: 0 2px 5px var(--shadow-color); color: var(--text-color); }
+.fixed-menu-btn { 
+    position: fixed; 
+    top: 15px; 
+    left: 15px; 
+    z-index: 1100; 
+    background: var(--menu-btn-bg); 
+    backdrop-filter: blur(4px); 
+    border: 1px solid var(--border-color); 
+    border-radius: 50%; 
+    width: 40px; 
+    height: 40px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-size: 1.5rem; 
+    line-height: 1; 
+    padding: 0; 
+    padding-bottom: 4px;
+    cursor: pointer; 
+    box-shadow: 0 2px 5px var(--shadow-color); 
+    color: var(--text-color); 
+}
 
 /* Login */
 .login-container { background: var(--card-bg); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px var(--shadow-color); text-align: center; max-width: 400px; width: 100%; }

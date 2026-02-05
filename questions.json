@@ -175,6 +175,46 @@
     ]
   },
   {
+    "text": "Will the camera show Robert Kraft in his owners box sitting next to a celebrity?",
+    "category": "Broadcast & Fun",
+    "options": [
+      {"text": "💆🏻‍♂️ Yes ", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will Bad Bunny have a special guest appearance?",
+    "category": "Halftime",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will Bad Bunny say ICE during the halftime show?",
+    "category": "Halftime",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will there be a televised gay kiss during the broadcast (coin toss to final whistle)?",
+    "category": "Broadcast & Fun",
+    "options": [
+      {"text": "🏳️‍🌈 Yes", "color": "#28a745"},
+      {"text": "No :(", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will there be live animals on stage (or on the field) during Bad Bunny's performance?",
+    "category": "Halftime",
+    "options": [
+      {"text": "🫏 Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
     "text": "Seahawks",
     "category": "Tie Breaker",
     "type": "scoreboard-left",

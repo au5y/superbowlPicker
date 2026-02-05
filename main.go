@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"math/rand"
 )
 
 type PageData struct {
@@ -96,6 +97,29 @@ var AllowedRooms = map[string]string{
 	"DRAPER":  "Draper",
 }
 
+var (
+    availIcons = []string{
+        // NFL Teams
+        "/static/assets/ne.png", "/static/assets/sea.png", "/static/assets/ari.png",
+        "/static/assets/atl.png", "/static/assets/bal.png", "/static/assets/buf.png",
+        "/static/assets/car.png", "/static/assets/chi.png", "/static/assets/cin.png",
+        "/static/assets/cle.png", "/static/assets/dal.png", "/static/assets/den.png",
+        "/static/assets/det.png", "/static/assets/gb.png", "/static/assets/hou.png",
+        "/static/assets/ind.png", "/static/assets/jax.png", "/static/assets/kc.png",
+        "/static/assets/lv.png", "/static/assets/lac.png", "/static/assets/lar.png",
+        "/static/assets/mia.png", "/static/assets/min.png", "/static/assets/no.png",
+        "/static/assets/nyg.png", "/static/assets/nyj.png", "/static/assets/phi.png",
+        "/static/assets/pit.png", "/static/assets/sf.png", "/static/assets/tb.png",
+        "/static/assets/ten.png", "/static/assets/was.png",
+    }
+	availEmojis = []string{
+		"🏈","🍺","🍕","🤡","👑","🚀","💎","🇺🇸","🍆","🍑","💦","🥳","💩","🧠","🌉",
+	}
+	availColors = []string{
+        "#D32F2F","#C2185B","#7B1FA2","#512DA8","#303F9F","#1976D2","#00796B","#388E3C","#F57C00","#E64A19","#5D4037","#455A64",
+    }
+)
+
 var funcMap = template.FuncMap{
 	"split": func(s string, sep string) []string {
 		if s == "" {
@@ -162,6 +186,34 @@ func (w *statusWriter) WriteHeader(status int) {
 	w.ResponseWriter.WriteHeader(status)
 }
 
+func getRandomAssets() (string, string) {
+    icon := availEmojis[rand.Intn(len(availEmojis))]
+    color := availColors[rand.Intn(len(availColors))]
+    return icon, color
+}
+
+func backfillDefaults() {
+    rows, err := db.Query("SELECT id FROM users WHERE icon = '/static/assets/helmet.svg' OR color_hex = '#002244'")
+    if err != nil {
+        log.Println("Backfill query error:", err)
+        return
+    }
+    defer rows.Close()
+
+    var ids []int
+    for rows.Next() {
+        var id int
+        rows.Scan(&id)
+        ids = append(ids, id)
+    }
+
+    for _, id := range ids {
+        i, c := getRandomAssets()
+        db.Exec("UPDATE users SET icon = ?, color_hex = ? WHERE id = ?", i, c, id)
+        log.Printf("Assigned random assets to User ID %d", id)
+    }
+}
+
 func main() {
 	setupLogging()
 	dbName := os.Getenv("DB_NAME")
@@ -170,6 +222,9 @@ func main() {
 	}
 	InitDB(dbName)
 	defer db.Close()
+
+	rand.Seed(time.Now().UnixNano())
+    backfillDefaults()
 
 	if len(os.Args) > 1 {
 		cmd := os.Args[1]
@@ -321,19 +376,45 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+
 	var grouped []CategoryGroup
 	groupMap := make(map[string]int)
+
 	for _, q := range questionOrder {
 		idx, exists := groupMap[q.Category]
 		if !exists {
 			slug := strings.ReplaceAll(strings.ToLower(q.Category), " ", "-")
-			newGroup := CategoryGroup{Name: q.Category, Anchor: slug, Questions: []QuestionData{*q}}
+			
+			displayName := q.Category
+			if displayName == "Tie Breaker" {
+				displayName = "Final Score Prediction (Tie Breaker)"
+			}
+
+			newGroup := CategoryGroup{Name: displayName, Anchor: slug, Questions: []QuestionData{*q}}
 			grouped = append(grouped, newGroup)
 			groupMap[q.Category] = len(grouped) - 1
 		} else {
 			grouped[idx].Questions = append(grouped[idx].Questions, *q)
 		}
 	}
+
+	var standardGroups []CategoryGroup
+	var tieBreakerGroup *CategoryGroup
+
+	for _, g := range grouped {
+		if g.Name == "Final Score Prediction (Tie Breaker)" {
+			val := g
+			tieBreakerGroup = &val
+		} else {
+			standardGroups = append(standardGroups, g)
+		}
+	}
+
+	if tieBreakerGroup != nil {
+		standardGroups = append(standardGroups, *tieBreakerGroup)
+	}
+	grouped = standardGroups
+
 	render(w, "index.html", PageData{User: user, Categories: grouped, GameStatus: getGameStatus(), RoomAliases: AllowedRooms, ActivePage: "home"})
 }
 
@@ -381,6 +462,11 @@ func handleUserProfile(w http.ResponseWriter, r *http.Request) {
 		var imgURL sql.NullString
 		var correctText sql.NullString
 		rows.Scan(&q.ID, &q.Text, &q.Category, &q.Status, &q.Type, &imgURL, &cID, &correctText)
+		
+		if q.Category == "Tie Breaker" {
+			q.Category = "Final Score Prediction (Tie Breaker)"
+		}
+
 		if cID.Valid {
 			q.CorrectOptionID = cID.Int64
 		}
@@ -737,8 +823,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	pin := r.FormValue("pin")
 	var userID int
 	var pinHash string
-	if err := db.QueryRow("SELECT id, pin_hash FROM users WHERE username = ? COLLATE NOCASE", username).Scan(&userID, &pinHash); err == nil {
-		if pinHash != "" && pinHash != pin {
+	if err := db.QueryRow("SELECT id, pin_hash FROM users WHERE username = ? COLLATE NOCASE", username).Scan(&userID, &pinHash); err == nil {		if pinHash != "" && pinHash != pin {
 			http.Redirect(w, r, "/?error=invalid_pin", 302)
 			return
 		}
@@ -746,9 +831,12 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 			db.Exec("UPDATE users SET pin_hash = ? WHERE id = ?", pin, userID)
 		}
 	} else {
-		res, _ := db.Exec("INSERT INTO users (username, pin_hash, room_code) VALUES (?, ?, ?)", username, pin, "")
-		id, _ := res.LastInsertId()
-		userID = int(id)
+		icon, color := getRandomAssets()
+        res, _ := db.Exec("INSERT INTO users (username, pin_hash, room_code, icon, color_hex) VALUES (?, ?, ?, ?, ?)", 
+            username, pin, "", icon, color)
+        
+        id, _ := res.LastInsertId()
+        userID = int(id)
 	}
 	isSecure := r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
 	http.SetCookie(w, &http.Cookie{Name: "user_id", Value: strconv.Itoa(userID), Expires: time.Now().Add(24 * 72 * time.Hour), Path: "/", HttpOnly: true, Secure: isSecure})
