@@ -1,209 +1,551 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leaderboard</title>
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
-    <link rel="stylesheet" href="/static/style.css">
-    <style>
-        /* Shared Drawer Styles */
-        .drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 900; display: none; }
-        .drawer-overlay.open { display: block; }
-        .drawer { position: fixed; top: 0; left: 0; width: 280px; height: 100%; background: var(--drawer-bg); z-index: 1000; transition: transform 0.3s ease; box-shadow: 2px 0 10px var(--shadow-color); padding-top: 20px; transform: translateX(-100%); }
-        .drawer.open { transform: translateX(0); }
-        .drawer-header { padding: 20px; border-bottom: 1px solid var(--border-color); font-size: 1.2rem; font-weight: bold; color: var(--heading-color); display: flex; justify-content: space-between; align-items: center; }
-        .drawer-nav a, .drawer-nav button.theme-toggle { display: block; padding: 15px 20px; width: 100%; text-align: left; box-sizing: border-box; color: var(--text-color); text-decoration: none; border-bottom: 1px solid var(--hover-bg); background: none; border: none; font-size: 1rem; cursor: pointer; }
-        .drawer-nav a:hover, .drawer-nav button:hover { background: var(--hover-bg); }
-        
-        .fixed-menu-btn { position: fixed; top: 15px; left: 15px; z-index: 1100; background: rgba(255,255,255,0.8); backdrop-filter: blur(4px); border: 1px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; box-shadow: 0 2px 5px var(--shadow-color); color: var(--text-color); }
 
-        /* Leaderboard Specifics */
-        .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 20px; }
-        table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 8px; overflow: hidden; }
-        th { background: var(--hover-bg); padding: 15px; text-align: left; color: var(--heading-color); }
-        td { padding: 15px; border-bottom: 1px solid var(--border-color); color: var(--text-color); }
-        tr:hover { background: var(--hover-bg); cursor: pointer; }
-        .score-cell { font-size: 1.2rem; font-weight: bold; color: var(--accent-color); }
-        .rank-cell { font-weight: bold; color: var(--subtext-color); width: 50px; }
-        .scope-btn { padding: 8px 12px; cursor: pointer; border: none; border-radius: 4px; margin-right: 5px; font-weight: bold; transition: all 0.2s; }
-        .scope-btn.active { background: var(--nav-active-bg); color: var(--nav-active-text); }
-        .scope-btn.inactive { background: var(--hover-bg); color: var(--text-color); font-weight: normal; }
+<head>
+    <title>Leaderboard</title>
+    {{template "head" .}}
+    <style>
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+            margin-top: 10px;
+        }
+
+        .leaderboard-table th {
+            text-align: left;
+            padding: 10px 15px;
+            border-bottom: 2px solid var(--border-color);
+            color: var(--subtext-color);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Row Styling */
+        .leaderboard-table tbody tr {
+            background: var(--card-bg);
+            box-shadow: 0 2px 4px var(--shadow-color);
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.3s;
+            will-change: transform;
+            position: relative;
+        }
+
+        .leaderboard-table td {
+            padding: 12px 15px;
+            vertical-align: middle;
+            border: none;
+        }
+
+        .leaderboard-table td:first-child {
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+        }
+
+        .leaderboard-table td:last-child {
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+
+        /* Rank Column */
+        .rank-col {
+            font-weight: bold;
+            font-size: 1.5rem;
+            color: var(--subtext-color);
+            width: 50px;
+            text-align: center;
+        }
+
+        .rank-1 {
+            color: #FFD700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            font-size: 2.2rem;
+        }
+
+        .rank-2 {
+            color: #C0C0C0;
+            font-size: 2rem;
+        }
+
+        .rank-3 {
+            color: #CD7F32;
+            font-size: 1.8rem;
+        }
+
+        /* User Column */
+        .user-cell {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .lb-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 3px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            font-size: 1.5rem;
+            background: var(--input-bg);
+            flex-shrink: 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .lb-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* User Identity */
+        .lb-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-color);
+            /* Matches theme (White/Black) */
+            letter-spacing: 0.5px;
+        }
+
+        /* Team Badge Style (The "Chip") */
+        .team-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            color: white;
+            /* Always White Text */
+            font-weight: bold;
+            font-size: 1rem;
+            min-width: 30px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Score Columns */
+        .score-cell {
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: var(--text-color);
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .cat-col-cell {
+            text-align: center;
+            font-weight: bold;
+            color: var(--subtext-color);
+            font-size: 1.1rem;
+        }
+
+        .cat-col-header {
+            text-align: center !important;
+            font-size: 0.7rem !important;
+        }
+
+        /* Config & Animations */
+        .config-panel {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .config-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            cursor: pointer;
+            color: var(--text-color);
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+            transform: scale(1.05);
+        }
+
+        @keyframes flashGreen {
+            0% {
+                background-color: rgba(40, 167, 69, 0.8);
+                color: white;
+                transform: scale(1.1);
+                box-shadow: 0 0 15px rgba(40, 167, 69, 0.6);
+            }
+
+            100% {
+                background-color: transparent;
+                color: inherit;
+                transform: scale(1);
+                box-shadow: none;
+            }
+        }
+
+        @keyframes flashRed {
+            0% {
+                background-color: rgba(220, 53, 69, 0.8);
+                color: white;
+                transform: scale(0.95);
+                box-shadow: 0 0 15px rgba(220, 53, 69, 0.6);
+            }
+
+            100% {
+                background-color: transparent;
+                color: inherit;
+                transform: scale(1);
+                box-shadow: none;
+            }
+        }
+
+        .flash-increase {
+            animation: flashGreen 3s ease-out;
+            border-radius: 6px;
+        }
+
+        .flash-decrease {
+            animation: flashRed 3s ease-out;
+            border-radius: 6px;
+        }
+        @media (max-width: 768px) {
+            
+            .cat-col-header, 
+            .cat-col-cell {
+                display: none !important;
+            }
+
+            .leaderboard-table th,
+            .leaderboard-table td {
+                padding: 10px 4px;
+            }
+            
+            .user-cell {
+                gap: 8px;
+            }
+
+            .lb-avatar {
+                width: 32px;
+                height: 32px;
+                font-size: 1rem;
+                border-width: 2px;
+            }
+
+            .lb-name {
+                font-size: 0.9rem;
+                max-width: 110px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                display: block;
+            }
+
+            .rank-col {
+                width: 30px;
+                font-size: 1rem;
+            }
+            .rank-1 { font-size: 1.4rem; }
+            .rank-2 { font-size: 1.3rem; }
+            .rank-3 { font-size: 1.2rem; }
+
+            .score-cell {
+                font-size: 1.1rem;
+            }
+            .team-badge {
+                padding: 2px 6px;
+                font-size: 0.8rem;
+                min-width: 24px;
+                border-radius: 8px;
+            }
+        }
+        @media (max-width: 768px) and (orientation: portrait) {
+            #config-details {
+                display: none !important;
+            }
+        }
     </style>
 </head>
+
 <body>
     <script>
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme) { document.documentElement.setAttribute('data-theme', savedTheme); }
     </script>
 
-    <div class="drawer-overlay" id="overlay" onclick="toggleDrawer()"></div>
-    <button class="fixed-menu-btn" onclick="toggleDrawer()">☰</button>
+    {{template "drawer" .}}
 
-    <div class="drawer" id="drawer">
-        <div class="drawer-header">
-            <span>Menu</span>
-            <button onclick="toggleDrawer()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color: var(--text-color);">&times;</button>
-        </div>
-        <div class="drawer-nav">
-            <a href="/">🏈 My Picks</a>
-            <a href="/leaderboard">🏆 Leaderboard</a>
-            <a href="/user/{{.User.ID}}">👤 My Profile</a>
-            <button class="theme-toggle" onclick="toggleTheme()">🌗 Toggle Dark Mode</button>
-            <hr style="border:0; border-top:1px solid var(--border-color);">
-            <a href="/logout" style="color: #C60C30;">Log Out</a>
-        </div>
-    </div>
+    <div style="max-width: 1000px; margin: 0 auto; padding-top: 60px; padding-bottom: 60px;">
+        <h1 style="text-align: center; margin-bottom: 20px;">🏆 Leaderboard</h1>
 
-    <div style="max-width: 800px; margin: 0 auto; padding-top: 60px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap: wrap; gap: 10px;">
-            <h2 style="margin:0;">🏆 Live Standings</h2>
-            
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <div id="room-controls">
-                    </div>
-            </div>
+        <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+            <button class="filter-btn active" id="btn-global" onclick="setScope('global')">Global</button>
+            {{if ne .User.RoomCode ""}}
+            {{$aliases := .RoomAliases}}
+            {{range split .User.RoomCode ","}}
+            <button class="filter-btn" onclick="setScope('{{.}}')">{{roomName . $aliases}}</button>
+            {{end}}
+            {{end}}
         </div>
 
-        <div class="table-container">
-            <table id="lb-table">
+        <details id="config-details">
+            <summary
+                style="cursor: pointer; color: var(--subtext-color); margin-bottom: 10px; font-weight: bold; text-align: center;">
+                ⚙️ Configure Categories</summary>
+            <div class="config-panel" id="column-toggles"></div>
+        </details>
+
+        <div style="overflow-x: auto;">
+            <table class="leaderboard-table">
                 <thead>
-                    <tr>
-                        <th style="width: 60px;">#</th>
+                    <tr id="table-header">
+                        <th style="width: 50px;">#</th>
                         <th>Player</th>
-                        <th>Tie Breaker</th>
+                        <th style="text-align:center; color:var(--subtext-color); font-size:0.8rem;">SEA - NE</th>
                         <th style="text-align: right;">Score</th>
                     </tr>
                 </thead>
-                <tbody id="lb-body">
-                    <tr><td colspan="4" style="text-align:center;">Loading...</td></tr>
-                </tbody>
+                <tbody id="lb-body"></tbody>
             </table>
         </div>
     </div>
 
     <script>
-        // Go template injection
-        const rawRoomStr = "{{.User.RoomCode}}";
-        const userRooms = rawRoomStr.split(',').filter(r => r.trim() !== "");
-        // Inject Aliases Map
-        const roomAliases = {{.RoomAliases}};
+        let currentScope = "global";
+        let allCategories = new Set();
+        let activeCategories = new Set();
+        let previousDataMap = {};
+        let previousRowPositions = {};
 
-        let currentRoom = userRooms.length > 0 ? userRooms[0] : "MAIN";
-        let isGlobal = false;
-
-        function toggleDrawer() {
-            const drawer = document.getElementById('drawer');
-            const overlay = document.getElementById('overlay');
-            if (drawer.classList.contains('open')) {
-                drawer.classList.remove('open');
-                overlay.classList.remove('open');
-            } else {
-                drawer.classList.add('open');
-                overlay.classList.add('open');
-            }
-        }
-
-        function toggleTheme() {
-            const current = document.documentElement.getAttribute('data-theme');
-            const next = current === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', next);
-            localStorage.setItem('theme', next);
-        }
-
-        function initControls() {
-            const container = document.getElementById('room-controls');
-            container.innerHTML = '';
-
-            // create buttons for each room the user is in
-            userRooms.forEach(room => {
-                const btn = document.createElement('button');
-                btn.className = (room === currentRoom && !isGlobal) ? 'scope-btn active' : 'scope-btn inactive';
-                
-                // USE ALIAS IF AVAILABLE
-                btn.textContent = roomAliases[room] || room;
-                
-                btn.onclick = () => setScope(room, false);
-                container.appendChild(btn);
-            });
-
-            // create global button
-            const globalBtn = document.createElement('button');
-            globalBtn.className = isGlobal ? 'scope-btn active' : 'scope-btn inactive';
-            globalBtn.textContent = 'Global';
-            globalBtn.onclick = () => setScope(null, true);
-            container.appendChild(globalBtn);
-        }
-
-        function setScope(room, global) {
-            isGlobal = global;
-            if (room) currentRoom = room;
-            
-            // Update Title if needed (Optional polish)
-            const titleEl = document.querySelector('h2');
-            if(global) titleEl.textContent = "🏆 Global Standings";
-            else titleEl.textContent = "🏆 " + (roomAliases[currentRoom] || currentRoom);
-
-            initControls(); 
+        function setScope(scope) {
+            currentScope = scope;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            previousRowPositions = {};
+            previousDataMap = {};
             loadLeaderboard();
         }
 
+        function toggleCategory(cat) {
+            if (activeCategories.has(cat)) { activeCategories.delete(cat); }
+            else { activeCategories.add(cat); }
+            renderTable(window.lastData, false);
+        }
+
         function loadLeaderboard() {
-            let url = '/api/leaderboard';
-            
-            if (isGlobal) {
-                url += '?scope=global';
-            } else {
-                url += '?room=' + encodeURIComponent(currentRoom);
-            }
+            const url = currentScope === 'global' ? '/api/leaderboard?scope=global' : '/api/leaderboard?room=' + currentScope;
 
             fetch(url)
-            .then(res => res.json())
-            .then(data => {
-                const tbody = document.getElementById('lb-body');
-                tbody.innerHTML = '';
-                
-                if (!data || data.length === 0) {
-                     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">No players found.</td></tr>';
-                     return;
-                }
+                .then(r => r.json())
+                .then(data => {
+                    window.lastData = data;
 
-                data.forEach((user, index) => {
-                    const tr = document.createElement('tr');
-                    tr.onclick = () => window.location.href = '/user/' + user.id;
-                    
-                    const tdRank = document.createElement('td');
-                    tdRank.className = 'rank-cell';
-                    tdRank.textContent = index + 1;
-                    tr.appendChild(tdRank);
+                    data.forEach(user => {
+                        if (user.category_scores) {
+                            Object.keys(user.category_scores).forEach(c => allCategories.add(c));
+                        }
+                    });
 
-                    const tdPlayer = document.createElement('td');
-                    const strong = document.createElement('strong');
-                    strong.textContent = user.username;
-                    tdPlayer.appendChild(strong);
+                    if (!window.catsInitialized && allCategories.size > 0) {
+                        allCategories.forEach(c => activeCategories.add(c));
+                        window.catsInitialized = true;
+                    }
 
-                    tr.appendChild(tdPlayer);
-
-                    const tdTie = document.createElement('td');
-                    tdTie.style.color = 'var(--subtext-color)';
-                    tdTie.textContent = user.tie_breaker;
-                    tr.appendChild(tdTie);
-
-                    const tdScore = document.createElement('td');
-                    tdScore.className = 'score-cell';
-                    tdScore.style.textAlign = 'right';
-                    tdScore.textContent = user.total_score;
-                    tr.appendChild(tdScore);
-
-                    tbody.appendChild(tr);
+                    renderToggles();
+                    captureRowPositions();
+                    renderTable(data, true);
+                    animateRows();
                 });
+        }
+
+        function renderToggles() {
+            const container = document.getElementById('column-toggles');
+            container.innerHTML = '';
+            Array.from(allCategories).sort().forEach(cat => {
+                const label = document.createElement('label');
+                label.className = 'config-toggle';
+                const box = document.createElement('input');
+                box.type = 'checkbox';
+                box.checked = activeCategories.has(cat);
+                box.onchange = () => toggleCategory(cat);
+                label.appendChild(box);
+                label.appendChild(document.createTextNode(cat));
+                container.appendChild(label);
             });
         }
 
-        // Initialize
-        initControls();
+        function captureRowPositions() {
+            previousRowPositions = {};
+            document.querySelectorAll('#lb-body tr').forEach(row => {
+                const uid = row.getAttribute('data-uid');
+                if (uid) {
+                    previousRowPositions[uid] = row.getBoundingClientRect().top;
+                }
+            });
+        }
+
+        function animateRows() {
+            document.querySelectorAll('#lb-body tr').forEach(row => {
+                const uid = row.getAttribute('data-uid');
+                if (uid && previousRowPositions[uid]) {
+                    const newTop = row.getBoundingClientRect().top;
+                    const oldTop = previousRowPositions[uid];
+                    const delta = oldTop - newTop;
+
+                    if (delta !== 0) {
+                        row.style.transform = `translateY(${delta}px)`;
+                        row.style.transition = 'none';
+
+                        requestAnimationFrame(() => {
+                            void row.offsetHeight;
+                            row.style.transition = 'transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)';
+                            row.style.transform = '';
+                        });
+                    }
+                }
+            });
+        }
+
+        function renderTable(data, checkAnimations) {
+            let activeCols = new Set();
+            let totalActive = false;
+
+            if (checkAnimations) {
+                data.forEach(user => {
+                    if (!previousDataMap[user.id]) return;
+                    const old = previousDataMap[user.id];
+
+                    if (user.total_score > old.total) totalActive = true;
+
+                    activeCategories.forEach(cat => {
+                        const s = user.category_scores ? (user.category_scores[cat] || 0) : 0;
+                        const oldS = old.cats[cat] || 0;
+                        if (s > oldS) activeCols.add(cat);
+                    });
+                });
+            }
+
+            const headerRow = document.getElementById('table-header');
+            headerRow.innerHTML = '<th style="width:50px;">#</th><th>Player</th><th style="text-align:center; color:var(--subtext-color); font-size:0.8rem;">SEA - NE</th><th style="text-align: right;">Score</th>';
+            const sortedCats = Array.from(activeCategories).sort();
+            const scoreHeader = headerRow.lastElementChild;
+            sortedCats.forEach(cat => {
+                const th = document.createElement('th');
+                th.textContent = cat;
+                th.className = 'cat-col-header';
+                headerRow.insertBefore(th, scoreHeader);
+            });
+
+            const tbody = document.getElementById('lb-body');
+            tbody.innerHTML = '';
+
+            let rank = 1;
+            for (let i = 0; i < data.length; i++) {
+                const user = data[i];
+                if (i > 0 && user.total_score < data[i - 1].total_score) rank = i + 1;
+
+                const tr = document.createElement('tr');
+                tr.setAttribute('data-uid', user.id);
+                tr.onclick = () => window.location.href = `/user/${user.id}`;
+                tr.style.cursor = 'pointer';
+
+                // Rank
+                const rankTd = document.createElement('td');
+                rankTd.className = `rank-col rank-${rank}`;
+                rankTd.textContent = rank;
+                tr.appendChild(rankTd);
+
+                // Player
+                const playerTd = document.createElement('td');
+                playerTd.innerHTML = `
+                    <div class="user-cell">
+                        <div class="lb-avatar" style="border-color: ${user.color_hex || '#ccc'}">
+                            ${user.icon && user.icon.length > 15 ? `<img src="${user.icon}">` : user.icon}
+                        </div>
+                        <div class="lb-name">${user.username}</div>
+                    </div>
+                `;
+                tr.appendChild(playerTd);
+
+                // TB Column (Badges)
+                const tbTd = document.createElement('td');
+                tbTd.style.textAlign = 'center';
+
+                if (user.tb_left !== undefined && user.tb_right !== undefined) {
+                    tbTd.innerHTML = `
+                        <span class="team-badge" style="background-color: #69BE28;">${user.tb_left}</span>
+                        <span style="color: var(--subtext-color); margin: 0 4px; font-weight:bold;">-</span>
+                        <span class="team-badge" style="background-color: #002244;">${user.tb_right}</span>
+                    `;
+                } else {
+                    tbTd.innerHTML = '<span style="color:var(--subtext-color);">-</span>';
+                }
+                tr.appendChild(tbTd);
+
+                // Categories
+                sortedCats.forEach(cat => {
+                    const catTd = document.createElement('td');
+                    catTd.className = 'cat-col-cell';
+                    const s = user.category_scores ? (user.category_scores[cat] || 0) : 0;
+                    catTd.textContent = s > 0 ? s : '-';
+
+                    if (checkAnimations && previousDataMap[user.id]) {
+                        const oldS = previousDataMap[user.id].cats[cat] || 0;
+                        if (s > oldS) {
+                            catTd.classList.add('flash-increase');
+                        } else if (s < oldS) {
+                            catTd.classList.add('flash-decrease');
+                        } else if (activeCols.has(cat)) {
+                            catTd.classList.add('flash-decrease');
+                        }
+                    }
+                    tr.appendChild(catTd);
+                });
+
+                // Total
+                const scoreTd = document.createElement('td');
+                scoreTd.className = 'score-cell';
+                scoreTd.textContent = user.total_score;
+
+                if (checkAnimations && previousDataMap[user.id]) {
+                    const oldTotal = previousDataMap[user.id].total;
+                    if (user.total_score > oldTotal) {
+                        scoreTd.classList.add('flash-increase');
+                    } else if (user.total_score < oldTotal) {
+                        scoreTd.classList.add('flash-decrease');
+                    } else if (totalActive) {
+                        scoreTd.classList.add('flash-decrease');
+                    }
+                }
+
+                tr.appendChild(scoreTd);
+                tbody.appendChild(tr);
+
+                if (!previousDataMap[user.id]) previousDataMap[user.id] = { cats: {} };
+                previousDataMap[user.id].total = user.total_score;
+                previousDataMap[user.id].cats = user.category_scores || {};
+            }
+        }
+
         loadLeaderboard();
         setInterval(loadLeaderboard, 5000);
     </script>
 </body>
+
 </html>

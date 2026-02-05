@@ -52,7 +52,7 @@
     "category": "Scoring & Stats",
     "options": [
       {"text": "Seahawks", "color": "#69BE28"},
-      {"text": "Patriots", "color": "#C60C30"}
+      {"text": "Patriots", "color": "#002244"}
     ]
   },
   {
@@ -132,28 +132,28 @@
     "text": "Will there be a Crypto or AI commercial?",
     "category": "Broadcast & Fun",
     "options": [
-      {"text": "Yes", "color": "#dc3545"},
-      {"text": "No", "color": "#28a745"}
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
     ]
   },
   {
     "text": "Will there be a 'Futures' commercial? (Kalshi, Polymarket, etc.)",
     "category": "Broadcast & Fun",
     "options": [
-      {"text": "Yes", "color": "#dc3545"},
-      {"text": "No", "color": "#28a745"}
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
     ]
   },
   {
     "text": "What category will the first commercial be?",
     "category": "Broadcast & Fun",
     "options": [
-      {"text": "Beer", "color": "#f0ad4e"},
-      {"text": "Car", "color": "#0275d8"},
-      {"text": "Movie", "color": "#5bc0de"},
-      {"text": "Tech", "color": "#5cb85c"},
-      {"text": "Food", "color": "#d9534f"},
-      {"text": "Other", "color": "#777777"}
+      {"text": "🍻 Beer", "color": "#f0ad4e"},
+      {"text": "🚗 Car", "color": "#0275d8"},
+      {"text": "🎥 Movie", "color": "#5bc0de"},
+      {"text": "🖥️ Tech", "color": "#5cb85c"},
+      {"text": "🍝 Food", "color": "#d9534f"},
+      {"text": "❓ Other", "color": "#777777"}
     ]
   },
   {
@@ -162,7 +162,7 @@
     "options": [
       {"text": "Action/Hero", "color": "#d9534f"},
       {"text": "Comedy/Family", "color": "#f0ad4e"},
-      {"text": "Horror/Thriller", "color": "#292b2c"},
+      {"text": "Horror/Thriller", "color": "#780606"},
       {"text": "Other", "color": "#777777"}
     ]
   },
@@ -175,17 +175,57 @@
     ]
   },
   {
+    "text": "Will the camera show Robert Kraft in his owners box sitting next to a celebrity?",
+    "category": "Broadcast & Fun",
+    "options": [
+      {"text": "💆🏻‍♂️ Yes ", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will Bad Bunny have a special guest appearance?",
+    "category": "Halftime",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will Bad Bunny say ICE during the halftime show?",
+    "category": "Halftime",
+    "options": [
+      {"text": "Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will there be a televised gay kiss during the broadcast (coin toss to final whistle)?",
+    "category": "Broadcast & Fun",
+    "options": [
+      {"text": "🏳️‍🌈 Yes", "color": "#28a745"},
+      {"text": "No :(", "color": "#dc3545"}
+    ]
+  },
+  {
+    "text": "Will there be live animals on stage (or on the field) during Bad Bunny's performance?",
+    "category": "Halftime",
+    "options": [
+      {"text": "🫏 Yes", "color": "#28a745"},
+      {"text": "No", "color": "#dc3545"}
+    ]
+  },
+  {
     "text": "Seahawks",
     "category": "Tie Breaker",
     "type": "scoreboard-left",
-    "image_url": "https://a.espncdn.com/i/teamlogos/nfl/500/sea.png",
+    "image_url": "/static/assets/sea.png",
     "options": []
   },
   {
     "text": "Patriots",
     "category": "Tie Breaker",
     "type": "scoreboard-right",
-    "image_url": "https://a.espncdn.com/i/teamlogos/nfl/500/ne.png",
+    "image_url": "/static/assets/ne.png",
     "options": []
   }
 ]

@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 
@@ -10,6 +11,9 @@ import (
 )
 
 var db *sql.DB
+
+// Generic Football Helmet Icon (Local Asset)
+const HelmetIconURL = "/static/assets/helmet.svg"
 
 type SeedQuestion struct {
 	Text     string       `json:"text"`
@@ -36,19 +40,22 @@ func InitDB(filepath string) {
 	}
 
 	createTables()
-
+	runMigrations()
 	seedData()
 }
 
 func createTables() {
 	queries := []string{
-		`CREATE TABLE IF NOT EXISTS users (
+		fmt.Sprintf(`CREATE TABLE IF NOT EXISTS users (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			username TEXT UNIQUE,
 			pin_hash TEXT,
 			total_score INTEGER DEFAULT 0,
-			room_code TEXT DEFAULT 'MAIN'
-		);`,
+			room_code TEXT DEFAULT 'MAIN',
+			is_admin INTEGER DEFAULT 0,
+			icon TEXT DEFAULT '%s',
+			color_hex TEXT DEFAULT '#002244'
+		);`, HelmetIconURL),
 		`CREATE TABLE IF NOT EXISTS questions (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			text TEXT,
@@ -87,54 +94,63 @@ func createTables() {
 			log.Fatalf("Error creating table: %s\nQuery: %s", err, query)
 		}
 	}
+}
 
-	var count int
-	err := db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('users') WHERE name='room_code'").Scan(&count)
-	if err == nil && count == 0 {
-		log.Println("Migrating: Adding room_code to users table...")
-		if _, err := db.Exec("ALTER TABLE users ADD COLUMN room_code TEXT DEFAULT 'MAIN'"); err != nil {
-			log.Fatalf("Error migrating users table: %v", err)
-		}
+func runMigrations() {
+	if !columnExists("users", "room_code") {
+		db.Exec("ALTER TABLE users ADD COLUMN room_code TEXT DEFAULT 'MAIN'")
 	}
+	if !columnExists("users", "is_admin") {
+		db.Exec("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0")
+	}
+	if !columnExists("users", "icon") {
+		db.Exec(fmt.Sprintf("ALTER TABLE users ADD COLUMN icon TEXT DEFAULT '%s'", HelmetIconURL))
+	}
+	if !columnExists("users", "color_hex") {
+		db.Exec("ALTER TABLE users ADD COLUMN color_hex TEXT DEFAULT '#002244'")
+	}
+
+	// Fix old defaults
+	db.Exec("UPDATE users SET icon = ? WHERE icon = '🏈'", HelmetIconURL)
+	db.Exec("UPDATE users SET icon = ? WHERE icon = 'https://www.svgrepo.com/show/8996/american-football-helmet.svg'", HelmetIconURL)
+	// Migrate any existing remote URLs to local assets
+	db.Exec("UPDATE users SET icon = REPLACE(icon, 'https://a.espncdn.com/i/teamlogos/nfl/500/', '/static/assets/') WHERE icon LIKE 'https://a.espncdn.com/i/teamlogos/nfl/500/%'")
+}
+
+func columnExists(tableName, columnName string) bool {
+	var count int
+	query := fmt.Sprintf("SELECT COUNT(*) FROM pragma_table_info('%s') WHERE name='%s'", tableName, columnName)
+	err := db.QueryRow(query).Scan(&count)
+	return err == nil && count > 0
 }
 
 func seedData() {
 	var stateVal string
 	err := db.QueryRow("SELECT value FROM settings WHERE key='game_status'").Scan(&stateVal)
 	if err != nil {
-		log.Println("Initializing Game State: OPEN")
 		db.Exec("INSERT INTO settings (key, value) VALUES ('game_status', 'OPEN')")
 	}
 
 	file, err := os.ReadFile("questions.json")
 	if err != nil {
-		log.Println("No questions.json found. Skipping seed.")
 		return
 	}
 
 	var questions []SeedQuestion
 	if err := json.Unmarshal(file, &questions); err != nil {
-		log.Printf("Error parsing questions.json: %v", err)
 		return
 	}
-
-	log.Println("Syncing questions from questions.json...")
 
 	for _, q := range questions {
 		var exists int
 		err := db.QueryRow("SELECT COUNT(*) FROM questions WHERE text = ?", q.Text).Scan(&exists)
 		if err == nil && exists == 0 {
-			
 			qType := q.Type
-			if qType == "" { qType = "select" }
-
-			res, err := db.Exec("INSERT INTO questions (text, category, type, image_url) VALUES (?, ?, ?, ?)", q.Text, q.Category, qType, q.ImageURL)
-			if err != nil {
-				log.Printf("Failed to insert question: %v", err)
-				continue
+			if qType == "" {
+				qType = "select"
 			}
+			res, _ := db.Exec("INSERT INTO questions (text, category, type, image_url) VALUES (?, ?, ?, ?)", q.Text, q.Category, qType, q.ImageURL)
 			qID, _ := res.LastInsertId()
-
 			for _, o := range q.Options {
 				db.Exec("INSERT INTO options (question_id, text, color_hex) VALUES (?, ?, ?)", qID, o.Text, o.Color)
 			}
@@ -145,10 +161,25 @@ func seedData() {
 func getGameStatus() string {
 	var status string
 	err := db.QueryRow("SELECT value FROM settings WHERE key='game_status'").Scan(&status)
-	if err != nil { return "OPEN" }
+	if err != nil {
+		return "OPEN"
+	}
 	return status
 }
 
 func setGameStatus(status string) {
 	db.Exec("INSERT OR REPLACE INTO settings (key, value) VALUES ('game_status', ?)", status)
+}
+
+func SetAdminStatus(username string, isAdmin bool) error {
+	var count int
+	if err := db.QueryRow("SELECT COUNT(*) FROM users WHERE username = ?", username).Scan(&count); err != nil || count == 0 {
+		return fmt.Errorf("user not found")
+	}
+	val := 0
+	if isAdmin {
+		val = 1
+	}
+	_, err := db.Exec("UPDATE users SET is_admin = ? WHERE username = ?", val, username)
+	return err
 }

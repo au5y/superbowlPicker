@@ -1,0 +1,88 @@
+{{define "drawer"}}
+<script>
+    (function() {
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'light');
+        }
+    })();
+</script>
+
+<div class="drawer-overlay" id="overlay" onclick="toggleDrawer()"></div>
+
+<button class="fixed-menu-btn" onclick="toggleDrawer()">☰</button>
+
+<div class="theme-switch" onclick="toggleTheme()" title="Toggle Theme" style="position: fixed; top: 20px; right: 20px; z-index: 1100;">
+    <span id="theme-icon">☀️</span>
+</div>
+
+<div class="drawer" id="drawer">
+    <div class="drawer-header">
+        <span>Menu</span>
+        <button onclick="toggleDrawer()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color: var(--text-color);">&times;</button>
+    </div>
+    <div class="drawer-nav">
+        <a href="/" class="{{if eq .ActivePage "home"}}active{{end}}">My Picks</a>
+        <a href="/rules" class="{{if eq .ActivePage "rules"}}active{{end}}">How To Play</a>
+        <a href="/leaderboard" class="{{if eq .ActivePage "leaderboard"}}active{{end}}">Leaderboard</a>
+        <a href="/results" class="{{if eq .ActivePage "results"}}active{{end}}">Results</a>
+        <a href="/user/{{.User.ID}}" class="{{if eq .ActivePage "profile"}}active{{end}}">My Profile</a>
+        
+        {{if .User.IsAdmin}}
+            <a href="/admin" class="{{if eq .ActivePage "admin"}}active{{end}}" style="color: var(--accent-color); font-weight: bold;">Admin Panel</a>
+        {{end}}
+        
+        <hr style="border:0; border-top:1px solid var(--border-color);">
+        
+        {{if eq .ActivePage "home"}}
+            <div style="padding: 10px 20px; font-weight:bold; color: var(--subtext-color); font-size:0.8rem;">JUMP TO SECTION</div>
+            {{range .Categories}}
+                <a href="#{{.Anchor}}" class="section-link" onclick="toggleDrawer()">{{.Name}}</a>
+            {{end}}
+            <hr style="border:0; border-top:1px solid var(--border-color);">
+        {{end}}
+
+        <a href="/logout" style="color: #C60C30;">Log Out</a>
+        <div style="text-align:center; padding: 10px; font-size: 0.8rem; color: var(--subtext-color);">v2.5.0</div>
+    </div>
+</div>
+
+<script>
+    function toggleDrawer() {
+        const drawer = document.getElementById('drawer');
+        const overlay = document.getElementById('overlay');
+        const menuBtn = document.querySelector('.fixed-menu-btn');
+
+        if (drawer.classList.contains('open')) {
+            drawer.classList.remove('open');
+            overlay.classList.remove('open');
+            menuBtn.style.display = 'flex';
+        } else {
+            drawer.classList.add('open');
+            overlay.classList.add('open');
+            menuBtn.style.display = 'none';
+        }
+    }
+
+    function toggleTheme() {
+        const current = document.documentElement.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        updateThemeIcon(next);
+    }
+
+    function updateThemeIcon(theme) {
+        const icon = document.getElementById('theme-icon');
+        if (icon) icon.textContent = theme === 'dark' ? '🌙' : '☀️';
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        updateThemeIcon(currentTheme);
+    });
+</script>
+{{end}}

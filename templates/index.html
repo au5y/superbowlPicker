@@ -1,126 +1,156 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Austin's Superbowl LX Prop Pool</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+    {{template "head" .}}
     <style>
-        .drawer-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 900; display: none;
-        }
-        .drawer-overlay.open { display: block; }
-        .drawer {
-            position: fixed; top: 0; left: 0; width: 280px; height: 100%;
-            background: var(--drawer-bg); z-index: 1000; transition: transform 0.3s ease;
-            box-shadow: 2px 0 10px var(--shadow-color);
-            padding-top: 20px;
-            transform: translateX(-100%);
-        }
-        .drawer.open { transform: translateX(0); }
-        @media (max-width: 600px) {
-            .drawer { width: 80%; }
-        }
-        .drawer-header {
-            padding: 20px; border-bottom: 1px solid var(--border-color);
-            font-size: 1.2rem; font-weight: bold; color: var(--heading-color);
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .drawer-nav a, .drawer-nav button.theme-toggle {
-            display: block; padding: 15px 20px; width: 100%; text-align: left; box-sizing: border-box;
-            color: var(--text-color); text-decoration: none; border-bottom: 1px solid var(--hover-bg);
-            background: none; border-left: none; border-right: none; border-top: none; font-size: 1rem; cursor: pointer;
-        }
-        .drawer-nav a:hover, .drawer-nav button.theme-toggle:hover { background: var(--hover-bg); }
-        .drawer-nav .section-link { padding-left: 30px; font-size: 0.9rem; color: var(--subtext-color); }
-        
         .app-header {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            padding: 15px; margin-bottom: 20px; text-align: center;
-        }
-        .user-badge {
-            font-size: 1.1rem; font-weight: bold; color: var(--heading-color);
-            margin-bottom: 5px;
-        }
-        .room-badge {
-            font-size: 0.9rem; color: var(--subtext-color); background: var(--hover-bg); 
-            padding: 2px 8px; border-radius: 12px; display: inline-block;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
         }
 
-        .fixed-menu-btn { 
-            position: fixed; top: 15px; left: 15px; z-index: 1100;
-            background: var(--menu-btn-bg); backdrop-filter: blur(4px);
-            border: 1px solid var(--border-color); border-radius: 50%;
-            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
-            font-size: 1.5rem; cursor: pointer; box-shadow: 0 2px 5px var(--shadow-color);
-            color: var(--text-color);
+        .user-badge {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--heading-color);
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        .fixed-menu-btn:hover { background: var(--card-bg); }
+
+        .user-avatar-header {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: var(--input-bg);
+            border: 2px solid var(--border-color);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .user-avatar-header img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .room-badge {
+            font-size: 0.9rem;
+            color: var(--subtext-color);
+            background: var(--hover-bg);
+            padding: 2px 8px;
+            border-radius: 12px;
+            display: inline-block;
+        }
 
         .section-header {
-            margin: 40px 0 20px 0; border-bottom: 2px solid var(--border-color);
-            padding-bottom: 10px; color: var(--accent-color);
-            display: flex; align-items: center; gap: 10px;
+            margin: 40px 0 20px 0;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        .section-icon { background: #69BE28; width: 10px; height: 25px; border-radius: 4px; display: inline-block; }
-        .number-input { font-size: 1.2rem; padding: 10px; border: 2px solid var(--border-color); border-radius: 6px; width: 100%; max-width: 200px; text-align: center; box-sizing: border-box; background: var(--input-bg); color: var(--text-color); }
-        
+
+        .section-icon {
+            background: #69BE28;
+            width: 10px;
+            height: 25px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .number-input {
+            font-size: 1.2rem;
+            padding: 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            width: 100%;
+            max-width: 200px;
+            text-align: center;
+            box-sizing: border-box;
+            background: var(--input-bg);
+            color: var(--text-color);
+        }
+
         .error-banner {
-            background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;
-            padding: 10px; border-radius: 5px; margin-bottom: 15px; text-align: center;
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            text-align: center;
             display: none;
         }
 
-        /* Modal for Room Gate */
         .modal-gate {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 2000;
-            display: flex; align-items: center; justify-content: center;
-            padding: 20px; box-sizing: border-box;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
         }
+
         .modal-content {
-            background: var(--card-bg); padding: 30px; border-radius: 12px;
-            text-align: center; max-width: 500px; width: 100%;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
         }
+
         .modal-btn-primary {
-            background: var(--accent-color); color: white; padding: 12px 20px;
-            border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1rem;
-        }
-        .modal-btn-secondary {
-            background: transparent; color: var(--subtext-color); padding: 10px;
-            border: 1px solid var(--border-color); border-radius: 6px; 
-            font-weight: normal; cursor: pointer; width: 100%; margin-top: 10px;
+            background: var(--accent-color);
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
         }
     </style>
 </head>
+
 <body>
     <script>
-        // Apply theme immediately to prevent flash
         const savedTheme = localStorage.getItem('theme');
-        if (savedTheme) {
-            document.documentElement.setAttribute('data-theme', savedTheme);
-        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            document.documentElement.setAttribute('data-theme', 'dark');
-        }
+        if (savedTheme) { document.documentElement.setAttribute('data-theme', savedTheme); }
+        else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) { document.documentElement.setAttribute('data-theme', 'dark'); }
     </script>
 
     {{if not .User}}
     <div style="margin-top: 50px;">
         <div class="login-container">
             <h1>🏈 Superbowl LX Prop Pool</h1>
-            
             <div id="error-msg" class="error-banner"></div>
-
             <p>Enter your name to join the pool.</p>
             <form action="/login" method="POST">
                 <input type="text" name="username" placeholder="Your Name" required autocomplete="off">
-                <p>Enter a 4 digit pin if you don't want someone to be able to change your answers (optional). If you forget it let Austin know and he'll reset it, if you don't set it and someone else tries to login with a new PIN it will be set to the new pin.</p>
-                <input type="password" name="pin" placeholder="PIN (Optional)" maxlength="4">                
+                <p>Enter a 4 digit pin if you don't want someone to be able to change your answers (optional).</p>
+                <input type="password" name="pin" placeholder="PIN (Optional)" maxlength="4">
                 <br>
                 <button type="submit" class="login-btn">Submit</button>
             </form>
@@ -130,101 +160,65 @@
         const params = new URLSearchParams(window.location.search);
         const error = params.get('error');
         const errDiv = document.getElementById('error-msg');
-        if (error === 'invalid_room') {
-            errDiv.textContent = "Invalid Room Code.";
-            errDiv.style.display = 'block';
-        } else if (error === 'invalid_pin') {
-            errDiv.textContent = "Incorrect PIN. Please try again.";
-            errDiv.style.display = 'block';
-        }
+        if (error) { errDiv.textContent = "Error: " + error; errDiv.style.display = 'block'; }
     </script>
     {{end}}
 
     {{if .User}}
-    
     {{if eq .User.RoomCode ""}}
     <div class="modal-gate">
         <div class="modal-content">
-            <div id="modal-error" style="color: #721c24; background: #f8d7da; padding: 10px; border-radius: 4px; margin-bottom: 15px; display: none; border: 1px solid #f5c6cb;">
-                Invalid Group Code. Please check spelling and try again.
-            </div>
-
+            <div id="modal-error"
+                style="color: #721c24; background: #f8d7da; padding: 10px; border-radius: 4px; margin-bottom: 15px; display: none; border: 1px solid #f5c6cb;">
+                Invalid Group Code.</div>
             <h2>👋 Welcome, {{.User.Username}}!</h2>
-            <p style="color: var(--text-color); line-height: 1.5;">
-                To compete directly against your friends, enter your <strong>Group Code</strong> below.
-            </p>
-            <p style="font-size: 0.9rem; color: var(--subtext-color); margin-bottom: 20px;">
-                Enter the code for the group you are directly pooling against.<br>
-                Ask Austin for the code!
-            </p>
-            
+            <p style="color: var(--text-color); line-height: 1.5;">To compete directly against your friends, enter your
+                <strong>Group Code</strong> below.</p>
             <form action="/user/update" method="POST">
-                <input type="text" name="room_codes" placeholder="GROUP CODE" 
-                       style="text-transform:uppercase; font-size: 1.2rem; text-align: center; letter-spacing: 2px;" required>
-                
+                <input type="text" name="room_codes" placeholder="GROUP CODE"
+                    style="text-transform:uppercase; font-size: 1.2rem; text-align: center; letter-spacing: 2px;"
+                    required>
                 <button type="submit" class="modal-btn-primary">Join Group</button>
             </form>
         </div>
     </div>
-    <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('error') === 'invalid_code') {
-            const modalErr = document.getElementById('modal-error');
-            if(modalErr) modalErr.style.display = 'block';
-        }
-    </script>
+    <script>if (new URLSearchParams(window.location.search).get('error') === 'invalid_code') document.getElementById('modal-error').style.display = 'block';</script>
     {{end}}
 
-    <div class="drawer-overlay" id="overlay" onclick="toggleDrawer()"></div>
-    
-    <button class="fixed-menu-btn" onclick="toggleDrawer()">☰</button>
-
-    <div class="drawer" id="drawer">
-        <div class="drawer-header">
-            <span>Menu</span>
-            <button onclick="toggleDrawer()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color: var(--text-color);">&times;</button>
-        </div>
-        <div class="drawer-nav">
-            <a href="/">🏈 My Picks</a>
-            <a href="/leaderboard">🏆 Leaderboard</a>
-            <a href="/user/{{.User.ID}}">👤 My Profile</a>
-            <button class="theme-toggle" onclick="toggleTheme()">🌗 Toggle Dark Mode</button>
-            <hr style="border:0; border-top:1px solid var(--border-color);">
-            <div style="padding: 10px 20px; font-weight:bold; color: var(--subtext-color); font-size:0.8rem;">JUMP TO SECTION</div>
-            {{range .Categories}}
-                <a href="#{{.Anchor}}" class="section-link" onclick="toggleDrawer()">{{.Name}}</a>
-            {{end}}
-            <hr style="border:0; border-top:1px solid var(--border-color);">
-            <a href="/logout" style="color: #C60C30;">Log Out</a>
-            <div style="text-align:center; padding: 10px; font-size: 0.8rem; color: var(--subtext-color);">v2.0.0</div>
-        </div>
-    </div>
+    {{template "drawer" .}}
 
     <div class="app-header">
-        <div class="user-badge">{{.User.Username}}</div>
+        <a href="/user/{{.User.ID}}" style="text-decoration: none;">
+            <div class="user-badge">
+                <div class="user-avatar-header">
+                    {{if gt (len .User.Icon) 15}}
+                    <img src="{{.User.Icon}}">
+                    {{else}}
+                    {{.User.Icon}}
+                    {{end}}
+                </div>
+                <span style="color: {{if ne .User.ColorHex "#002244"}}{{.User.ColorHex}}{{else}}inherit{{end}}">{{.User.Username}}</span>
+            </div>
+        </a>
         {{$aliases := .RoomAliases}}
         <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: wrap;">
-            {{range split .User.RoomCode ","}}
-                <div class="room-badge">{{roomName . $aliases}}</div>
-            {{end}}
+            {{range split .User.RoomCode ","}}<div class="room-badge">{{roomName . $aliases}}</div>{{end}}
         </div>
-        <div style="margin-top:5px; font-size:0.9rem; font-weight:bold; color:var(--accent-color);">{{.User.TotalScore}} pts</div>
-        {{if eq .GameStatus "LOCKED"}}
-            <div style="background:#C60C30; color:white; padding:2px 8px; border-radius:4px; font-size:0.8rem; margin-top:5px;">LOCKED</div>
-        {{end}}
+        <div style="margin-top:5px; font-size:0.9rem; font-weight:bold; color:var(--accent-color);">{{.User.TotalScore}}
+            pts</div>
+        {{if eq .GameStatus "LOCKED"}}<div
+            style="background:#C60C30; color:white; padding:2px 8px; border-radius:4px; font-size:0.8rem; margin-top:5px;">
+            LOCKED</div>{{end}}
     </div>
 
-    <div id="save-status" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #28a745; color: white; padding: 8px 16px; border-radius: 20px; opacity: 0; transition: opacity 0.5s; font-weight: bold; z-index: 2000; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
-        Saved ✓
-    </div>
+    <div id="save-status"
+        style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #28a745; color: white; padding: 8px 16px; border-radius: 20px; opacity: 0; transition: opacity 0.5s; font-weight: bold; z-index: 2000; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+        Saved ✓</div>
 
     <div>
         {{range .Categories}}
         <div id="{{.Anchor}}">
-            <h2 class="section-header">
-                <span class="section-icon"></span> {{.Name}}
-            </h2>
-            
+            <h2 class="section-header"><span class="section-icon"></span> {{.Name}}</h2>
             <div class="grid-container">
                 {{range .Questions}}
                 {{if eq .Type "scoreboard-left"}}
@@ -232,88 +226,65 @@
                     <div class="scoreboard-half">
                         <img src="{{.ImageURL}}" class="sb-logo">
                         <div class="sb-team-name">{{.Text}}</div>
-                        <input type="number" class="sb-input" placeholder="00" value="{{if .UserPrediction}}{{.UserPrediction.TextInput}}{{end}}" onblur="handleSelection(this, {{.ID}}, null, this.value)" {{if eq $.GameStatus "LOCKED"}}disabled{{end}}>
+                        <input type="number" class="sb-input" placeholder="00"
+                            value="{{if .UserPrediction}}{{.UserPrediction.TextInput}}{{end}}"
+                            onblur="handleSelection(this, {{.ID}}, null, this.value)" {{if eq $.GameStatus "LOCKED"
+                            }}disabled{{end}}>
                     </div>
                     <div class="sb-divider">-</div>
-                {{else if eq .Type "scoreboard-right"}}
+                    {{else if eq .Type "scoreboard-right"}}
                     <div class="scoreboard-half">
                         <img src="{{.ImageURL}}" class="sb-logo">
                         <div class="sb-team-name">{{.Text}}</div>
-                        <input type="number" class="sb-input" placeholder="00" value="{{if .UserPrediction}}{{.UserPrediction.TextInput}}{{end}}" onblur="handleSelection(this, {{.ID}}, null, this.value)" {{if eq $.GameStatus "LOCKED"}}disabled{{end}}>
+                        <input type="number" class="sb-input" placeholder="00"
+                            value="{{if .UserPrediction}}{{.UserPrediction.TextInput}}{{end}}"
+                            onblur="handleSelection(this, {{.ID}}, null, this.value)" {{if eq $.GameStatus "LOCKED"
+                            }}disabled{{end}}>
                     </div>
-                </div> 
-                {{else}}
-                <div class="question-card {{if eq $.GameStatus "LOCKED"}}locked-bg{{end}}" data-qid="{{.ID}}" data-type="{{.Type}}">
+                </div> {{else}}
+                <div class="question-card {{if eq $.GameStatus " LOCKED"}}locked-bg{{end}}" data-qid="{{.ID}}"
+                    data-type="{{.Type}}">
                     <div class="question-text">{{.Text}}</div>
-                    
                     {{if eq .Type "select"}}
                     <div class="options-container">
-                        {{$qID := .ID}}
-                        {{$isResolved := eq .Status "RESOLVED"}}
-                        {{$correctID := .CorrectOptionID}}
-                        {{$category := .Category}}
-                        
+                        {{$qID := .ID}}{{$isResolved := eq .Status "RESOLVED"}}{{$correctID := .CorrectOptionID}}
                         {{range .Options}}
-                            {{$logoUrl := ""}}
-                            {{$secondaryColor := ""}}
-                            {{$isHero := false}}
-
-                            {{if eq .Text "Seahawks"}}
-                                {{$isHero = true}}
-                                {{$logoUrl = "https://a.espncdn.com/i/teamlogos/nfl/500/sea.png"}}
-                                {{$secondaryColor = "#002244"}}
-                            {{end}}
-                            {{if eq .Text "Patriots"}}
-                                {{$isHero = true}}
-                                {{$logoUrl = "https://a.espncdn.com/i/teamlogos/nfl/500/ne.png"}}
-                                {{$secondaryColor = "#C60C30"}}
-                            {{end}}
-                            {{if eq .Text "Heads"}}
-                                {{$isHero = true}}
-                                {{$logoUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/2006_Quarter_Proof.png/200px-2006_Quarter_Proof.png"}}
-                                {{$secondaryColor = "#19470e"}}
-                            {{end}}
-                            {{if eq .Text "Tails"}}
-                                {{$isHero = true}}
-                                {{$logoUrl = "https://washington-quarters.com/coins/nevada-reverse.png"}}
-                                {{$secondaryColor = "#19470e"}}
-                            {{end}}
-
-                        <label class="option-label {{if eq $.GameStatus "LOCKED"}}disabled{{end}}">
-                            <input type="radio" name="q-{{$qID}}" value="{{.ID}}" 
-                                   data-color="{{.ColorHex}}" 
-                                   data-secondary="{{$secondaryColor}}"
-                                   data-is-hero="{{$isHero}}"
-                                   onchange="handleSelection(this, {{$qID}}, '{{.ID}}', null)" 
-                                   {{if .IsSelected}}checked{{end}} 
-                                   {{if or (eq $.GameStatus "LOCKED") $isResolved}}disabled{{end}}>
-                            
-                            <div class="option-box 
-                                {{if $isHero}}hero-box{{end}}
-                                {{if $isResolved}}
-                                    {{if eq (printf "%d" .ID) (printf "%d" $correctID)}}resolved-correct{{end}}
-                                    {{if and .IsSelected (ne (printf "%d" .ID) (printf "%d" $correctID))}}resolved-wrong{{end}}
-                                {{else if eq $.GameStatus "LOCKED"}}
-                                    locked
-                                {{end}}" 
-                                id="box-{{.ID}}" 
+                        {{$logoUrl := ""}}{{$secondaryColor := ""}}{{$isHero := false}}
+                        {{if eq .Text "Seahawks"}}{{$isHero = true}}{{$logoUrl =
+                        "/static/assets/sea.png"}}{{$secondaryColor = "#002244"}}{{end}}
+                        {{if eq .Text "Patriots"}}{{$isHero = true}}{{$logoUrl =
+                        "/static/assets/ne.png"}}{{$secondaryColor = "#C60C30"}}{{end}}
+                        {{if eq .Text "Heads"}}{{$isHero = true}}{{$logoUrl =
+                        "/static/assets/heads.png"}}{{$secondaryColor = "#19470e"}}{{end}}
+                        {{if eq .Text "Tails"}}{{$isHero = true}}{{$logoUrl =
+                        "/static/assets/tails.png"}}{{$secondaryColor = "#19470e"}}{{end}}
+                        <label class="option-label {{if eq $.GameStatus " LOCKED"}}disabled{{end}}">
+                            <input type="radio" name="q-{{$qID}}" value="{{.ID}}" data-color="{{.ColorHex}}"
+                                data-secondary="{{$secondaryColor}}" data-is-hero="{{$isHero}}"
+                                onchange="handleSelection(this, {{$qID}}, '{{.ID}}', null)" {{if
+                                .IsSelected}}checked{{end}} {{if or (eq $.GameStatus "LOCKED" )
+                                $isResolved}}disabled{{end}}>
+                            <div class="option-box {{if $isHero}}hero-box{{end}} {{if $isResolved}}{{if eq (printf " %d"
+                                .ID) (printf "%d" $correctID)}}resolved-correct{{end}}{{if and .IsSelected (ne
+                                (printf "%d" .ID) (printf "%d" $correctID))}}resolved-wrong{{end}}{{else if eq
+                                $.GameStatus "LOCKED" }}{{if .IsSelected}}locked-selected{{else}}locked{{end}}{{end}}"
+                                id="box-{{.ID}}"
                                 style="border-color: {{.ColorHex}}; {{if $isHero}}background-color: {{.ColorHex}};{{end}}">
-                                
-                                {{if and $isHero $logoUrl}}
-                                    <img src="{{$logoUrl}}" class="team-logo">
-                                {{end}}
-                                {{.Text}}
+                                {{if and $isHero $logoUrl}}<img src="{{$logoUrl}}" class="team-logo">{{end}}{{.Text}}
                             </div>
                         </label>
                         {{end}}
                     </div>
                     {{else}}
                     <div style="text-align: center;">
-                        <input type="number" class="number-input" placeholder="Enter Value" value="{{if .UserPrediction}}{{.UserPrediction.TextInput}}{{end}}" onblur="handleSelection(this, {{.ID}}, null, this.value)" {{if eq $.GameStatus "LOCKED"}}disabled style="background: var(--locked-bg);"{{end}}>
+                        <input type="number" class="number-input" placeholder="Enter Value"
+                            value="{{if .UserPrediction}}{{.UserPrediction.TextInput}}{{end}}"
+                            onblur="handleSelection(this, {{.ID}}, null, this.value)" {{if eq $.GameStatus "LOCKED"
+                            }}disabled style="background: var(--locked-bg);" {{end}}>
                     </div>
                     {{end}}
                 </div>
-                {{end}} 
+                {{end}}
                 {{end}}
             </div>
         </div>
@@ -321,173 +292,84 @@
 
         {{if ne .GameStatus "LOCKED"}}
         <div class="validate-bar">
-            <!-- Helper Text Area -->
-            <div id="validation-feedback" style="margin-bottom: 8px; font-weight: bold; min-height: 1.2em; font-size: 0.95rem;"></div>
-            <button class="btn-validate" onclick="validatePicks()">LOCK IN / VALIDATE</button>
+            <div id="validation-feedback"
+                style="margin-bottom: 8px; font-weight: bold; min-height: 1.2em; font-size: 0.95rem;"></div>
+            <button class="btn-validate" onclick="validatePicks()">VALIDATE PICKS</button>
         </div>
         {{end}}
     </div>
 
     <script>
-        function toggleDrawer() {
-            const drawer = document.getElementById('drawer');
-            const overlay = document.getElementById('overlay');
-            if (drawer.classList.contains('open')) {
-                drawer.classList.remove('open');
-                overlay.classList.remove('open');
-            } else {
-                drawer.classList.add('open');
-                overlay.classList.add('open');
-            }
-        }
-
-        function toggleTheme() {
-            const current = document.documentElement.getAttribute('data-theme');
-            const next = current === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', next);
-            localStorage.setItem('theme', next);
-        }
-
-        document.addEventListener("DOMContentLoaded", function() {
-            document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
-                if(!radio.disabled) updateVisualState(radio);
-            });
-            document.querySelectorAll('.hero-box').forEach(box => {
-                const radio = box.previousElementSibling;
-                if (!radio.checked && !radio.disabled) {
-                    box.style.filter = "grayscale(100%)";
-                    box.style.opacity = "0.7";
-                    box.style.backgroundColor = "#ddd"; 
-                    box.style.borderColor = "#bbb";
-                    box.style.color = "#555";
-                }
-            });
-        });
-
         function handleSelection(el, questionId, optionId, textVal) {
-            if(optionId) updateVisualState(el);
-            const payload = { 
-                question_id: String(questionId), 
-                option_id: optionId ? String(optionId) : "",
-                text_input: textVal ? String(textVal) : ""
-            };
-            fetch('/predict', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            }).then(response => { if (response.ok) showToast(); });
+            if (optionId) updateVisualState(el);
+            fetch('/predict', { method: 'POST', body: JSON.stringify({ question_id: String(questionId), option_id: optionId ? String(optionId) : "", text_input: textVal ? String(textVal) : "" }) })
+                .then(response => { if (response.ok) showToast(); });
         }
-
         function updateVisualState(activeRadio) {
-            if(activeRadio.disabled) return;
-            const color = activeRadio.getAttribute('data-color') || '#555';
-            const secondary = activeRadio.getAttribute('data-secondary');
-            const isHero = activeRadio.getAttribute('data-is-hero') === "true";
-
+            if (activeRadio.disabled) return;
             const container = activeRadio.closest('.options-container');
-            
             container.querySelectorAll('.option-box').forEach(box => {
                 const radio = box.previousElementSibling;
                 const boxHero = radio.getAttribute('data-is-hero') === "true";
-
-                if (boxHero) {
-                    box.style.filter = "grayscale(100%)";
-                    box.style.opacity = "0.7";
-                    box.style.backgroundColor = "#ddd";
-                    box.style.borderColor = "#bbb";
-                    box.style.color = "#555";
-                } else {
-                    box.style.backgroundColor = 'var(--card-bg)';
-                    box.style.color = 'var(--subtext-color)';
-                    box.style.borderColor = 'var(--border-color)';
-                }
+                if (boxHero) { box.style.filter = "grayscale(100%)"; box.style.opacity = "0.7"; box.style.backgroundColor = "#ddd"; box.style.borderColor = "#bbb"; box.style.color = "#555"; }
+                else { box.style.backgroundColor = 'var(--card-bg)'; box.style.color = 'var(--subtext-color)'; box.style.borderColor = 'var(--border-color)'; }
             });
-
             const activeBox = document.getElementById('box-' + activeRadio.value);
+            const isHero = activeRadio.getAttribute('data-is-hero') === "true";
+            const color = activeRadio.getAttribute('data-color') || '#555';
             if (activeBox) {
-                if (isHero) {
-                    activeBox.style.filter = "grayscale(0%)";
-                    activeBox.style.opacity = "1";
-                    activeBox.style.backgroundColor = color; 
-                    activeBox.style.color = "white";
-                    activeBox.style.borderColor = secondary || color; 
-                } else {
-                    activeBox.style.backgroundColor = color;
-                    activeBox.style.color = 'white';
-                    activeBox.style.borderColor = color;
-                }
+                if (isHero) { activeBox.style.filter = "grayscale(0%)"; activeBox.style.opacity = "1"; activeBox.style.backgroundColor = color; activeBox.style.color = "white"; activeBox.style.borderColor = activeRadio.getAttribute('data-secondary') || color; }
+                else { activeBox.style.backgroundColor = color; activeBox.style.color = 'white'; activeBox.style.borderColor = color; }
             }
         }
-
-        function showToast() {
-            const el = document.getElementById('save-status');
-            el.style.opacity = '1';
-            setTimeout(() => { el.style.opacity = '0'; }, 1500);
-        }
-
+        function showToast() { const el = document.getElementById('save-status'); el.style.opacity = '1'; setTimeout(() => { el.style.opacity = '0'; }, 1500); }
         function validatePicks() {
-            let missingCount = 0;
-            let firstMissingEl = null;
-            const feedbackEl = document.getElementById('validation-feedback');
-            
-            // 1. Reset previous error states
-            document.querySelectorAll('.missing-pick').forEach(el => {
-                el.classList.remove('missing-pick');
-            });
-
-            // 2. Check Standard Questions
+            let missingCount = 0; let firstMissingEl = null;
+            document.querySelectorAll('.missing-pick').forEach(el => el.classList.remove('missing-pick'));
             document.querySelectorAll('.question-card').forEach(card => {
-                const type = card.getAttribute('data-type');
                 let isAnswered = false;
-
-                if (type === 'select') {
-                    // Check if any radio in this card is checked
-                    if (card.querySelector('input[type="radio"]:checked')) isAnswered = true;
-                } else {
-                    // Check if text/number input has content
-                    const input = card.querySelector('input.number-input');
-                    if (input && input.value.trim() !== '') isAnswered = true;
-                }
-
-                if (!isAnswered) {
-                    missingCount++;
-                    card.classList.add('missing-pick');
-                    if (!firstMissingEl) firstMissingEl = card;
-                }
+                if (card.getAttribute('data-type') === 'select') { if (card.querySelector('input[type="radio"]:checked')) isAnswered = true; }
+                else { const input = card.querySelector('input.number-input'); if (input && input.value.trim() !== '') isAnswered = true; }
+                if (!isAnswered) { missingCount++; card.classList.add('missing-pick'); if (!firstMissingEl) firstMissingEl = card; }
             });
-
-            // 3. Check Scoreboard Inputs
             document.querySelectorAll('.scoreboard-container').forEach(container => {
-                const input = container.querySelector('.sb-input');
-                if (input && input.value.trim() === '') {
-                    missingCount++;
-                    container.classList.add('missing-pick');
-                    if (!firstMissingEl) firstMissingEl = container;
-                }
+                const input = container.querySelector('.sb-input'); if (input && input.value.trim() === '') { missingCount++; container.classList.add('missing-pick'); if (!firstMissingEl) firstMissingEl = container; }
             });
-
-            // 4. Update UI / Helper Text
-            if (missingCount > 0) {
-                feedbackEl.style.color = "#dc3545"; // Red
-                feedbackEl.textContent = `⚠️ You have ${missingCount} unfinished prediction${missingCount === 1 ? '' : 's'}!`;
-                
-                // Smooth scroll to the first missing item
-                if (firstMissingEl) {
-                    firstMissingEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            } else {
-                feedbackEl.style.color = "#28a745"; // Green
-                feedbackEl.textContent = "✅ All picks entered! You are ready for the game.";
-            }
+            const feedbackEl = document.getElementById('validation-feedback');
+            if (missingCount > 0) { feedbackEl.style.color = "#dc3545"; feedbackEl.textContent = `⚠️ ${missingCount} unfinished predictions!`; if (firstMissingEl) firstMissingEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+            else { feedbackEl.style.color = "#28a745"; feedbackEl.textContent = "✅ All picks entered!"; }
         }
 
-        document.addEventListener('input', function(e) {
-            const container = e.target.closest('.question-card, .scoreboard-container');
-            if (container && container.classList.contains('missing-pick')) {
-                container.classList.remove('missing-pick');
-            }
+        // Initialize Game Logic
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll('input[type="radio"]:checked').forEach(radio => { if (!radio.disabled) updateVisualState(radio); });
         });
+
+        // Polling Logic
+        let lastStatus = "{{.GameStatus}}";
+        let lastResolved = -1;
+
+        function pollStatus() {
+            fetch('/api/status')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status !== lastStatus) {
+                        location.reload();
+                    }
+                    if (data.status === 'LOCKED') {
+                        if (lastResolved !== -1 && data.resolved_count !== lastResolved) {
+                            location.reload();
+                        }
+                        lastResolved = data.resolved_count;
+                    }
+                })
+                .catch(e => console.error("Poll error", e));
+        }
+        // Initial fetch to set resolved count
+        fetch('/api/status').then(r => r.json()).then(d => { lastResolved = d.resolved_count; });
+        setInterval(pollStatus, 5000);
     </script>
     {{end}}
 </body>
+
 </html>
