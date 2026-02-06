@@ -69,6 +69,8 @@ type QuestionData struct {
 	CorrectOptionID  int64
 	CorrectTextInput string
 	UserPrediction   *PredictionData
+	ViewerPrediction *PredictionData
+	StatsPct         int
 }
 
 type OptionData struct {
@@ -497,6 +499,34 @@ func handleUserProfile(w http.ResponseWriter, r *http.Request) {
 			q.UserPrediction = pred
 		}
 	}
+
+	if currentUser.ID != targetUser.ID {
+		vRows, err := db.Query("SELECT question_id, selected_option_id, text_input FROM predictions WHERE user_id=?", currentUser.ID)
+		if err == nil {
+			defer vRows.Close()
+			for vRows.Next() {
+				var qID int
+				var sID sql.NullInt64
+				var txt sql.NullString
+				vRows.Scan(&qID, &sID, &txt)
+				if q, ok := questionsMap[qID]; ok {
+					pred := &PredictionData{}
+					if sID.Valid {
+						pred.SelectedOptionID = sID.Int64
+					}
+					if txt.Valid {
+						pred.TextInput = txt.String
+					}
+					// Determine if viewer was correct (for coloring)
+					if q.Status == "RESOLVED" && q.Type == "select" {
+						pred.IsCorrect = (pred.SelectedOptionID == q.CorrectOptionID)
+					}
+					q.ViewerPrediction = pred
+				}
+			}
+		}
+	}
+
 	var finalQuestions []QuestionData
 	for _, q := range questionOrder {
 		finalQuestions = append(finalQuestions, *q)
@@ -1084,7 +1114,6 @@ func handleAdminBackup(w http.ResponseWriter, r *http.Request) {
 func handleResults(w http.ResponseWriter, r *http.Request) {
 	user := getUser(r)
 
-	// Fetch all questions and their correct answers
 	questionsMap := make(map[int]*QuestionData)
 	var questionOrder []*QuestionData
 
@@ -1113,7 +1142,6 @@ func handleResults(w http.ResponseWriter, r *http.Request) {
 		questionOrder = append(questionOrder, q)
 	}
 
-	// Fetch options to display the text of the winning option
 	optRows, err := db.Query("SELECT id, question_id, text, color_hex FROM options")
 	if err == nil {
 		defer optRows.Close()
@@ -1127,7 +1155,58 @@ func handleResults(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	render(w, "results.html", PageData{User: user, Categories: nil, GameStatus: getGameStatus(), ActivePage: "results", Questions: extractQuestions(questionOrder)})
+	totalMap := make(map[int]int)
+	tRows, err := db.Query("SELECT question_id, COUNT(*) FROM predictions GROUP BY question_id")
+	if err == nil {
+		defer tRows.Close()
+		for tRows.Next() {
+			var qID, count int
+			tRows.Scan(&qID, &count)
+			totalMap[qID] = count
+		}
+	}
+
+	correctMap := make(map[int]int)
+	cRows, err := db.Query(`
+        SELECT p.question_id, COUNT(*) 
+        FROM predictions p 
+        JOIN questions q ON p.question_id = q.id 
+        WHERE q.status = 'RESOLVED' 
+          AND (
+            (COALESCE(q.type, 'select') = 'select' AND p.selected_option_id = q.correct_option_id) 
+            OR 
+            (COALESCE(q.type, 'select') != 'select' AND p.text_input = q.correct_text_input)
+          )
+        GROUP BY p.question_id
+    `)
+	if err == nil {
+		defer cRows.Close()
+		for cRows.Next() {
+			var qID, count int
+			cRows.Scan(&qID, &count)
+			correctMap[qID] = count
+		}
+	}
+
+	// Assign percentages to the question structs
+	for _, q := range questionsMap {
+		total := totalMap[q.ID]
+		if total > 0 {
+			correct := correctMap[q.ID]
+			// floor div is fine
+			q.StatsPct = (correct * 100) / total
+		} else {
+			q.StatsPct = 0
+		}
+	}
+
+	render(w, "results.html", PageData{
+		User:       user,
+		Categories: nil,
+		GameStatus: getGameStatus(),
+		ActivePage: "results",
+		Questions:  extractQuestions(questionOrder),
+	})
 }
 
 func extractQuestions(qs []*QuestionData) []QuestionData {

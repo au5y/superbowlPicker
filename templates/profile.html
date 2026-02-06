@@ -337,6 +337,14 @@
         </div>
         {{end}}
 
+        {{if and (ne .User.ID .TargetUser.ID) (eq .GameStatus "LOCKED")}}
+            <div style="margin: 20px 0; text-align: center;">
+                <label style="display: inline-flex; align-items: center; gap: 10px; cursor: pointer; background: var(--card-bg); padding: 10px 20px; border-radius: 30px; box-shadow: 0 2px 4px var(--shadow-color); border: 1px solid var(--border-color);">
+                    <input type="checkbox" id="compare-toggle" onchange="toggleCompare()" style="width: 20px; height: 20px;">
+                    <span style="font-weight: bold; color: var(--text-color);">Compare Against Me</span>
+                </label>
+            </div>
+            {{end}}
         <div>
             {{range .Questions}}
             <div class="pick-row 
@@ -348,27 +356,48 @@
                     <strong>{{.Text}}</strong>
                 </div>
 
-                <div class="pick-result">
-                    {{if .UserPrediction}}
-                    {{if eq .Type "select"}}
-                    {{$selID := .UserPrediction.SelectedOptionID}}
-                    {{range .Options}}
-                    {{if eq (printf "%d" .ID) (printf "%d" $selID)}}{{.Text}}{{end}}
-                    {{end}}
-                    {{else}}
-                    {{.UserPrediction.TextInput}}
-                    {{end}}
+                <div class="pick-result" style="text-align: right;">
+                    <div class="their-pick">
+                        {{if .UserPrediction}}
+                            {{if eq .Type "select"}}
+                                {{$selID := .UserPrediction.SelectedOptionID}}
+                                {{range .Options}}
+                                    {{if eq (printf "%d" .ID) (printf "%d" $selID)}}{{.Text}}{{end}}
+                                {{end}}
+                            {{else}}
+                                {{.UserPrediction.TextInput}}
+                            {{end}}
+                            
+                            {{if eq .Status "RESOLVED"}}
+                                {{if .UserPrediction.IsCorrect}}<span class="badge-correct">✔</span>{{else}}<span class="badge-wrong">✘</span>{{end}}
+                            {{end}}
+                        {{else}}
+                            <span style="color: var(--subtext-color);">No Pick</span>
+                        {{end}}
+                    </div>
 
-                    {{if eq .Status "RESOLVED"}}
-                    {{if .UserPrediction.IsCorrect}}
-                    <span class="badge-correct">✔</span>
-                    {{else}}
-                    <span class="badge-wrong">✘</span>
-                    {{end}}
-                    {{end}}
-                    {{else}}
-                    <span style="color: var(--subtext-color);">No Pick</span>
-                    {{end}}
+                    <div class="my-compare-pick" style="display: none; margin-top: 5px; font-size: 0.9rem; color: var(--subtext-color); border-top: 1px solid var(--border-color); padding-top: 5px;">
+                        <span style="font-size: 0.8rem; text-transform: uppercase; font-weight: bold;">Me:</span>
+                        {{if .ViewerPrediction}}
+                            {{if eq .Type "select"}}
+                                {{$vSelID := .ViewerPrediction.SelectedOptionID}}
+                                {{range .Options}}
+                                    {{if eq (printf "%d" .ID) (printf "%d" $vSelID)}}
+                                        <span style="{{if eq .Status "RESOLVED"}}{{if $.ViewerPrediction.IsCorrect}}color:#28a745;{{else}}color:#dc3545;{{end}}{{end}}">
+                                            {{.Text}}
+                                        </span>
+                                    {{end}}
+                                {{end}}
+                            {{else}}
+                                {{.ViewerPrediction.TextInput}}
+                            {{end}}
+                            {{if eq .Status "RESOLVED"}}
+                                {{if .ViewerPrediction.IsCorrect}}<span class="badge-correct">✔</span>{{else}}<span class="badge-wrong">✘</span>{{end}}
+                            {{end}}
+                        {{else}}
+                            <span>No Pick</span>
+                        {{end}}
+                    </div>
                 </div>
             </div>
             {{end}}
@@ -480,6 +509,15 @@
                 startCycling();
             }
         });
+
+        function toggleCompare() {
+            const isChecked = document.getElementById('compare-toggle').checked;
+            const myPicks = document.querySelectorAll('.my-compare-pick');
+            
+            myPicks.forEach(el => {
+                el.style.display = isChecked ? 'block' : 'none';
+            });
+        }
     </script>
 </body>
 
