@@ -109,12 +109,6 @@ func runMigrations() {
 	if !columnExists("users", "color_hex") {
 		db.Exec("ALTER TABLE users ADD COLUMN color_hex TEXT DEFAULT '#002244'")
 	}
-
-	// Fix old defaults
-	db.Exec("UPDATE users SET icon = ? WHERE icon = '🏈'", HelmetIconURL)
-	db.Exec("UPDATE users SET icon = ? WHERE icon = 'https://www.svgrepo.com/show/8996/american-football-helmet.svg'", HelmetIconURL)
-	// Migrate any existing remote URLs to local assets
-	db.Exec("UPDATE users SET icon = REPLACE(icon, 'https://a.espncdn.com/i/teamlogos/nfl/500/', '/static/assets/') WHERE icon LIKE 'https://a.espncdn.com/i/teamlogos/nfl/500/%'")
 }
 
 func columnExists(tableName, columnName string) bool {
