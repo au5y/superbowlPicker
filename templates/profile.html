@@ -256,7 +256,7 @@
                             Preset Avatars
                         </label>
                         <div class="icon-grid">
-                            {{range $i, $emoji := split "🏈,🍺,🍕,🤡,👑,🚀,💎,🇺🇸,🍆,🍑,💦,🥳,💩,🧠,🌉" ","}}
+                            {{range $i, $emoji := split "🏈,🏆,💍,🏟️,🥅,🦓,🐐,🍺,🍻,🍕,🍗,🍔,🌭,🥑,💰,🎰,🎲,🔮,👑,🤡,🚀,💎,🇺🇸,🥳,📺,💩,🧠,🌉" ","}}
                             <label class="icon-option">
                                 <input type="radio" name="icon" value="{{$emoji}}" {{if eq $.TargetUser.Icon $emoji}}checked{{end}}>
                                 <div class="icon-display">{{$emoji}}</div>

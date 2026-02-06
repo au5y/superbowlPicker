@@ -100,22 +100,10 @@ var AllowedRooms = map[string]string{
 }
 
 var (
-	availIcons = []string{
-		// NFL Teams
-		"/static/assets/ne.png", "/static/assets/sea.png", "/static/assets/ari.png",
-		"/static/assets/atl.png", "/static/assets/bal.png", "/static/assets/buf.png",
-		"/static/assets/car.png", "/static/assets/chi.png", "/static/assets/cin.png",
-		"/static/assets/cle.png", "/static/assets/dal.png", "/static/assets/den.png",
-		"/static/assets/det.png", "/static/assets/gb.png", "/static/assets/hou.png",
-		"/static/assets/ind.png", "/static/assets/jax.png", "/static/assets/kc.png",
-		"/static/assets/lv.png", "/static/assets/lac.png", "/static/assets/lar.png",
-		"/static/assets/mia.png", "/static/assets/min.png", "/static/assets/no.png",
-		"/static/assets/nyg.png", "/static/assets/nyj.png", "/static/assets/phi.png",
-		"/static/assets/pit.png", "/static/assets/sf.png", "/static/assets/tb.png",
-		"/static/assets/ten.png", "/static/assets/was.png",
-	}
 	availEmojis = []string{
-		"🏈", "🍺", "🍕", "🤡", "👑", "🚀", "💎", "🇺🇸", "🥳", "🧠", "🌉",
+		"🏈", "👑", "🚀", "💎", "🇺🇸", "🥳", "🌉",
+		"🍺", "🍻", "🍕", "🍗", "🍔", "🌭", "🥑",
+		"💰", "🎰", "🎲", "🔮",
 	}
 	availColors = []string{
 		"#D32F2F", "#C2185B", "#7B1FA2", "#512DA8", "#303F9F", "#1976D2", "#00796B", "#388E3C", "#F57C00", "#E64A19", "#5D4037", "#455A64",
@@ -225,7 +213,6 @@ func main() {
 	InitDB(dbName)
 	defer db.Close()
 
-	rand.Seed(time.Now().UnixNano())
 	backfillDefaults()
 
 	if len(os.Args) > 1 {
