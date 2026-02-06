@@ -9,7 +9,6 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"net/url"
 	"os"
 	"regexp"
 	"sort"
@@ -185,6 +184,28 @@ func getRandomAssets() (string, string) {
 	return icon, color
 }
 
+func backfillDefaults() {
+	rows, err := db.Query("SELECT id FROM users WHERE icon = '/static/assets/helmet.svg' OR color_hex = '#002244'")
+	if err != nil {
+		log.Println("Backfill query error:", err)
+		return
+	}
+	defer rows.Close()
+
+	var ids []int
+	for rows.Next() {
+		var id int
+		rows.Scan(&id)
+		ids = append(ids, id)
+	}
+
+	for _, id := range ids {
+		i, c := getRandomAssets()
+		db.Exec("UPDATE users SET icon = ?, color_hex = ? WHERE id = ?", i, c, id)
+		log.Printf("Assigned random assets to User ID %d", id)
+	}
+}
+
 func main() {
 	setupLogging()
 	dbName := os.Getenv("DB_NAME")
@@ -193,6 +214,8 @@ func main() {
 	}
 	InitDB(dbName)
 	defer db.Close()
+
+	backfillDefaults()
 
 	if len(os.Args) > 1 {
 		cmd := os.Args[1]
@@ -209,9 +232,6 @@ func main() {
 			}
 			fmt.Printf("User '%s' updated. Admin: %v\n", username, isAdmin)
 			os.Exit(0)
-		} else {
-			fmt.Println("Usage: go run . [admin|deadmin] <username>")
-			os.Exit(1)
 		}
 	}
 
@@ -231,7 +251,6 @@ func main() {
 	http.HandleFunc("/predict", withLogging(handlePredict))
 	http.HandleFunc("/api/leaderboard", withLogging(handleLeaderboardAPI))
 	http.HandleFunc("/api/status", withLogging(handleGameStatusAPI))
-	http.HandleFunc("/api/check-user", withLogging(handleCheckUser))
 	http.HandleFunc("/admin", withLogging(requireAdmin(handleAdmin)))
 	http.HandleFunc("/admin/resolve", withLogging(requireAdmin(handleResolve)))
 	http.HandleFunc("/admin/state", withLogging(requireAdmin(handleGameState)))
@@ -281,23 +300,6 @@ func getUser(r *http.Request) *User {
 	}
 	user.IsAdmin = (isAdminInt == 1)
 	return user
-}
-
-func handleCheckUser(w http.ResponseWriter, r *http.Request) {
-	param := r.URL.Query().Get("username")
-	if param == "" {
-		return
-	}
-	var count int
-	err := db.QueryRow("SELECT COUNT(*) FROM users WHERE username = ? COLLATE NOCASE", param).Scan(&count)
-	if err != nil {
-		http.Error(w, "DB Error", 500)
-		return
-	}
-
-	response := map[string]bool{"exists": count > 0}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
 }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
@@ -869,8 +871,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	var pinHash string
 	if err := db.QueryRow("SELECT id, pin_hash FROM users WHERE username = ? COLLATE NOCASE", username).Scan(&userID, &pinHash); err == nil {
 		if pinHash != "" && pinHash != pin {
-			redirectURL := fmt.Sprintf("/?error=invalid_pin&username=%s", url.QueryEscape(username))
-			http.Redirect(w, r, redirectURL, 302)
+			http.Redirect(w, r, "/?error=invalid_pin", 302)
 			return
 		}
 		if pinHash == "" {

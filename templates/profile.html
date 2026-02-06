@@ -307,8 +307,7 @@
                                 <input type="color" id="native-color-picker" name="color"
                                     value="{{.TargetUser.ColorHex}}"
                                     style="opacity:0; width:0; height:0; position:absolute;"
-                                    onchange="selectColor(this.value, this.parentElement)"
-                                    oninput="selectColor(this.value, this.parentElement)">
+                                    onchange="selectColor(this.value, this.parentElement)">
                             </label>
                         </div>
                         <input type="hidden" id="final-color-input" name="final_color" value="{{.TargetUser.ColorHex}}">
@@ -418,9 +417,6 @@
         function selectColor(hex, el) {
             document.getElementById('final-color-input').value = hex;
             document.getElementById('native-color-picker').value = hex;
-            // if (nativePicker && nativePicker.value !== hex) {
-            //     nativePicker.value = hex;
-            // }
             document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
             if (el.classList.contains('color-swatch')) {
                 el.classList.add('active');

@@ -146,13 +146,11 @@
         <div class="login-container">
             <h1>🏈 Superbowl LX Prop Pool</h1>
             <div id="error-msg" class="error-banner"></div>
-            <p>Enter your name to join, keep it your name rather than a username. We're all friends here</p>
-            <form id="login-form" action="/login" method="POST">
+            <p>Enter your name to join the pool.</p>
+            <form action="/login" method="POST">
                 <input type="text" name="username" placeholder="Your Name" required autocomplete="off">
-                <p>Enter a passphrase or pin if you don't want someone to be able to change your answers (optional).<br>
-                <em>This is not the most secure site ever, please be cautious.</em></p>
-                <input type="password" name="pin" placeholder="Passcode (Optional)" maxlength="15">
-                <br>
+                <p>Enter a 4 digit pin if you don't want someone to be able to change your answers (optional).</p>
+                <input type="password" name="pin" placeholder="PIN (Optional)" maxlength="4">
                 <br>
                 <button type="submit" class="login-btn">Submit</button>
             </form>
@@ -162,97 +160,24 @@
         const params = new URLSearchParams(window.location.search);
         const error = params.get('error');
         const errDiv = document.getElementById('error-msg');
-        
-        if (error) { 
-            errDiv.textContent = "Error: " + error; 
-            errDiv.style.display = 'block'; 
-        }
-
-        const urlUsername = params.get('username');
-        if (urlUsername) {
-            const userField = document.querySelector('input[name="username"]');
-            if (userField) {
-                userField.value = urlUsername;
-                const pinField = document.querySelector('input[name="pin"]');
-                if (pinField) pinField.focus(); 
-            }
-        }
-    </script>
-    <div id="confirm-modal" class="modal-gate" style="display: none;">
-        <div class="modal-content">
-            <h2>New Here?</h2>
-            <p id="confirm-msg" style="color: var(--text-color); margin-bottom: 20px;">
-                That name does not exist yet. Create a new account with this name?
-            </p>
-            <div style="display: flex; gap: 10px;">
-                <button type="button" id="btn-cancel" class="modal-btn-primary" 
-                        style="background-color: #6c757d;">No, fix typo</button>
-                
-                <button type="button" id="btn-confirm" class="modal-btn-primary">Yes, new account time</button>
-            </div>
-        </div>
-    </div>
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const loginForm = document.getElementById('login-form');
-            const confirmModal = document.getElementById('confirm-modal');
-            const btnCancel = document.getElementById('btn-cancel');
-            const btnConfirm = document.getElementById('btn-confirm');
-            
-            if (!loginForm || !confirmModal) return;
-
-            loginForm.addEventListener('submit', function (e) {
-                e.preventDefault();
-                
-                const usernameInput = loginForm.querySelector('input[name="username"]');
-                const username = usernameInput.value.trim();
-                
-                if (!username) return; 
-
-                fetch('/api/check-user?username=' + encodeURIComponent(username)) 
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.exists) {
-                            loginForm.submit();
-                        } else {
-                            confirmModal.style.display = 'flex';
-                        }
-                    })
-                    .catch(err => {
-                        console.error("API failed", err);
-                        loginForm.submit();
-                    });
-            });
-
-            btnCancel.addEventListener('click', function () {
-                confirmModal.style.display = 'none';
-                loginForm.querySelector('input[name="username"]').focus();
-            });
-
-            btnConfirm.addEventListener('click', function () {
-                loginForm.submit();
-            });
-        });
+        if (error) { errDiv.textContent = "Error: " + error; errDiv.style.display = 'block'; }
     </script>
     {{end}}
 
     {{if .User}}
     {{if eq .User.RoomCode ""}}
-    <style>body { overflow: hidden; height: 100vh; position: fixed; width: 100%; }</style>
-    
     <div class="modal-gate">
         <div class="modal-content">
             <div id="modal-error"
                 style="color: #721c24; background: #f8d7da; padding: 10px; border-radius: 4px; margin-bottom: 15px; display: none; border: 1px solid #f5c6cb;">
                 Invalid Group Code.</div>
             <h2>👋 Welcome, {{.User.Username}}!</h2>
-            <p style="color: var(--text-color); line-height: 1.5;">To get started, enter your
-                <strong>Group Code(s)</strong> below to join.<br>(Multiple Codes can be separated by a comma)</p>
+            <p style="color: var(--text-color); line-height: 1.5;">To compete directly against your friends, enter your
+                <strong>Group Code</strong> below.</p>
             <form action="/user/update" method="POST">
                 <input type="text" name="room_codes" placeholder="GROUP CODE"
                     style="text-transform:uppercase; font-size: 1.2rem; text-align: center; letter-spacing: 2px;"
                     required>
-                <br><br>
                 <button type="submit" class="modal-btn-primary">Join Group</button>
             </form>
         </div>
