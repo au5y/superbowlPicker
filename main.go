@@ -569,6 +569,8 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Fix: Decoupled Icon and Color updates to allow independent changing
+
 	if r.FormValue("icon") != "" {
 		newIcon := r.FormValue("icon")
 
@@ -605,15 +607,20 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		newColor := r.FormValue("final_color")
-		if newColor == "" {
-			newColor = r.FormValue("color")
+		if newIcon != "" {
+			db.Exec("UPDATE users SET icon = ? WHERE id = ?", newIcon, targetID)
 		}
+	}
 
+	newColor := r.FormValue("final_color")
+	if newColor == "" {
+		newColor = r.FormValue("color")
+	}
+
+	if newColor != "" {
 		match, _ := regexp.MatchString(`^#[0-9a-fA-F]{6}$`, newColor)
-
-		if newIcon != "" && match {
-			db.Exec("UPDATE users SET icon = ?, color_hex = ? WHERE id = ?", newIcon, newColor, targetID)
+		if match {
+			db.Exec("UPDATE users SET color_hex = ? WHERE id = ?", newColor, targetID)
 		}
 	}
 

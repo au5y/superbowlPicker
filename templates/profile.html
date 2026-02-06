@@ -347,6 +347,7 @@
             {{end}}
         <div>
             {{range .Questions}}
+            {{$q := .}}
             <div class="pick-row 
                     {{if .UserPrediction}}
                         {{if eq .Status "RESOLVED"}}{{if .UserPrediction.IsCorrect}}pick-correct{{else}}pick-wrong{{end}}{{else}}pick-pending{{end}}{{end}}">
@@ -378,21 +379,21 @@
 
                     <div class="my-compare-pick" style="display: none; margin-top: 5px; font-size: 0.9rem; color: var(--subtext-color); border-top: 1px solid var(--border-color); padding-top: 5px;">
                         <span style="font-size: 0.8rem; text-transform: uppercase; font-weight: bold;">Me:</span>
-                        {{if .ViewerPrediction}}
-                            {{if eq .Type "select"}}
-                                {{$vSelID := .ViewerPrediction.SelectedOptionID}}
-                                {{range .Options}}
+                        {{if $q.ViewerPrediction}}
+                            {{if eq $q.Type "select"}}
+                                {{$vSelID := $q.ViewerPrediction.SelectedOptionID}}
+                                {{range $q.Options}}
                                     {{if eq (printf "%d" .ID) (printf "%d" $vSelID)}}
-                                        <span style="{{if eq .Status "RESOLVED"}}{{if $.ViewerPrediction.IsCorrect}}color:#28a745;{{else}}color:#dc3545;{{end}}{{end}}">
+                                        <span style="{{if eq $q.Status "RESOLVED"}}{{if $q.ViewerPrediction.IsCorrect}}color:#28a745;{{else}}color:#dc3545;{{end}}{{end}}">
                                             {{.Text}}
                                         </span>
                                     {{end}}
                                 {{end}}
                             {{else}}
-                                {{.ViewerPrediction.TextInput}}
+                                {{$q.ViewerPrediction.TextInput}}
                             {{end}}
-                            {{if eq .Status "RESOLVED"}}
-                                {{if .ViewerPrediction.IsCorrect}}<span class="badge-correct">✔</span>{{else}}<span class="badge-wrong">✘</span>{{end}}
+                            {{if eq $q.Status "RESOLVED"}}
+                                {{if $q.ViewerPrediction.IsCorrect}}<span class="badge-correct">✔</span>{{else}}<span class="badge-wrong">✘</span>{{end}}
                             {{end}}
                         {{else}}
                             <span>No Pick</span>
