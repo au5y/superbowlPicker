@@ -12,40 +12,67 @@
     {{template "drawer" .}}
 
     <div style="max-width: 800px; margin: 0 auto; padding-top: 60px;">
-        <div class="card" style="margin-bottom: 20px; text-align: center; border-left: 5px solid var(--accent-color);">
-            <h2>🏆 Official Results</h2>
-            <p style="color: var(--subtext-color);">The final results for all props.</p>
+        <div style="text-align: center; margin-bottom: 40px;">
+            <h2 style="font-size: 2rem; margin-bottom: 5px;">🏆 Official Results</h2>
+            <p style="color: var(--subtext-color); margin: 0;">The final outcomes for all predictions.</p>
         </div>
 
         {{range .Questions}}
-        <div class="card" style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; padding: 15px; {{if eq .Status "RESOLVED"}}border-left: 5px solid #28a745;{{else}}border-left: 5px solid var(--subtext-color);{{end}}">
-            <div style="flex: 1;">
-                <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--subtext-color); margin-bottom: 4px;">
-                    {{.Category}}
+            <div class="result-card">
+                <!-- Info Section -->
+                <div class="result-info">
+                    <div class="result-category">{{.Category}}</div>
+                    <div class="result-question">{{.Text}}</div>
                 </div>
-                <div style="font-weight: 600;">{{.Text}}</div>
-            </div>
-            
-            <div style="text-align: right; font-weight: bold;">
-                {{if eq .Status "RESOLVED"}}
-                    {{if eq .Type "select"}}
-                        {{$cID := .CorrectOptionID}}
-                        {{range .Options}}
-                            {{if eq (printf "%d" .ID) (printf "%d" $cID)}}
-                                <span style="color: #28a745; background: rgba(40,167,69,0.1); padding: 5px 10px; border-radius: 4px;">
-                                    {{.Text}}
-                                </span>
-                            {{end}}
-                        {{end}}
+                
+                <!-- Stats & Result Section -->
+                <div class="result-meta">
+                    <!-- Donut Chart -->
+                    {{if gt .StatsPct 0}}
+                    <div class="stat-circle" style="--p: {{.StatsPct}};">
+                        <div class="stat-content">
+                            <span class="stat-value">{{.StatsPct}}%</span>
+                            <span class="stat-label">Correct</span>
+                        </div>
+                    </div>
                     {{else}}
-                         <span style="color: #28a745;">{{.CorrectTextInput}}</span>
+                    <div class="stat-circle" style="--p: 0; opacity: 0.3;">
+                        <div class="stat-content">
+                            <span class="stat-value">--</span>
+                        </div>
+                    </div>
                     {{end}}
-                {{else}}
-                    <span style="color: var(--subtext-color); font-size: 0.9rem; font-style: italic;">Pending...</span>
-                {{end}}
+
+                    {{if eq .Status "RESOLVED"}}
+                        <div class="winner-badge">
+                            <div class="winner-details">
+                                <span class="winner-label">OUTCOME</span>
+                                <span class="winner-name">
+                                    {{if eq .Type "select"}}
+                                        {{$cID := .CorrectOptionID}}
+                                        {{range .Options}}
+                                            {{if eq (printf "%d" .ID) (printf "%d" $cID)}}
+                                                {{.Text}}
+                                            {{end}}
+                                        {{end}}
+                                    {{else}}
+                                        {{.CorrectTextInput}}
+                                    {{end}}
+                                </span>
+                            </div>
+                        </div>
+                    {{else}}
+                        <div class="winner-badge" style="opacity: 0.5;">
+                            <span class="pending-state">Pending Result...</span>
+                        </div>
+                    {{end}}
+                </div>
             </div>
-        </div>
         {{end}}
+        
+        <div style="text-align: center; margin-top: 40px; margin-bottom: 40px;">
+            <a href="/leaderboard" class="btn-validate" style="text-decoration: none; padding: 12px 30px; border-radius: 50px;">View Full Leaderboard</a>
+        </div>
     </div>
 </body>
 </html>

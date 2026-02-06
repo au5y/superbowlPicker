@@ -9,6 +9,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
 	"sort"
@@ -68,6 +69,8 @@ type QuestionData struct {
 	CorrectOptionID  int64
 	CorrectTextInput string
 	UserPrediction   *PredictionData
+	ViewerPrediction *PredictionData
+	StatsPct         int
 }
 
 type OptionData struct {
@@ -100,22 +103,10 @@ var AllowedRooms = map[string]string{
 }
 
 var (
-	availIcons = []string{
-		// NFL Teams
-		"/static/assets/ne.png", "/static/assets/sea.png", "/static/assets/ari.png",
-		"/static/assets/atl.png", "/static/assets/bal.png", "/static/assets/buf.png",
-		"/static/assets/car.png", "/static/assets/chi.png", "/static/assets/cin.png",
-		"/static/assets/cle.png", "/static/assets/dal.png", "/static/assets/den.png",
-		"/static/assets/det.png", "/static/assets/gb.png", "/static/assets/hou.png",
-		"/static/assets/ind.png", "/static/assets/jax.png", "/static/assets/kc.png",
-		"/static/assets/lv.png", "/static/assets/lac.png", "/static/assets/lar.png",
-		"/static/assets/mia.png", "/static/assets/min.png", "/static/assets/no.png",
-		"/static/assets/nyg.png", "/static/assets/nyj.png", "/static/assets/phi.png",
-		"/static/assets/pit.png", "/static/assets/sf.png", "/static/assets/tb.png",
-		"/static/assets/ten.png", "/static/assets/was.png",
-	}
 	availEmojis = []string{
-		"🏈", "🍺", "🍕", "🤡", "👑", "🚀", "💎", "🇺🇸", "🥳", "🧠", "🌉",
+		"🏈", "👑", "🚀", "💎", "🇺🇸", "🥳", "🌉",
+		"🍺", "🍻", "🍕", "🍗", "🍔", "🌭", "🥑",
+		"💰", "🎰", "🎲", "🔮",
 	}
 	availColors = []string{
 		"#D32F2F", "#C2185B", "#7B1FA2", "#512DA8", "#303F9F", "#1976D2", "#00796B", "#388E3C", "#F57C00", "#E64A19", "#5D4037", "#455A64",
@@ -194,28 +185,6 @@ func getRandomAssets() (string, string) {
 	return icon, color
 }
 
-func backfillDefaults() {
-	rows, err := db.Query("SELECT id FROM users WHERE icon = '/static/assets/helmet.svg' OR color_hex = '#002244'")
-	if err != nil {
-		log.Println("Backfill query error:", err)
-		return
-	}
-	defer rows.Close()
-
-	var ids []int
-	for rows.Next() {
-		var id int
-		rows.Scan(&id)
-		ids = append(ids, id)
-	}
-
-	for _, id := range ids {
-		i, c := getRandomAssets()
-		db.Exec("UPDATE users SET icon = ?, color_hex = ? WHERE id = ?", i, c, id)
-		log.Printf("Assigned random assets to User ID %d", id)
-	}
-}
-
 func main() {
 	setupLogging()
 	dbName := os.Getenv("DB_NAME")
@@ -224,9 +193,6 @@ func main() {
 	}
 	InitDB(dbName)
 	defer db.Close()
-
-	rand.Seed(time.Now().UnixNano())
-	backfillDefaults()
 
 	if len(os.Args) > 1 {
 		cmd := os.Args[1]
@@ -243,6 +209,9 @@ func main() {
 			}
 			fmt.Printf("User '%s' updated. Admin: %v\n", username, isAdmin)
 			os.Exit(0)
+		} else {
+			fmt.Println("Usage: go run . [admin|deadmin] <username>")
+			os.Exit(1)
 		}
 	}
 
@@ -262,6 +231,7 @@ func main() {
 	http.HandleFunc("/predict", withLogging(handlePredict))
 	http.HandleFunc("/api/leaderboard", withLogging(handleLeaderboardAPI))
 	http.HandleFunc("/api/status", withLogging(handleGameStatusAPI))
+	http.HandleFunc("/api/check-user", withLogging(handleCheckUser))
 	http.HandleFunc("/admin", withLogging(requireAdmin(handleAdmin)))
 	http.HandleFunc("/admin/resolve", withLogging(requireAdmin(handleResolve)))
 	http.HandleFunc("/admin/state", withLogging(requireAdmin(handleGameState)))
@@ -311,6 +281,23 @@ func getUser(r *http.Request) *User {
 	}
 	user.IsAdmin = (isAdminInt == 1)
 	return user
+}
+
+func handleCheckUser(w http.ResponseWriter, r *http.Request) {
+	param := r.URL.Query().Get("username")
+	if param == "" {
+		return
+	}
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM users WHERE username = ? COLLATE NOCASE", param).Scan(&count)
+	if err != nil {
+		http.Error(w, "DB Error", 500)
+		return
+	}
+
+	response := map[string]bool{"exists": count > 0}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
@@ -512,6 +499,34 @@ func handleUserProfile(w http.ResponseWriter, r *http.Request) {
 			q.UserPrediction = pred
 		}
 	}
+
+	if currentUser.ID != targetUser.ID {
+		vRows, err := db.Query("SELECT question_id, selected_option_id, text_input FROM predictions WHERE user_id=?", currentUser.ID)
+		if err == nil {
+			defer vRows.Close()
+			for vRows.Next() {
+				var qID int
+				var sID sql.NullInt64
+				var txt sql.NullString
+				vRows.Scan(&qID, &sID, &txt)
+				if q, ok := questionsMap[qID]; ok {
+					pred := &PredictionData{}
+					if sID.Valid {
+						pred.SelectedOptionID = sID.Int64
+					}
+					if txt.Valid {
+						pred.TextInput = txt.String
+					}
+					// Determine if viewer was correct (for coloring)
+					if q.Status == "RESOLVED" && q.Type == "select" {
+						pred.IsCorrect = (pred.SelectedOptionID == q.CorrectOptionID)
+					}
+					q.ViewerPrediction = pred
+				}
+			}
+		}
+	}
+
 	var finalQuestions []QuestionData
 	for _, q := range questionOrder {
 		finalQuestions = append(finalQuestions, *q)
@@ -554,6 +569,8 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Fix: Decoupled Icon and Color updates to allow independent changing
+
 	if r.FormValue("icon") != "" {
 		newIcon := r.FormValue("icon")
 
@@ -590,15 +607,20 @@ func handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		newColor := r.FormValue("final_color")
-		if newColor == "" {
-			newColor = r.FormValue("color")
+		if newIcon != "" {
+			db.Exec("UPDATE users SET icon = ? WHERE id = ?", newIcon, targetID)
 		}
+	}
 
+	newColor := r.FormValue("final_color")
+	if newColor == "" {
+		newColor = r.FormValue("color")
+	}
+
+	if newColor != "" {
 		match, _ := regexp.MatchString(`^#[0-9a-fA-F]{6}$`, newColor)
-
-		if newIcon != "" && match {
-			db.Exec("UPDATE users SET icon = ?, color_hex = ? WHERE id = ?", newIcon, newColor, targetID)
+		if match {
+			db.Exec("UPDATE users SET color_hex = ? WHERE id = ?", newColor, targetID)
 		}
 	}
 
@@ -854,7 +876,8 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	var pinHash string
 	if err := db.QueryRow("SELECT id, pin_hash FROM users WHERE username = ? COLLATE NOCASE", username).Scan(&userID, &pinHash); err == nil {
 		if pinHash != "" && pinHash != pin {
-			http.Redirect(w, r, "/?error=invalid_pin", 302)
+			redirectURL := fmt.Sprintf("/?error=invalid_pin&username=%s", url.QueryEscape(username))
+			http.Redirect(w, r, redirectURL, 302)
 			return
 		}
 		if pinHash == "" {
@@ -1098,7 +1121,6 @@ func handleAdminBackup(w http.ResponseWriter, r *http.Request) {
 func handleResults(w http.ResponseWriter, r *http.Request) {
 	user := getUser(r)
 
-	// Fetch all questions and their correct answers
 	questionsMap := make(map[int]*QuestionData)
 	var questionOrder []*QuestionData
 
@@ -1127,7 +1149,6 @@ func handleResults(w http.ResponseWriter, r *http.Request) {
 		questionOrder = append(questionOrder, q)
 	}
 
-	// Fetch options to display the text of the winning option
 	optRows, err := db.Query("SELECT id, question_id, text, color_hex FROM options")
 	if err == nil {
 		defer optRows.Close()
@@ -1141,7 +1162,58 @@ func handleResults(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	render(w, "results.html", PageData{User: user, Categories: nil, GameStatus: getGameStatus(), ActivePage: "results", Questions: extractQuestions(questionOrder)})
+	totalMap := make(map[int]int)
+	tRows, err := db.Query("SELECT question_id, COUNT(*) FROM predictions GROUP BY question_id")
+	if err == nil {
+		defer tRows.Close()
+		for tRows.Next() {
+			var qID, count int
+			tRows.Scan(&qID, &count)
+			totalMap[qID] = count
+		}
+	}
+
+	correctMap := make(map[int]int)
+	cRows, err := db.Query(`
+        SELECT p.question_id, COUNT(*) 
+        FROM predictions p 
+        JOIN questions q ON p.question_id = q.id 
+        WHERE q.status = 'RESOLVED' 
+          AND (
+            (COALESCE(q.type, 'select') = 'select' AND p.selected_option_id = q.correct_option_id) 
+            OR 
+            (COALESCE(q.type, 'select') != 'select' AND p.text_input = q.correct_text_input)
+          )
+        GROUP BY p.question_id
+    `)
+	if err == nil {
+		defer cRows.Close()
+		for cRows.Next() {
+			var qID, count int
+			cRows.Scan(&qID, &count)
+			correctMap[qID] = count
+		}
+	}
+
+	// Assign percentages to the question structs
+	for _, q := range questionsMap {
+		total := totalMap[q.ID]
+		if total > 0 {
+			correct := correctMap[q.ID]
+			// floor div is fine
+			q.StatsPct = (correct * 100) / total
+		} else {
+			q.StatsPct = 0
+		}
+	}
+
+	render(w, "results.html", PageData{
+		User:       user,
+		Categories: nil,
+		GameStatus: getGameStatus(),
+		ActivePage: "results",
+		Questions:  extractQuestions(questionOrder),
+	})
 }
 
 func extractQuestions(qs []*QuestionData) []QuestionData {
